@@ -1,3 +1,5 @@
+use chrono;
+
 #[derive(Debug)]
 pub enum ColumnType {
     U64,
@@ -40,6 +42,9 @@ pub enum Value {
     JSON(String),
     None,
     Timestamp(u64),
+    Date(chrono::NaiveDate),//year month day
+    Time(chrono::NaiveTime),//hours, minutes, seconds
+    DateTime(chrono::NaiveDateTime),//year month day, hours, minutes, seconds
     //Decimal(bigdecimal? decimal? string? what about precision?)
 }
 

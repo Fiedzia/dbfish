@@ -1,18 +1,23 @@
 use std::fs::File;
 
 use csv;
+use termcolor;
 
 use crate::commands::CSVDestinationOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
+use crate::utils::fileorstdout::FileOrStdout;
 
 pub struct CSVDestination {
-    csv_writer: csv::Writer<File>,
+    csv_writer: csv::Writer<FileOrStdout>,
 }
 
 impl CSVDestination 
 {
     pub fn init(csv_options: &CSVDestinationOptions) -> CSVDestination {
-        let csv_writer = csv::Writer::from_path(&csv_options.filename).unwrap();
+        let csv_writer = csv::Writer::from_writer(match csv_options.filename.as_str() {
+            "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Never)),
+            _ => FileOrStdout::File(std::fs::File::create(csv_options.filename.to_string()).unwrap())
+        });
         CSVDestination { csv_writer }
     }
 
@@ -33,6 +38,10 @@ impl CSVDestination
                 Value::Bool(value) => value.to_string(),
                 //Value::Bytes(value) => value.to_string(),
                 Value::None => "".to_string(),
+                Value::Timestamp(value) => value.to_string(),
+                Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),
+                Value::Time(time) => format!("{}", time.format("%H:%M:%S")),
+                Value::DateTime(datetime) => format!("{}", datetime.format("%Y-%m-%d %H:%M:%S")),
                 _ => panic!(format!("csv: unsupported type: {:?}", v))
             }
         }).collect()

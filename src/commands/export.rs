@@ -11,6 +11,7 @@ use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDes
 use crate::sources::mysql::MysqlSource;
 use crate::destinations::csv::CSVDestination;
 use crate::destinations::sqlite::SqliteDestination;
+use crate::destinations::text_vertical::TextVerticalDestination;
 
 
 pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {

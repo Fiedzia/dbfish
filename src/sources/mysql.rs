@@ -1,3 +1,4 @@
+use chrono;
 use mysql;
 use mysql::consts::ColumnType as MyColumnType;
 use mysql::consts::ColumnFlags as MyColumnFlags;
@@ -56,9 +57,9 @@ impl <'a>MysqlSource<'a> {
         }
     }
 
-    pub fn mysql_to_row(mysql_row: mysql::Row) -> Row {
+    pub fn mysql_to_row(column_info: &[ColumnInfo], mysql_row: mysql::Row) -> Row {
         let mut result = Row::with_capacity(mysql_row.len());
-        for value in mysql_row.unwrap() {
+        for (idx, value) in mysql_row.unwrap().iter().enumerate() {
             match &value {
                 mysql::Value::NULL => result.push(Value::None),
                 mysql::Value::Int(v) => result.push(Value::I64(*v)),
@@ -68,15 +69,31 @@ impl <'a>MysqlSource<'a> {
                     Ok(s) => result.push(Value::String(s.to_string())),
                     Err(e) => panic!(format!("mysq: invalid utf8 in '{:?}' for row: {:?}", v, value))
                 },
-                /*
-                Date(u16, u8, u8, u8, u8, u8, u32)
-                year, month, day, hour, minutes, seconds, micro seconds
-
-                Time(bool, u32, u8, u8, u8, u32)
-                is negative, days, hours, minutes, seconds, micro seconds
-                */
-
-                _ => panic!(format!("unsupported mysql data type: {:?}", value))
+                mysql::Value::Date(year, month, day, hour, minute, second, microsecond) => {
+                    match column_info[idx].data_type {
+                        ColumnType::Date => result.push(
+                            Value::Date(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32))
+                        ),
+                        ColumnType::DateTime => result.push(
+                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms( *hour as u32, *minute as u32, *second as u32))
+                        ),
+                        ColumnType::Time => result.push(
+                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
+                        ),
+                        ColumnType::Timestamp => result.push(
+                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms(*hour as u32, *minute as u32, *second as u32))
+                        ),
+                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
+                    }
+                },
+                mysql::Value::Time(negative, day, hour, minute, second, microsecond) => {
+                    match column_info[idx].data_type {
+                        ColumnType::Time => result.push(
+                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
+                        ),
+                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
+                    }
+                },
             }
         }
         result
@@ -96,6 +113,7 @@ impl <'a>DataSource for MysqlSource<'a> {
                 name: column.name_str().into_owned(),
                 data_type:  match column_type {
                     MyColumnType::MYSQL_TYPE_DECIMAL => ColumnType::Decimal,
+                    MyColumnType::MYSQL_TYPE_NEWDECIMAL => ColumnType::Decimal,
                     MyColumnType::MYSQL_TYPE_TINY => 
                         if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U8} else {ColumnType::I8},
                     MyColumnType::MYSQL_TYPE_SHORT =>
@@ -116,26 +134,24 @@ impl <'a>DataSource for MysqlSource<'a> {
                         | MyColumnType::MYSQL_TYPE_MEDIUM_BLOB
                         | MyColumnType::MYSQL_TYPE_LONG_BLOB
                         | MyColumnType::MYSQL_TYPE_BLOB => ColumnType::Bytes,
-                    /*MyColumnType::MYSQL_TYPE_TIMESTAMP => ,
-                    MyColumnType::MYSQL_TYPE_DATE,
-                    MyColumnType::MYSQL_TYPE_TIME,
-                    MyColumnType::MYSQL_TYPE_DATETIME,
-                    MyColumnType::MYSQL_TYPE_YEAR,*/
 
-
-
+                    MyColumnType::MYSQL_TYPE_TIMESTAMP => ColumnType::Timestamp,
+                    MyColumnType::MYSQL_TYPE_DATE => ColumnType::Date,
+                    MyColumnType::MYSQL_TYPE_TIME => ColumnType::Time,
+                    MyColumnType::MYSQL_TYPE_TIME2 => ColumnType::Time,
+                    MyColumnType::MYSQL_TYPE_DATETIME => ColumnType::DateTime,
+                    MyColumnType::MYSQL_TYPE_DATETIME2 => ColumnType::DateTime,
+                    MyColumnType::MYSQL_TYPE_YEAR => ColumnType::I64,
+                    MyColumnType::MYSQL_TYPE_NEWDATE => ColumnType::Date,
+                    MyColumnType::MYSQL_TYPE_TIMESTAMP2 => ColumnType::Timestamp,
 
                     /*
                     MyColumnType::MYSQL_TYPE_NULL,
-                    MyColumnType::MYSQL_TYPE_NEWDATE,
                     MyColumnType::MYSQL_TYPE_BIT,
-                    MyColumnType::MYSQL_TYPE_TIMESTAMP2,
-                    MyColumnType::MYSQL_TYPE_DATETIME2,
-                    MyColumnType::MYSQL_TYPE_TIME2,
-                    MyColumnType::MYSQL_TYPE_NEWDECIMAL,
                     MyColumnType::MYSQL_TYPE_ENUM,
                     MyColumnType::MYSQL_TYPE_SET,
-                    MyColumnType::MYSQL_TYPE_GEOMETRY,*/
+                    MyColumnType::MYSQL_TYPE_GEOMETR
+                    */
                     _ => panic!(format!("mysql: unsupported column type: {:?}", column_type))
                 },
             });
@@ -146,10 +162,11 @@ impl <'a>DataSource for MysqlSource<'a> {
     fn get_count(&self) -> Option<u64> { self.count }
 
     fn get_rows(&mut self, count: u32) -> Option<Vec<Row>> {
+        let ci = self.get_column_info();
         let mut results: Vec<Row> =  self.results
             .by_ref()
             .take(count as usize)
-            .map(|v|{ MysqlSource::mysql_to_row(v.unwrap())})
+            .map(|v|{ MysqlSource::mysql_to_row(&ci, v.unwrap())})
             .collect();
         match results.len() {
             0 => None,

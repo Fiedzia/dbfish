@@ -84,7 +84,7 @@ pub struct CSVDestinationOptions {
 pub struct TextVerticalDestinationOptions {
     #[structopt(help = "filename")]
     pub filename: String,
-    #[structopt(help = "truncate data")]
+    #[structopt(short = "t", long = "truncate", help = "truncate data")]
     pub truncate: Option<u64>
 }
 

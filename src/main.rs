@@ -9,6 +9,7 @@ pub mod commands;
 pub mod definitions;
 pub mod destinations;
 pub mod sources;
+pub mod utils;
 
 use commands::{ApplicationArguments, Command};
 

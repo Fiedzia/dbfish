@@ -1,103 +1,133 @@
+use std;
 use std::path::Path;
+use std::io::Write;
 
-use sqlite;
+use atty;
+use termcolor;
+use termcolor::WriteColor;
+use unicode_segmentation::UnicodeSegmentation;
 
-use crate::commands::SqliteDestinationOptions;
+
+use crate::commands::TextVerticalDestinationOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
+use crate::utils::fileorstdout::FileOrStdout;
 
-pub struct SqliteDestination {
-    connection: sqlite::Connection,
-    table: String,
+pub struct TextVerticalDestination {
+    filename: String,
+    truncate: Option<u64>,
     column_names: Vec<String>,
+    use_color: bool,
+    writer: FileOrStdout,
 }
 
-impl SqliteDestination {
+impl TextVerticalDestination {
 
-    pub fn init(sqlite_options: &SqliteDestinationOptions) -> SqliteDestination {
-        let path = Path::new(&sqlite_options.filename);
-        if path.exists() {
-            std::fs::remove_file(path);
-        }
-        SqliteDestination {
-            connection: sqlite::Connection::open(&sqlite_options.filename).unwrap(),
-            table: sqlite_options.table.clone(),
+    pub fn init(options: &TextVerticalDestinationOptions) -> TextVerticalDestination {
+        
+        let use_color =  options.filename == "-" && atty::is(atty::Stream::Stdout);
+        TextVerticalDestination {
+            filename: options.filename.clone(),
+            truncate: options.truncate,
             column_names: vec![],
+            use_color,
+            writer: match options.filename.as_ref() {
+                "-" =>  FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Auto)),
+                _ => FileOrStdout::File(std::fs::File::create(options.filename.clone()).unwrap())
+            }
         }
     }
 }
 
-impl DataDestination for SqliteDestination {
+impl DataDestination for TextVerticalDestination {
     
     fn prepare(&mut self, source: &DataSource) {
-        let columns = source
-            .get_column_info()
-            .iter()
-            .map(|col| { format!("{} {}", col.name, match col.data_type {
-                ColumnType::U64 | ColumnType::I64
-                | ColumnType::U32 | ColumnType::I32
-                | ColumnType::U16 | ColumnType::I16
-                | ColumnType::U8 | ColumnType::I8 => "integer".to_string(),
-                ColumnType::String => "text".to_string(),
-                ColumnType::Bytes => "blob".to_string(),
-                ColumnType::F64 | ColumnType::F32 => "float".to_string(),
-                ColumnType::Bool => "bool".to_string(),
-                ColumnType::DateTime => "datetime".to_string(),
-                ColumnType::Date => "date".to_string(),
-                ColumnType::Time => "time".to_string(),
-                ColumnType::Decimal => "numeric".to_string(),
-                _ => panic!(format!("sqlite: unsupported column type: {:?}", col.data_type))
-            })})
-            .collect::<Vec<String>>()
-            .join(", ");
         self.column_names = source
             .get_column_info()
             .iter()
             .map(|col| { col.name.clone() })
             .collect();
-
-        let create_table_query =format!("create table {} ({})", self.table, columns);
-        self.connection.execute(create_table_query).unwrap();
     }
     fn add_rows(&mut self, rows: &[Row]) {
-        let values_part = self.column_names.iter().map(|v| {"?".to_string()}).collect::<Vec<String>>().join(", ");
-        let mut sql = format!(
-            "insert into {} ({}) values ({})",
-            self.table,
-            self.column_names.join(", "),
-            values_part
-        );
-        for v in 1..rows.len() {
-            sql.push_str(&format!(",({})", values_part));
-        }
-        let mut statement = self.connection.prepare(sql).unwrap();
-        let mut cursor = statement.cursor();
-        let mut data: Vec<sqlite::Value> = Vec::with_capacity(self.column_names.len());
+
         for row in rows {
-            for col in row.iter() {
-                match col {
-                    Value::U64(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::I64(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::U32(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::I32(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::U16(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::I16(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::U8(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::I8(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::Bool(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::String(value) => data.push(sqlite::Value::String(value.to_string())),
-                    Value::F64(value) => data.push(sqlite::Value::Float(*value)),
-                    Value::F32(value) => data.push(sqlite::Value::Float(*value as f64)),
-                    Value::Bytes(value) => data.push(sqlite::Value::Binary(value.clone())),
-                    _ => panic!(format!("sqlite: unsupported type: {:?}", col))
+            self.writer.write(&"------\n".to_string().into_bytes());
+            for (idx, col) in row.iter().enumerate() {
+                let content = match col {
+                    Value::U64(value) => value.to_string(),
+                    Value::I64(value) => value.to_string(),
+                    Value::U32(value) => value.to_string(),
+                    Value::I32(value) => value.to_string(),
+                    Value::U16(value) => value.to_string(),
+                    Value::I16(value) => value.to_string(),
+                    Value::U8(value) => value.to_string(),
+                    Value::I8(value) => value.to_string(),
+                    Value::F64(value) => value.to_string(),
+                    Value::F32(value) => value.to_string(),
+                    Value::String(value) => value.to_string(),
+                    Value::Bool(value) => value.to_string(),
+                    //Value::Bytes(value) => value.to_string(),
+                    Value::None => "".to_string(),
+                    Value::Timestamp(value) => value.to_string(),
+                    Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),
+                    Value::Time(time) => format!("{}", time.format("%H:%M:%S")),
+                    Value::DateTime(datetime) => format!("{}", datetime.format("%Y-%m-%d %H:%M:%S")),
+                   
+                    _ => panic!(format!("text-vertical: unsupported type: {:?}", col))
+                };
+                let content_bytes_length = content.len();
+                let (truncated, new_content) = match self.truncate {
+                    None => (false, content),
+                    Some(max_length) => (content.len() > max_length as usize , if content.len() > max_length as usize {
+                        UnicodeSegmentation::graphemes(content.as_str(), true).take(max_length as usize).collect::<Vec<&str>>().join("")
+                    } else {
+                        content
+                    })
+                };
+
+                match (self.use_color, truncated) {
+                    (true, true) =>  {
+                        if let FileOrStdout::ColorStdout(ref mut s) = self.writer {
+                            s.set_color(termcolor::ColorSpec::new().set_bold(true)).unwrap();
+                            write!(s, "{}", self.column_names[idx]).unwrap();
+                            s.set_color(&termcolor::ColorSpec::new()).unwrap();
+                            writeln!(s, ": {} ...(bytes trimmed: {})", new_content, content_bytes_length - new_content.len()).unwrap();
+                        }
+                    },
+                    (true, false) => {
+                         if let FileOrStdout::ColorStdout(ref mut s) = self.writer {
+                            s.set_color(termcolor::ColorSpec::new().set_bold(true)).unwrap();
+                            write!(s, "{}", self.column_names[idx]).unwrap();
+                            s.set_color(&termcolor::ColorSpec::new()).unwrap();
+                            writeln!(s, ": {}", new_content).unwrap();
+                        }
+                   
+                    
+                    }, 
+                    (false, true) => {
+                        self.writer.write(
+                            &format!(
+                                "{}: {}...({} bytes trimmed)\n",
+                                self.column_names[idx],
+                                new_content,
+                                content_bytes_length - new_content.len()
+                            ).into_bytes()
+                        ).unwrap();
+                    },
+                    (false, false) => {
+                        self.writer.write(
+                            &format!(
+                                "{}: {}\n",
+                                self.column_names[idx],
+                                new_content
+                            ).into_bytes()
+                        ).unwrap();
+                    }
                 }
             }
         }
-        cursor.bind(&data);
-        cursor.next().unwrap();
-       
     }
 
-    fn close(&mut self) { }
+    fn close(&mut self) { self.writer.flush(); }
 
 }
 
