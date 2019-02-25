@@ -1,0 +1,15 @@
+[package]
+authors = ["Maciej Dziardziel <fiedzia@gmail.com>"]
+edition = "2018"
+name = "dbexport"
+version = "0.1.0"
+
+[dependencies]
+chrono = "0.4.6"
+csv = "1.0"
+humantime = "1.2.0"
+indicatif = "0.11.0"
+mysql = "15"
+prettytable-rs = "0.8.0"
+sqlite = "0.24"
+structopt = "0.2"
