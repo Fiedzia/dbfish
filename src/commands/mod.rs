@@ -32,19 +32,20 @@ pub struct ExportCommand {
 
 #[derive(StructOpt)]
 pub enum SourceCommand {
+    #[cfg(feature = "mysql")]
     #[structopt(name = "mysql", about="mysql")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Mysql(MysqlSourceOptions),
-    //Postgresql
-    //Sqlite
-    //CSV file
-    //Solr
-    //ES
+    #[cfg(feature = "postgres")]
+    #[structopt(name = "postgres", about="postgres")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Postgres(PostgresSourceOptions),
 }
 
 
 #[derive(Clone, StructOpt)]
 pub enum DestinationCommand {
+    #[cfg(feature = "sqlite")]
     #[structopt(name = "sqlite", about="Sqlite file")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Sqlite(SqliteDestinationOptions),
@@ -67,6 +68,7 @@ pub enum DestinationCommand {
 }
 
 
+#[cfg(feature = "sqlite")]
 #[derive(Clone, StructOpt)]
 pub struct SqliteDestinationOptions {
     #[structopt(help = "sqlite filename")]
@@ -115,9 +117,33 @@ pub struct JSONDestinationOptions {
     pub compact: bool,
 }
 
-
+#[cfg(feature = "mysql")]
 #[derive(Clone, StructOpt)]
 pub struct MysqlSourceOptions {
+    #[structopt(short = "h", long = "host", help = "hostname", default_value = "localhost")]
+    pub host: String,
+    #[structopt(short = "u", long = "user", help = "username")]
+    pub user: String,
+    #[structopt(short = "p", long = "password", help = "password")]
+    pub password: Option<String>,
+    #[structopt(short = "P", long = "port", help = "port", default_value = "3306")]
+    pub port: u16,
+    #[structopt(short = "D", long = "database", help = "database name")]
+    pub database: Option<String>,
+    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    pub init: Option<String>,
+    #[structopt(short = "q", long = "query", help = "sql query")]
+    pub query: String,
+    #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
+    pub count: bool,
+    #[structopt(subcommand)]
+    pub destination: DestinationCommand
+}
+
+
+#[cfg(feature = "postgres")]
+#[derive(Clone, StructOpt)]
+pub struct PostgresSourceOptions {
     #[structopt(short = "h", long = "host", help = "hostname", default_value = "localhost")]
     pub host: String,
     #[structopt(short = "u", long = "user", help = "username")]

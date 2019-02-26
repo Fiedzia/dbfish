@@ -1,10 +1,8 @@
-use std::fs::File;
-
 use csv;
 use termcolor;
 
 use crate::commands::CSVDestinationOptions;
-use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
+use crate::definitions::{Value, Row, DataSource, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 
 pub struct CSVDestination {

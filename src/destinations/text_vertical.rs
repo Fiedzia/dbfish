@@ -1,5 +1,4 @@
 use std;
-use std::path::Path;
 use std::io::Write;
 
 use atty;
@@ -9,7 +8,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 
 use crate::commands::TextVerticalDestinationOptions;
-use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
+use crate::definitions::{Value, Row, DataSource, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 
 pub struct TextVerticalDestination {
@@ -138,6 +137,4 @@ impl DataDestination for TextVerticalDestination {
     }
 
     fn close(&mut self) { self.writer.flush(); }
-
 }
-

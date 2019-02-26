@@ -3,7 +3,7 @@ use std::path::Path;
 use sqlite;
 
 use crate::commands::SqliteDestinationOptions;
-use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
+use crate::definitions::{ColumnType, Value, Row, DataSource, DataDestination};
 
 pub struct SqliteDestination {
     connection: sqlite::Connection,

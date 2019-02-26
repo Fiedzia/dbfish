@@ -1,65 +1,64 @@
 use chrono;
-use mysql;
-use mysql::consts::ColumnType as MyColumnType;
-use mysql::consts::ColumnFlags as MyColumnFlags;
+use postgres::{self, Connection, rows::Rows, TlsMode};
 
-use crate::commands::MysqlSourceOptions;
-use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource};
 
-pub fn get_mysql_url(mysql_options: &MysqlSourceOptions) -> String {
+use crate::commands::PostgresSourceOptions;
+use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
+
+pub fn get_postgres_url(postgres_options: &PostgresSourceOptions) -> String {
     format!(
-        "mysql://{user}:{password}@{hostname}:{port}/{database}",
-        user=mysql_options.user,
-        hostname=mysql_options.host,
-        password=mysql_options.password.clone().unwrap_or("".to_string()),
-        port=mysql_options.port,
-        database=mysql_options.database.clone().unwrap_or("".to_string()),
+        "postgres://{user}:{password}@{hostname}:{port}/{database}",
+        user=postgres_options.user,
+        hostname=postgres_options.host,
+        password=postgres_options.password.clone().unwrap_or("".to_string()),
+        port=postgres_options.port,
+        database=postgres_options.database.clone().unwrap_or("".to_string()),
     )
 }
 
 
-pub fn establish_connection(mysql_options: &MysqlSourceOptions) -> mysql::Pool {
+pub fn establish_connection(postgres_options: &PostgresSourceOptions) -> Connection {
 
-    let database_url = get_mysql_url(&mysql_options);
-    let pool = mysql::Pool::new(database_url).unwrap();
+    let database_url = get_postgres_url(&postgres_options);
+    let conn = Connection::connect(database_url, TlsMode::None).unwrap();
 
-    if let Some(ref init) = mysql_options.init {
-        pool.prep_exec(init, ()).unwrap();
+    if let Some(ref init) = postgres_options.init {
+        conn.execute(init, &[]).unwrap();
     }
-    pool
+    conn
 }
 
 
-pub struct MysqlSource<'a> {
-    pool: mysql::Pool,
-    results: mysql::QueryResult<'a>,
+pub struct PostgresSource {
+    connection: Connection,
+    results:  Rows,
     count: Option<u64>,
 }
 
-impl <'a>MysqlSource<'a> {
-    pub fn init(mysql_options: &MysqlSourceOptions) -> MysqlSource {
+impl PostgresSource {
+    pub fn init(postgres_options: &PostgresSourceOptions) -> PostgresSource {
 
-        let pool = establish_connection(&mysql_options);
-        let count: Option<u64> = match mysql_options.count {
+        let conn = establish_connection(&postgres_options);
+        let count: Option<u64> = match postgres_options.count {
             true => {
-                let count_query = format!("select count(*) from ({}) q", mysql_options.query);
-                let count_value = pool.first_exec(count_query, ()).unwrap().unwrap().get(0).unwrap();
-                Some(count_value)
+                let count_query = format!("select count(*) from ({}) q", postgres_options.query);
+                let count_value:i64 = conn.query(count_query.as_str(), &[]).unwrap().get(0).get(0);
+                Some(count_value as u64)
             },
             false => None,
         };
-        let mysql_result = pool.prep_exec(mysql_options.query.clone(), ()).unwrap();
+        let postgres_result = conn.query(postgres_options.query.as_str(), &[]).unwrap();
 
-        MysqlSource {
+        PostgresSource {
             count,
-            pool,
-            results: mysql_result,
+            connection: conn,
+            results: postgres_result,
         }
     }
 
-    pub fn mysql_to_row(column_info: &[ColumnInfo], mysql_row: mysql::Row) -> Row {
-        let mut result = Row::with_capacity(mysql_row.len());
-        for (idx, value) in mysql_row.unwrap().iter().enumerate() {
+    pub fn postgres_to_row(column_info: &[ColumnInfo], postgres_row: postgres::rows::Row) -> Row {
+        let mut result = Row::with_capacity(postgres_row.len());
+        /*for (idx, value) in mysql_row.unwrap().iter().enumerate() {
             match &value {
                 mysql::Value::NULL => result.push(Value::None),
                 mysql::Value::Int(v) => result.push(Value::I64(*v)),
@@ -95,18 +94,18 @@ impl <'a>MysqlSource<'a> {
                     }
                 },
             }
-        }
+        }*/
         result
     }
 }
 
-impl <'a>DataSource for MysqlSource<'a> {
+impl DataSource for PostgresSource {
 
-    fn get_name(&self) -> String { "mysql".to_string() }
+    fn get_name(&self) -> String { "postgresql".to_string() }
 
     fn get_column_info(&self) -> Vec<ColumnInfo> {
         let mut result = vec![];
-        for column in  self.results.columns_ref() {
+        /*for column in  self.results.columns_ref() {
             let column_type = column.column_type();
             let flags = column.flags();
             result.push(ColumnInfo {
@@ -155,7 +154,7 @@ impl <'a>DataSource for MysqlSource<'a> {
                     _ => panic!(format!("mysql: unsupported column type: {:?}", column_type))
                 },
             });
-        }
+        }*/
         result
     }
 
@@ -164,9 +163,10 @@ impl <'a>DataSource for MysqlSource<'a> {
     fn get_rows(&mut self, count: u32) -> Option<Vec<Row>> {
         let ci = self.get_column_info();
         let mut results: Vec<Row> =  self.results
+            .iter()
             .by_ref()
             .take(count as usize)
-            .map(|v|{ MysqlSource::mysql_to_row(&ci, v.unwrap())})
+            .map(|v|{ PostgresSource::postgres_to_row(&ci, v)})
             .collect();
         match results.len() {
             0 => None,

@@ -1,16 +1,14 @@
 use std;
-use std::path::Path;
 use std::io::Write;
 
 use atty;
 use prettytable::{self, Table, Cell};
 use termcolor;
-use termcolor::WriteColor;
 use unicode_segmentation::UnicodeSegmentation;
 
 
 use crate::commands::TextDestinationOptions;
-use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
+use crate::definitions::{Value, Row, DataSource, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 
 
