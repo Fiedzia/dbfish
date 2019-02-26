@@ -28,6 +28,9 @@ impl TextDestination {
     pub fn init(options: &TextDestinationOptions) -> TextDestination {
         
         let use_color =  options.filename == "-" && atty::is(atty::Stream::Stdout);
+        let mut table = Table::new();
+        table.set_format(*prettytable::format::consts::FORMAT_BOX_CHARS);
+
         TextDestination {
             filename: options.filename.clone(),
             truncate: options.truncate,
@@ -37,7 +40,7 @@ impl TextDestination {
                 "-" =>  FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Auto)),
                 _ => FileOrStdout::File(std::fs::File::create(options.filename.clone()).unwrap())
             },
-            table: Table::new(),
+            table,
 
         }
     }
