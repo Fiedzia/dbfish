@@ -84,8 +84,10 @@ pub struct CSVDestinationOptions {
 pub struct TextVerticalDestinationOptions {
     #[structopt(help = "filename")]
     pub filename: String,
-    #[structopt(short = "t", long = "truncate", help = "truncate data")]
-    pub truncate: Option<u64>
+    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    pub truncate: Option<u64>,
+    #[structopt(short = "s", long = "sort-columns", help = "sort columns by name")]
+    pub sort_columns: bool,
 }
 
 #[derive(Clone, StructOpt)]

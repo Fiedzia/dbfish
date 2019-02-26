@@ -18,6 +18,7 @@ pub struct TextVerticalDestination {
     column_names: Vec<String>,
     use_color: bool,
     writer: FileOrStdout,
+    sort_columns: bool,
 }
 
 impl TextVerticalDestination {
@@ -28,6 +29,7 @@ impl TextVerticalDestination {
         TextVerticalDestination {
             filename: options.filename.clone(),
             truncate: options.truncate,
+            sort_columns: options.sort_columns,
             column_names: vec![],
             use_color,
             writer: match options.filename.as_ref() {
@@ -50,6 +52,8 @@ impl DataDestination for TextVerticalDestination {
     fn add_rows(&mut self, rows: &[Row]) {
 
         for row in rows {
+            //<column index, value, original length, truncated>
+            let mut row_data: Vec<(usize, String, usize, bool)> = Vec::with_capacity(self.column_names.len());
             self.writer.write(&"------\n".to_string().into_bytes());
             for (idx, col) in row.iter().enumerate() {
                 let content = match col {
@@ -83,6 +87,12 @@ impl DataDestination for TextVerticalDestination {
                         content
                     })
                 };
+                row_data.push((idx, new_content, content_bytes_length, truncated));
+            }
+            if self.sort_columns {
+                row_data.sort_by(|a, b| {self.column_names[a.0].cmp(&self.column_names[b.0])});
+            }
+            for (idx, new_content, content_bytes_length, truncated) in row_data {
 
                 match (self.use_color, truncated) {
                     (true, true) =>  {
