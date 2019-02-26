@@ -8,6 +8,7 @@ Sources:
 destinations:
 
  * csv
+ * text (classic table)
  * text-vertical
  * sqlite
 
@@ -30,7 +31,7 @@ Fancy features:
 TODO:
 
     * more sources (sqlite, csv, postgresql, bigquery, json)
-    * more destinations (fancy html, text, HDF5)
+    * more destinations (fancy html, HDF5, ODF)
     * support a bit more mysql features (few types were ommited)
     * helpful error messages
     

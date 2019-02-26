@@ -51,6 +51,9 @@ pub enum DestinationCommand {
     #[structopt(name = "csv", about="CSV")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     CSV(CSVDestinationOptions),
+    #[structopt(name = "text", about="Text")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Text(TextDestinationOptions),
     #[structopt(name = "text-vertical", about="Text (columns displayed vertically)")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     TextVertical(TextVerticalDestinationOptions),
@@ -60,9 +63,7 @@ pub enum DestinationCommand {
     #[structopt(name = "html", about="HTML")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     HTML(HTMLDestinationOptions),
-    #[structopt(name = "text", about="Text")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-    Text(TextDestinationOptions),*/
+    */
 }
 
 
@@ -81,6 +82,14 @@ pub struct CSVDestinationOptions {
 }
 
 #[derive(Clone, StructOpt)]
+pub struct TextDestinationOptions {
+    #[structopt(help = "text filename")]
+    pub filename: String,
+    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    pub truncate: Option<u64>,
+}
+
+#[derive(Clone, StructOpt)]
 pub struct TextVerticalDestinationOptions {
     #[structopt(help = "filename")]
     pub filename: String,
@@ -88,12 +97,6 @@ pub struct TextVerticalDestinationOptions {
     pub truncate: Option<u64>,
     #[structopt(short = "s", long = "sort-columns", help = "sort columns by name")]
     pub sort_columns: bool,
-}
-
-#[derive(Clone, StructOpt)]
-pub struct TextDestinationOptions {
-    #[structopt(help = "text filename")]
-    pub filename: String,
 }
 
 #[derive(Clone, StructOpt)]

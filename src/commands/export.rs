@@ -6,11 +6,12 @@ use humantime;
 use indicatif::ProgressBar;
 
 
-use crate::commands::{ApplicationArguments, ExportCommand, SourceCommand, MysqlSourceOptions, DestinationCommand, SqliteDestinationOptions, CSVDestinationOptions, TextVerticalDestinationOptions};
+use crate::commands::{ApplicationArguments, ExportCommand, SourceCommand, MysqlSourceOptions, DestinationCommand, SqliteDestinationOptions, CSVDestinationOptions, TextDestinationOptions, TextVerticalDestinationOptions};
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
 use crate::sources::mysql::MysqlSource;
 use crate::destinations::csv::CSVDestination;
 use crate::destinations::sqlite::SqliteDestination;
+use crate::destinations::text::TextDestination;
 use crate::destinations::text_vertical::TextVerticalDestination;
 
 
@@ -23,6 +24,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             let mut destination: Box<dyn DataDestination> = match &mysql_options.destination {
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
+                DestinationCommand::Text(text_options) => Box::new(TextDestination::init(&text_options)),
                 DestinationCommand::TextVertical(text_vertical_options) => Box::new(TextVerticalDestination::init(&text_vertical_options)),
             };
             (source, destination)
