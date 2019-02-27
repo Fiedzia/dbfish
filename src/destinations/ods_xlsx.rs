@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::commands::{SpreadsheetDestinationOptions};
 use crate::definitions::{Value, Row, DataSource, DataDestination};
-use crate::utils::fileorstdout::FileOrStdout;
+use crate::utils::truncate_text_with_note;
 
 
 pub enum SpreadsheetFormat {
@@ -17,11 +17,12 @@ pub struct SpreadsheetDestination {
     filename: String,
     sheet: Sheet,
     sheet_row_count: usize,
-    format: SpreadsheetFormat
+    format: SpreadsheetFormat,
+    truncate: Option<u64>,
 }
 
 
-pub fn value_to_cell(value: &Value) -> Cell {
+pub fn value_to_cell(value: &Value, truncate: Option<u64>) -> Cell {
     match value {
         Value::U64(value) => Cell::str(value.to_string()),
         Value::I64(value) => Cell::str(value.to_string()),
@@ -33,7 +34,7 @@ pub fn value_to_cell(value: &Value) -> Cell {
         Value::I8(value) => Cell::str(value.to_string()),
         Value::F64(value) => Cell::float(*value),
         Value::F32(value) => Cell::float(*value as f64),
-        Value::String(value) => Cell::str(value.to_string()),
+        Value::String(value) => Cell::str(truncate_text_with_note(value.to_string(), truncate)),
         Value::Bool(value) => Cell::str(value.to_string()),
         //Value::Bytes(value) => value.to_string(),
         Value::None => Cell::str("".to_string()),
@@ -52,7 +53,8 @@ impl SpreadsheetDestination
             filename: spreadsheet_options.filename.clone(),
             sheet: Sheet::new("sheet 1"),
             sheet_row_count: 0,
-            format
+            format,
+            truncate: spreadsheet_options.truncate,
         }
     }
 }
@@ -69,7 +71,7 @@ impl DataDestination for SpreadsheetDestination
     fn add_rows(&mut self, rows: &[Row]) {
         for row in rows {
             for (idx, val) in row.iter().enumerate() {
-                self.sheet.add_cell(value_to_cell(val), self.sheet_row_count, idx);
+                self.sheet.add_cell(value_to_cell(val, self.truncate), self.sheet_row_count, idx);
             }
             self.sheet_row_count += 1;
         }

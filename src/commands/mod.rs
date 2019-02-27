@@ -82,12 +82,16 @@ pub struct SqliteDestinationOptions {
     pub filename: String,
     #[structopt(help = "sqlite table name", default_value="data")]
     pub table: String,
+    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    pub truncate: Option<u64>,
 }
 
 #[derive(Clone, StructOpt)]
 pub struct CSVDestinationOptions {
     #[structopt(help = "csv filename. Use '-' for stdout")]
     pub filename: String,
+    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    pub truncate: Option<u64>,
 }
 
 #[cfg(feature = "spsheet")]
@@ -95,6 +99,8 @@ pub struct CSVDestinationOptions {
 pub struct SpreadsheetDestinationOptions {
     #[structopt(help = "spreadsheet filename")]
     pub filename: String,
+    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    pub truncate: Option<u64>,
 }
 
 #[derive(Clone, StructOpt)]

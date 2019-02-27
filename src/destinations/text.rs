@@ -4,13 +4,12 @@ use std::io::Write;
 use atty;
 use prettytable::{self, Table, Cell};
 use termcolor;
-use unicode_segmentation::UnicodeSegmentation;
 
 
 use crate::commands::TextDestinationOptions;
 use crate::definitions::{Value, Row, DataSource, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
-
+use crate::utils::truncate_text_with_note;
 
 pub struct TextDestination {
     filename: String,
@@ -65,8 +64,8 @@ impl DataDestination for TextDestination {
 
         for row in rows {
             //<column index, value, original length, truncated>
-            let mut row_data: Vec<(usize, String, usize, bool)> = Vec::with_capacity(self.column_names.len());
-            for (idx, col) in row.iter().enumerate() {
+            let mut row_data: Vec<String> = Vec::with_capacity(self.column_names.len());
+            for col in row.iter() {
                 let content = match col {
                     Value::U64(value) => value.to_string(),
                     Value::I64(value) => value.to_string(),
@@ -78,7 +77,7 @@ impl DataDestination for TextDestination {
                     Value::I8(value) => value.to_string(),
                     Value::F64(value) => value.to_string(),
                     Value::F32(value) => value.to_string(),
-                    Value::String(value) => value.to_string(),
+                    Value::String(value) => truncate_text_with_note(value.to_string(), self.truncate),
                     Value::Bool(value) => value.to_string(),
                     //Value::Bytes(value) => value.to_string(),
                     Value::None => "".to_string(),
@@ -87,30 +86,17 @@ impl DataDestination for TextDestination {
                     Value::Time(time) => format!("{}", time.format("%H:%M:%S")),
                     Value::DateTime(datetime) => format!("{}", datetime.format("%Y-%m-%d %H:%M:%S")),
                    
-                    _ => panic!(format!("text-vertical: unsupported type: {:?}", col))
+                    _ => panic!(format!("text: unsupported type: {:?}", col))
                 };
-                let content_bytes_length = content.len();
-                let (truncated, new_content) = match self.truncate {
-                    None => (false, content),
-                    Some(max_length) => (content.len() > max_length as usize , if content.len() > max_length as usize {
-                        UnicodeSegmentation::graphemes(content.as_str(), true).take(max_length as usize).collect::<Vec<&str>>().join("")
-                    } else {
-                        content
-                    })
-                };
-                row_data.push((idx, new_content, content_bytes_length, truncated));
+                row_data.push(content);
             }
 
             self.table.add_row(
                 prettytable::Row::new(
                     row_data
                         .iter()
-                        .map(|(idx, new_content, content_bytes_length, truncated)| {
-                            if *truncated {
-                                Cell::new(&format!("{} ...(bytes trimmed: {})", new_content, content_bytes_length - new_content.len()))
-                            } else {
-                                Cell::new(&new_content)
-                            }
+                        .map(|content| {
+                            Cell::new(&content)
                         })
                         .collect()
                 )

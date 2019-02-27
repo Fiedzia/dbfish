@@ -4,9 +4,11 @@ use termcolor;
 use crate::commands::CSVDestinationOptions;
 use crate::definitions::{Value, Row, DataSource, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
+use crate::utils::truncate_text_with_note;
 
 pub struct CSVDestination {
     csv_writer: csv::Writer<FileOrStdout>,
+    truncate: Option<u64>
 }
 
 impl CSVDestination 
@@ -16,10 +18,10 @@ impl CSVDestination
             "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Never)),
             _ => FileOrStdout::File(std::fs::File::create(csv_options.filename.to_string()).unwrap())
         });
-        CSVDestination { csv_writer }
+        CSVDestination { csv_writer, truncate: csv_options.truncate }
     }
 
-    pub fn row_to_csv_row(row: &Row) -> Vec<String> {
+    pub fn row_to_csv_row(row: &Row, truncate: Option<u64>) -> Vec<String> {
         row.iter().map(|v| {
             match v {
                 Value::U64(value) => value.to_string(),
@@ -32,7 +34,7 @@ impl CSVDestination
                 Value::I8(value) => value.to_string(),
                 Value::F64(value) => value.to_string(),
                 Value::F32(value) => value.to_string(),
-                Value::String(value) => value.to_string(),
+                Value::String(value) => truncate_text_with_note(value.to_string(), truncate),
                 Value::Bool(value) => value.to_string(),
                 //Value::Bytes(value) => value.to_string(),
                 Value::None => "".to_string(),
@@ -59,7 +61,7 @@ impl DataDestination for CSVDestination
     }
     fn add_rows(&mut self, rows: &[Row]) {
         for row in rows {
-            self.csv_writer.write_record(CSVDestination::row_to_csv_row(&row));
+            self.csv_writer.write_record(CSVDestination::row_to_csv_row(&row, self.truncate));
         }
     }
 

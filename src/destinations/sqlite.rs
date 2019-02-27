@@ -4,11 +4,14 @@ use sqlite;
 
 use crate::commands::SqliteDestinationOptions;
 use crate::definitions::{ColumnType, Value, Row, DataSource, DataDestination};
+use crate::utils::truncate_text_with_note;
+
 
 pub struct SqliteDestination {
     connection: sqlite::Connection,
     table: String,
     column_names: Vec<String>,
+    truncate: Option<u64>,
 }
 
 impl SqliteDestination {
@@ -22,6 +25,7 @@ impl SqliteDestination {
             connection: sqlite::Connection::open(&sqlite_options.filename).unwrap(),
             table: sqlite_options.table.clone(),
             column_names: vec![],
+            truncate: sqlite_options.truncate,
         }
     }
 }
@@ -84,7 +88,7 @@ impl DataDestination for SqliteDestination {
                     Value::U8(value) => data.push(sqlite::Value::Integer(*value as i64)),
                     Value::I8(value) => data.push(sqlite::Value::Integer(*value as i64)),
                     Value::Bool(value) => data.push(sqlite::Value::Integer(*value as i64)),
-                    Value::String(value) => data.push(sqlite::Value::String(value.to_string())),
+                    Value::String(value) => data.push(sqlite::Value::String(truncate_text_with_note(value.to_string(), self.truncate))),
                     Value::F64(value) => data.push(sqlite::Value::Float(*value)),
                     Value::F32(value) => data.push(sqlite::Value::Float(*value as f64)),
                     Value::Bytes(value) => data.push(sqlite::Value::Binary(value.clone())),
