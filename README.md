@@ -12,14 +12,17 @@ usage:
 
 Sources:
 
-* MySQL
+ * MySQL
 
 Destinations:
 
  * csv
  * text (classic table)
  * text-vertical (each column in its own line vertically)
+ * ods (ODS spreadsheet)
  * sqlite file
+ * xlsx (XLSX spreadsheet)
+
 
 
 example:
@@ -32,30 +35,31 @@ example:
 
 Fancy features:
 
-    * progressbar
-    * color support
-    * truncate long texts
+ * progressbar
+ * color support
+ * truncate long texts
 
 
 TODO:
 
-    * more sources (sqlite, csv, PostgreSQL, BigQuery, maybe json/Solr/ES)
-    * more destinations (fancy html, HDF5, ODF, XLSX)
-    * support a bit more MySQL features (few types were ommited)
-    * helpful error messages
-    * kill all .unwrap()
-    * debug destination
+ * more sources (sqlite, CSV, PostgreSQL, BigQuery, maybe json/Solr/ES)
+ * more destinations (fancy html, HDF5)
+ * support a bit more MySQL features (few types were ommited)
+ * helpful error messages
+ * kill all .unwrap()
+ * debug source/destination
+ * tests
 
 
 Design principles:
 
-    * Keep it simple. This is not a tool that translates every feature of every database perfectly.
-    * Verbose errors. If something doesn't work, say it. Swallowing errors silently is not acceptable.
+* Keep it simple. This is not a tool that translates every feature of every database perfectly.
+* Verbose errors. If something doesn't work, say it. Swallowing errors silently is not acceptable.
 
 
 Development:
 
-You will need [link Rust](https://www.rust-lang.org/). I recommend using latest stable version.
+You will need [Rust](https://www.rust-lang.org/). I recommend using latest stable version.
 Once you have that, running cargo build --release should just work, generating target/release/dbexport binary.
 You will also need sqlite3 installed, since its dynamically linked.
 

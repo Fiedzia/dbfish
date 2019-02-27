@@ -22,7 +22,6 @@ pub enum Command {
 
 #[derive(StructOpt)]
 pub struct ExportCommand {
-    //progress: Option<bool>,
     #[structopt(short = "b", long = "batch-size", help = "batch size", default_value="500")]
     batch_size: u32,
     #[structopt(subcommand)]
@@ -45,13 +44,21 @@ pub enum SourceCommand {
 
 #[derive(Clone, StructOpt)]
 pub enum DestinationCommand {
+    #[structopt(name = "csv", about="CSV")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    CSV(CSVDestinationOptions),
+    #[cfg(feature = "spsheet")]
+    #[structopt(name = "ods", about="ODS spreadsheet")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    ODS(SpreadsheetDestinationOptions),
+    #[cfg(feature = "spsheet")]
+    #[structopt(name = "ods", about="ODS spreadsheet")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    XLSX(SpreadsheetDestinationOptions),
     #[cfg(feature = "sqlite")]
     #[structopt(name = "sqlite", about="Sqlite file")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Sqlite(SqliteDestinationOptions),
-    #[structopt(name = "csv", about="CSV")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-    CSV(CSVDestinationOptions),
     #[structopt(name = "text", about="Text")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Text(TextDestinationOptions),
@@ -79,7 +86,14 @@ pub struct SqliteDestinationOptions {
 
 #[derive(Clone, StructOpt)]
 pub struct CSVDestinationOptions {
-    #[structopt(help = "csv filename")]
+    #[structopt(help = "csv filename. Use '-' for stdout")]
+    pub filename: String,
+}
+
+#[cfg(feature = "spsheet")]
+#[derive(Clone, StructOpt)]
+pub struct SpreadsheetDestinationOptions {
+    #[structopt(help = "spreadsheet filename")]
     pub filename: String,
 }
 

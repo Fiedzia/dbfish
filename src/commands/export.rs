@@ -7,6 +7,8 @@ use crate::commands::{ApplicationArguments, ExportCommand, SourceCommand,  Desti
 use crate::definitions::{DataSource, DataDestination};
 #[cfg(feature = "mysql")]
 use crate::sources::mysql::MysqlSource;
+#[cfg(feature = "spsheet")]
+use crate::destinations::ods_xlsx::{SpreadsheetDestination, SpreadsheetFormat};
 #[cfg(feature = "postgres")]
 use crate::sources::postgres::PostgresSource;
 use crate::destinations::csv::CSVDestination;
@@ -27,6 +29,10 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 #[cfg(feature = "sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
+                #[cfg(feature = "spsheet")]
+                DestinationCommand::ODS(spreadsheet_options) => Box::new(SpreadsheetDestination::init(&spreadsheet_options, SpreadsheetFormat::ODS)),
+                #[cfg(feature = "spsheet")]
+                DestinationCommand::XLSX(spreadsheet_options) => Box::new(SpreadsheetDestination::init(&spreadsheet_options, SpreadsheetFormat::XLSX)),
                 DestinationCommand::Text(text_options) => Box::new(TextDestination::init(&text_options)),
                 DestinationCommand::TextVertical(text_vertical_options) => Box::new(TextVerticalDestination::init(&text_vertical_options)),
             };
@@ -39,6 +45,10 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 #[cfg(feature = "sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
+                #[cfg(feature = "spsheet")]
+                DestinationCommand::ODS(spreadsheet_options) => Box::new(SpreadsheetDestination::init(&spreadsheet_options, SpreadsheetFormat::ODS)),
+                #[cfg(feature = "spsheet")]
+                DestinationCommand::XLSX(spreadsheet_options) => Box::new(SpreadsheetDestination::init(&spreadsheet_options, SpreadsheetFormat::XLSX)),
                 DestinationCommand::Text(text_options) => Box::new(TextDestination::init(&text_options)),
                 DestinationCommand::TextVertical(text_vertical_options) => Box::new(TextVerticalDestination::init(&text_vertical_options)),
             };

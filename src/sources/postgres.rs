@@ -105,55 +105,13 @@ impl DataSource for PostgresSource {
 
     fn get_column_info(&self) -> Vec<ColumnInfo> {
         let mut result = vec![];
-        /*for column in  self.results.columns_ref() {
-            let column_type = column.column_type();
-            let flags = column.flags();
+        /*for column in self.results.columns(){
             result.push(ColumnInfo {
-                name: column.name_str().into_owned(),
-                data_type:  match column_type {
-                    MyColumnType::MYSQL_TYPE_DECIMAL => ColumnType::Decimal,
-                    MyColumnType::MYSQL_TYPE_NEWDECIMAL => ColumnType::Decimal,
-                    MyColumnType::MYSQL_TYPE_TINY => 
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U8} else {ColumnType::I8},
-                    MyColumnType::MYSQL_TYPE_SHORT =>
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U16} else {ColumnType::I16},
-                    MyColumnType::MYSQL_TYPE_LONG =>
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U32} else {ColumnType::I32},
-                    MyColumnType::MYSQL_TYPE_LONGLONG =>
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U64} else {ColumnType::I64},
-                    MyColumnType::MYSQL_TYPE_INT24 =>
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U32} else {ColumnType::I32},
-                    MyColumnType::MYSQL_TYPE_VARCHAR
-                        | MyColumnType::MYSQL_TYPE_VAR_STRING
-                        | MyColumnType::MYSQL_TYPE_STRING => ColumnType::String,
-                    MyColumnType::MYSQL_TYPE_FLOAT => ColumnType::F32,
-                    MyColumnType::MYSQL_TYPE_DOUBLE => ColumnType::F64,
-                    MyColumnType::MYSQL_TYPE_JSON => ColumnType::JSON,
-                    MyColumnType::MYSQL_TYPE_TINY_BLOB
-                        | MyColumnType::MYSQL_TYPE_MEDIUM_BLOB
-                        | MyColumnType::MYSQL_TYPE_LONG_BLOB
-                        | MyColumnType::MYSQL_TYPE_BLOB => ColumnType::Bytes,
-
-                    MyColumnType::MYSQL_TYPE_TIMESTAMP => ColumnType::Timestamp,
-                    MyColumnType::MYSQL_TYPE_DATE => ColumnType::Date,
-                    MyColumnType::MYSQL_TYPE_TIME => ColumnType::Time,
-                    MyColumnType::MYSQL_TYPE_TIME2 => ColumnType::Time,
-                    MyColumnType::MYSQL_TYPE_DATETIME => ColumnType::DateTime,
-                    MyColumnType::MYSQL_TYPE_DATETIME2 => ColumnType::DateTime,
-                    MyColumnType::MYSQL_TYPE_YEAR => ColumnType::I64,
-                    MyColumnType::MYSQL_TYPE_NEWDATE => ColumnType::Date,
-                    MyColumnType::MYSQL_TYPE_TIMESTAMP2 => ColumnType::Timestamp,
-
-                    /*
-                    MyColumnType::MYSQL_TYPE_NULL,
-                    MyColumnType::MYSQL_TYPE_BIT,
-                    MyColumnType::MYSQL_TYPE_ENUM,
-                    MyColumnType::MYSQL_TYPE_SET,
-                    MyColumnType::MYSQL_TYPE_GEOMETR
-                    */
-                    _ => panic!(format!("mysql: unsupported column type: {:?}", column_type))
-                },
-            });
+                name: column.name,to_string(),
+                data_type: {
+                    let type_ = column.type();
+                }
+            }
         }*/
         result
     }
