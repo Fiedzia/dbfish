@@ -1,5 +1,5 @@
-#[cfg(feature = "mysql")] 
+#[cfg(feature = "use_mysql")] 
 pub mod mysql;
-#[cfg(feature = "postgres")] 
+#[cfg(feature = "use_postgres")] 
 pub mod postgres;
 

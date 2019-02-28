@@ -31,11 +31,11 @@ pub struct ExportCommand {
 
 #[derive(StructOpt)]
 pub enum SourceCommand {
-    #[cfg(feature = "mysql")]
+    #[cfg(feature = "use_mysql")]
     #[structopt(name = "mysql", about="mysql")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Mysql(MysqlSourceOptions),
-    #[cfg(feature = "postgres")]
+    #[cfg(feature = "use_postgres")]
     #[structopt(name = "postgres", about="postgres")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Postgres(PostgresSourceOptions),
@@ -47,15 +47,15 @@ pub enum DestinationCommand {
     #[structopt(name = "csv", about="CSV")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     CSV(CSVDestinationOptions),
-    #[cfg(feature = "spsheet")]
+    #[cfg(feature = "use_spsheet")]
     #[structopt(name = "ods", about="ODS spreadsheet")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     ODS(SpreadsheetDestinationOptions),
-    #[cfg(feature = "spsheet")]
+    #[cfg(feature = "use_spsheet")]
     #[structopt(name = "ods", about="ODS spreadsheet")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     XLSX(SpreadsheetDestinationOptions),
-    #[cfg(feature = "sqlite")]
+    #[cfg(feature = "use_sqlite")]
     #[structopt(name = "sqlite", about="Sqlite file")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Sqlite(SqliteDestinationOptions),
@@ -75,7 +75,7 @@ pub enum DestinationCommand {
 }
 
 
-#[cfg(feature = "sqlite")]
+#[cfg(feature = "use_sqlite")]
 #[derive(Clone, StructOpt)]
 pub struct SqliteDestinationOptions {
     #[structopt(help = "sqlite filename")]
@@ -94,7 +94,7 @@ pub struct CSVDestinationOptions {
     pub truncate: Option<u64>,
 }
 
-#[cfg(feature = "spsheet")]
+#[cfg(feature = "use_spsheet")]
 #[derive(Clone, StructOpt)]
 pub struct SpreadsheetDestinationOptions {
     #[structopt(help = "spreadsheet filename")]
@@ -137,7 +137,7 @@ pub struct JSONDestinationOptions {
     pub compact: bool,
 }
 
-#[cfg(feature = "mysql")]
+#[cfg(feature = "use_mysql")]
 #[derive(Clone, StructOpt)]
 pub struct MysqlSourceOptions {
     #[structopt(short = "h", long = "host", help = "hostname", default_value = "localhost")]
@@ -161,7 +161,7 @@ pub struct MysqlSourceOptions {
 }
 
 
-#[cfg(feature = "postgres")]
+#[cfg(feature = "use_postgres")]
 #[derive(Clone, StructOpt)]
 pub struct PostgresSourceOptions {
     #[structopt(short = "h", long = "host", help = "hostname", default_value = "localhost")]

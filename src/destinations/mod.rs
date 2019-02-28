@@ -1,7 +1,7 @@
 pub mod csv;
-#[cfg(feature = "spsheet")]
+#[cfg(feature = "use_spsheet")]
 pub mod ods_xlsx;
-#[cfg(feature = "sqlite")]
+#[cfg(feature = "use_sqlite")]
 pub mod sqlite;
 pub mod text;
 pub mod text_vertical;

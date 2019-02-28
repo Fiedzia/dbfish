@@ -8,13 +8,16 @@ version = "0.1.0"
 atty = "0.2.11"
 chrono = "0.4.6"
 csv = "1.0"
-fallible-iterator = "0.1.6"
 humantime = "1.2.0"
 indicatif = "0.11.0"
 prettytable-rs = "0.8.0"
 structopt = "0.2"
 termcolor = "1.0.4"
 unicode-segmentation = "1.2.1"
+
+[dependencies.fallible-iterator]
+optional = true
+version = "0.1.6"
 
 [dependencies.mysql]
 optional = true
@@ -38,8 +41,13 @@ version = "0.24"
 
 [features]
 default = [
-    "mysql",
-    "spsheet",
-    "postgres",
-    "sqlite",
+    "use_mysql",
+    "use_spsheet",
+    "use_postgres",
+    "use_sqlite",
 ]
+
+use_mysql = ["mysql"]
+use_postgres = ["postgres", "fallible-iterator"]
+use_spsheet = ["spsheet"]
+use_sqlite = ["sqlite"]
