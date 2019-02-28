@@ -39,15 +39,25 @@ version = "0.1.0"
 optional = true
 version = "0.24"
 
+[dependencies.sqlite3-src]
+optional = true
+version = "0.2.10"
+
 [features]
 default = [
     "use_mysql",
-    "use_spsheet",
     "use_postgres",
+    "use_spsheet",
     "use_sqlite",
 ]
-
 use_mysql = ["mysql"]
-use_postgres = ["postgres", "fallible-iterator"]
+use_postgres = [
+    "postgres",
+    "fallible-iterator",
+]
 use_spsheet = ["spsheet"]
-use_sqlite = ["sqlite"]
+use_sqlite = [
+    "sqlite",
+    "sqlite3-src",
+    "sqlite3-src/bundled"
+]

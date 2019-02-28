@@ -1,5 +1,5 @@
 # dbexport
-Export data from relational databse to CSV/JSON/Sqlite file
+Export data from relational databse to CSV/text/Sqlite file, among others.
 I've created this because I was frustrated with usability and functionality of out-of-the box database tools.
 Seriously, psql and mysql clients should do all that long ago. They still don't.
 
@@ -14,6 +14,7 @@ Sources:
 
  * MySQL
 
+
 Destinations:
 
  * csv
@@ -24,8 +25,7 @@ Destinations:
  * xlsx (XLSX spreadsheet)
 
 
-
-example:
+Examples:
 
 ```bash
     dbexport export mysql --database users -q 'select * from users' csv somefile.csv
@@ -49,7 +49,7 @@ TODO:
  * kill all .unwrap()
  * debug source/destination
  * tests
-
+ * config file for storing database credentials
 
 Design principles:
 
@@ -61,5 +61,5 @@ Development:
 
 You will need [Rust](https://www.rust-lang.org/). I recommend using latest stable version.
 Once you have that, running cargo build --release should just work, generating target/release/dbexport binary.
-You will also need sqlite3 installed, since its dynamically linked.
-
+You will also sqlite3 libs and C compiler installed, since its being built and linked statically,
+disable use_sqlite feature if that's a problem for you.
