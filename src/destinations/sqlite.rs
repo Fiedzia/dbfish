@@ -70,7 +70,7 @@ impl DataDestination for SqliteDestination {
             self.column_names.join(", "),
             values_part
         );
-        for v in 1..rows.len() {
+        for _v in 1..rows.len() {
             sql.push_str(&format!(",({})", values_part));
         }
         let mut statement = self.connection.prepare(sql).unwrap();

@@ -170,7 +170,7 @@ pub struct PostgresSourceOptions {
     pub user: String,
     #[structopt(short = "p", long = "password", help = "password")]
     pub password: Option<String>,
-    #[structopt(short = "P", long = "port", help = "port", default_value = "3306")]
+    #[structopt(short = "P", long = "port", help = "port", default_value = "5432")]
     pub port: u16,
     #[structopt(short = "D", long = "database", help = "database name")]
     pub database: Option<String>,

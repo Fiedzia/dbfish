@@ -8,6 +8,7 @@ version = "0.1.0"
 atty = "0.2.11"
 chrono = "0.4.6"
 csv = "1.0"
+fallible-iterator = "0.1.6"
 humantime = "1.2.0"
 indicatif = "0.11.0"
 prettytable-rs = "0.8.0"
@@ -19,14 +20,17 @@ unicode-segmentation = "1.2.1"
 optional = true
 version = "15"
 
-[dependencies.spsheet]
-optional = true
-version = "0.1.0"
-features = ["ods", "xlsx"]
-
 [dependencies.postgres]
 optional = true
 version = "0.15.2"
+
+[dependencies.spsheet]
+features = [
+    "ods",
+    "xlsx",
+]
+optional = true
+version = "0.1.0"
 
 [dependencies.sqlite]
 optional = true

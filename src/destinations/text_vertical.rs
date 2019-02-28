@@ -4,7 +4,6 @@ use std::io::Write;
 use atty;
 use termcolor;
 use termcolor::WriteColor;
-use unicode_segmentation::UnicodeSegmentation;
 
 
 use crate::commands::TextVerticalDestinationOptions;

@@ -1,5 +1,13 @@
+//TODO: basic data types
+//TODO: error handling
+//TODO: use generators when available in stable Rust. Or figure out how to iterator into closure.
+
+use std::sync::mpsc::sync_channel;
+use std::thread;
+
 use chrono;
-use postgres::{self, Connection, rows::Rows, TlsMode};
+use fallible_iterator::FallibleIterator;
+use postgres::{self, Connection, rows::Rows, TlsMode, types::Kind};
 
 
 use crate::commands::PostgresSourceOptions;
@@ -28,15 +36,22 @@ pub fn establish_connection(postgres_options: &PostgresSourceOptions) -> Connect
     conn
 }
 
+enum Message {
+    Columns(Vec<(String, postgres::types::Type)>),
+    Row(Option<Row>)
+}
 
 pub struct PostgresSource {
-    connection: Connection,
-    results:  Rows,
+    columns: Vec<(String, postgres::types::Type)>, //(name, type)
     count: Option<u64>,
+    receiving_channel:  std::sync::mpsc::Receiver<Message>,
+    no_more_results: bool,
 }
 
 impl PostgresSource {
     pub fn init(postgres_options: &PostgresSourceOptions) -> PostgresSource {
+
+        let (sender, receiver) = sync_channel(100);
 
         let conn = establish_connection(&postgres_options);
         let count: Option<u64> = match postgres_options.count {
@@ -47,54 +62,53 @@ impl PostgresSource {
             },
             false => None,
         };
-        let postgres_result = conn.query(postgres_options.query.as_str(), &[]).unwrap();
+
+
+        let postgres_options_copy = postgres_options.to_owned();
+        thread::spawn(move|| {
+
+            let conn = establish_connection(&postgres_options_copy);
+            let stmt = conn.prepare(&postgres_options_copy.query).unwrap();
+            let trans = conn.transaction().unwrap();
+            let mut rows = stmt.lazy_query(&trans, &[], 100).unwrap();
+            let columns: Vec<(String,  postgres::types::Type)> = rows
+                .columns()
+                .iter()
+                .map(|c| {(c.name().to_string(), c.type_().clone())})
+                .collect();
+            sender.send(Message::Columns(columns.clone())).unwrap();
+            while let Some(row) = rows.next().unwrap() {
+                sender.send(Message::Row(Some(PostgresSource::postgres_to_row(&columns, &row)))).unwrap();
+            };
+            sender.send(Message::Row(None))
+        });
+
+        let columns = match receiver.recv().unwrap() {
+            Message::Columns(columns) => columns,
+            Message::Row(_) => panic!("postgres: missing column info")
+        };
 
         PostgresSource {
             count,
-            connection: conn,
-            results: postgres_result,
+            columns,
+            receiving_channel: receiver,
+            no_more_results: false,
         }
     }
 
-    pub fn postgres_to_row(column_info: &[ColumnInfo], postgres_row: postgres::rows::Row) -> Row {
+    pub fn postgres_to_row(column_info: &[(String,  postgres::types::Type)], postgres_row: &postgres::rows::Row) -> Row {
         let mut result = Row::with_capacity(postgres_row.len());
-        /*for (idx, value) in mysql_row.unwrap().iter().enumerate() {
-            match &value {
-                mysql::Value::NULL => result.push(Value::None),
-                mysql::Value::Int(v) => result.push(Value::I64(*v)),
-                mysql::Value::UInt(v) => result.push(Value::U64(*v)),
-                mysql::Value::Float(v) => result.push(Value::F64(*v)),
-                mysql::Value::Bytes(v) => match std::str::from_utf8(&v) {
-                    Ok(s) => result.push(Value::String(s.to_string())),
-                    Err(e) => panic!(format!("mysq: invalid utf8 in '{:?}' for row: {:?}", v, value))
-                },
-                mysql::Value::Date(year, month, day, hour, minute, second, microsecond) => {
-                    match column_info[idx].data_type {
-                        ColumnType::Date => result.push(
-                            Value::Date(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32))
-                        ),
-                        ColumnType::DateTime => result.push(
-                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms( *hour as u32, *minute as u32, *second as u32))
-                        ),
-                        ColumnType::Time => result.push(
-                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        ColumnType::Timestamp => result.push(
-                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
-                    }
-                },
-                mysql::Value::Time(negative, day, hour, minute, second, microsecond) => {
-                    match column_info[idx].data_type {
-                        ColumnType::Time => result.push(
-                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
-                    }
-                },
+        for (idx, (name, type_)) in column_info.iter().enumerate() {
+            match (type_.kind(), type_.name()) {
+                (Kind::Simple, "int4") => result.push(Value::I32( postgres_row.get(idx) )),
+                (Kind::Simple, "int8") => result.push(Value::I64( postgres_row.get(idx) )),
+                (Kind::Simple, "float4") => result.push(Value::F32( postgres_row.get(idx) )),
+                (Kind::Simple, "float8") => result.push(Value::F64( postgres_row.get(idx) )),
+                (Kind::Simple, "text") => result.push(Value::String( postgres_row.get(idx) )),
+                _ => panic!("postgres: unsupported type: {:?}", type_ )
             }
-        }*/
+        }
+
         result
     }
 }
@@ -105,31 +119,46 @@ impl DataSource for PostgresSource {
 
     fn get_column_info(&self) -> Vec<ColumnInfo> {
         let mut result = vec![];
-        /*for column in self.results.columns(){
-            result.push(ColumnInfo {
-                name: column.name,to_string(),
-                data_type: {
-                    let type_ = column.type();
-                }
-            }
-        }*/
+        for (name, type_) in self.columns.iter() {
+            println!("name={}; type_name={}; kind={:?};", name, type_.name(), type_.kind() );
+            match (type_.kind(), type_.name()) {
+                (Kind::Simple, "int4") => result.push(ColumnInfo{name: name.to_string(), data_type: ColumnType::I32}),
+                (Kind::Simple, "int8") => result.push(ColumnInfo{name: name.to_string(), data_type: ColumnType::I64}),
+                (Kind::Simple, "float4") => result.push(ColumnInfo{name: name.to_string(), data_type: ColumnType::F32}),
+                (Kind::Simple, "float8") => result.push(ColumnInfo{name: name.to_string(), data_type: ColumnType::F64}),
+                (Kind::Simple, "text") => result.push(ColumnInfo{name: name.to_string(), data_type: ColumnType::String}),
+                _ => panic!("postgres: unsupported type: {:?}", type_ )
+            };
+        }
         result
     }
 
     fn get_count(&self) -> Option<u64> { self.count }
 
     fn get_rows(&mut self, count: u32) -> Option<Vec<Row>> {
-        let ci = self.get_column_info();
-        let mut results: Vec<Row> =  self.results
-            .iter()
-            .by_ref()
-            .take(count as usize)
-            .map(|v|{ PostgresSource::postgres_to_row(&ci, v)})
-            .collect();
-        match results.len() {
-            0 => None,
-            _ => Some(results)
+        if self.no_more_results {
+            return None;
+        };
+
+        let mut results: Vec<Row> = vec![];
+        let mut done:bool = results.len() >= count as usize; //in case of count being 0
+        while !done {
+            match self.receiving_channel.recv().unwrap() {
+                Message::Row(potential_row) => match potential_row {
+                    Some(row) => { results.push(row); },
+                    None => {
+                        self.no_more_results = true;
+                        done = true;
+                    }
+                },
+                _ => panic!("postgres: expected row message, got something else", ),
+            };
+            if results.len() == count as usize {
+                done = true;
+            }
         }
+
+        Some(results)
     }
 }
 

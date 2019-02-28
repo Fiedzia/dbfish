@@ -24,8 +24,8 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
     let (mut source, mut destination) = match export_command.source {
         #[cfg(feature = "mysql")]
         SourceCommand::Mysql(ref mysql_options) => {
-            let mut source: Box<dyn DataSource>  = Box::new(MysqlSource::init(&mysql_options));
-            let mut destination: Box<dyn DataDestination> = match &mysql_options.destination {
+            let source: Box<dyn DataSource>  = Box::new(MysqlSource::init(&mysql_options));
+            let destination: Box<dyn DataDestination> = match &mysql_options.destination {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 #[cfg(feature = "sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
