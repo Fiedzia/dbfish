@@ -17,12 +17,13 @@ Sources:
 
 Destinations:
 
- * csv
+ * CSV
+ * HTML (done nicely using bootstrap)
+ * ODS (ODS spreadsheet)
+ * SQLite file
  * text (classic table)
  * text-vertical (each column in its own line vertically)
- * ods (ODS spreadsheet)
- * sqlite file
- * xlsx (XLSX spreadsheet)
+ * XLSX (Excel spreadsheet)
 
 
 Examples:
@@ -43,13 +44,15 @@ Fancy features:
 TODO:
 
  * more sources (sqlite, CSV, PostgreSQL, BigQuery, maybe json/Solr/ES)
- * more destinations (fancy html, HDF5)
- * support a bit more MySQL features (few types were ommited)
+ * more destinations (HDF5)
+ * support a bit more MySQL and PostgreSQL features (few types were ommited)
  * helpful error messages
  * kill all .unwrap()
  * debug source/destination
  * tests
  * config file for storing database credentials
+ * compress to zip/tgz
+
 
 Design principles:
 

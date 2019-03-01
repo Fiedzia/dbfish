@@ -5,6 +5,7 @@ name = "dbexport"
 version = "0.1.0"
 
 [dependencies]
+askama_escape = "0.2.0"
 atty = "0.2.11"
 chrono = "0.4.6"
 csv = "1.0"
@@ -59,5 +60,5 @@ use_spsheet = ["spsheet"]
 use_sqlite = [
     "sqlite",
     "sqlite3-src",
-    "sqlite3-src/bundled"
+    "sqlite3-src/bundled",
 ]

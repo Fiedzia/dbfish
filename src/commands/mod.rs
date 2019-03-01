@@ -65,12 +65,12 @@ pub enum DestinationCommand {
     #[structopt(name = "text-vertical", about="Text (columns displayed vertically)")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     TextVertical(TextVerticalDestinationOptions),
-    /*#[structopt(name = "json", about="JSON")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-    JSON(JSONDestinationOptions),
     #[structopt(name = "html", about="HTML")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     HTML(HTMLDestinationOptions),
+    /*#[structopt(name = "json", about="JSON")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    JSON(JSONDestinationOptions),
     */
 }
 
@@ -125,8 +125,10 @@ pub struct TextVerticalDestinationOptions {
 pub struct HTMLDestinationOptions {
     #[structopt(help = "html filename")]
     pub filename: String,
-    #[structopt(help = "html page title")]
-    pub title: String,
+    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    pub truncate: Option<u64>,
+    #[structopt(long = "title", help = "html page title")]
+    pub title: Option<String>,
 }
 
 #[derive(Clone, StructOpt)]
