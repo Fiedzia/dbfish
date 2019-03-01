@@ -12,7 +12,6 @@ use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
 
 pub struct TextVerticalDestination {
-    filename: String,
     truncate: Option<u64>,
     column_names: Vec<String>,
     use_color: bool,
@@ -26,7 +25,6 @@ impl TextVerticalDestination {
         
         let use_color =  options.filename == "-" && atty::is(atty::Stream::Stdout);
         TextVerticalDestination {
-            filename: options.filename.clone(),
             truncate: options.truncate,
             sort_columns: options.sort_columns,
             column_names: vec![],
@@ -53,7 +51,7 @@ impl DataDestination for TextVerticalDestination {
         for row in rows {
             //<column index, value>
             let mut row_data: Vec<(usize, String)> = Vec::with_capacity(self.column_names.len());
-            self.writer.write(&"------\n".to_string().into_bytes());
+            self.writer.write(&"------\n".to_string().into_bytes()).unwrap();
             for (idx, col) in row.iter().enumerate() {
                 let content = match col {
                     Value::U64(value) => value.to_string(),
@@ -107,5 +105,5 @@ impl DataDestination for TextVerticalDestination {
         }
     }
 
-    fn close(&mut self) { self.writer.flush(); }
+    fn close(&mut self) { self.writer.flush().unwrap(); }
 }

@@ -40,8 +40,8 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         },
         #[cfg(feature = "use_postgres")]
         SourceCommand::Postgres(ref postgres_options) => {
-            let mut source: Box<dyn DataSource> = Box::new(PostgresSource::init(&postgres_options));
-            let mut destination: Box<dyn DataDestination> = match &postgres_options.destination {
+            let source: Box<dyn DataSource> = Box::new(PostgresSource::init(&postgres_options));
+            let destination: Box<dyn DataDestination> = match &postgres_options.destination {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
@@ -57,9 +57,8 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
 
     };
     destination.prepare(&*source);
-    let mut done:bool = false;
     let mut processed = 0;
-    let mut progress_bar = match args.verbose {
+    let progress_bar = match args.verbose {
         true => {
             let pb = ProgressBar::new(
                 match source.get_count() {
@@ -76,7 +75,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         false => None
     };
 
-    while !done {
+    loop {
         let rows_option = source.get_rows(export_command.batch_size);
         match rows_option {
             Some(rows) => {
@@ -86,7 +85,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                     pb.inc(rows.len() as u64);
                 }
             },
-            None => { done = true; break; }
+            None => { break; }
         }
     };
     destination.close();

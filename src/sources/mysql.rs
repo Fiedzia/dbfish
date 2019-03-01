@@ -31,7 +31,6 @@ pub fn establish_connection(mysql_options: &MysqlSourceOptions) -> mysql::Pool {
 
 
 pub struct MysqlSource<'a> {
-    pool: mysql::Pool,
     results: mysql::QueryResult<'a>,
     count: Option<u64>,
 }
@@ -52,7 +51,6 @@ impl <'a>MysqlSource<'a> {
 
         MysqlSource {
             count,
-            pool,
             results: mysql_result,
         }
     }
@@ -67,9 +65,9 @@ impl <'a>MysqlSource<'a> {
                 mysql::Value::Float(v) => result.push(Value::F64(*v)),
                 mysql::Value::Bytes(v) => match std::str::from_utf8(&v) {
                     Ok(s) => result.push(Value::String(s.to_string())),
-                    Err(e) => panic!(format!("mysq: invalid utf8 in '{:?}' for row: {:?}", v, value))
+                    Err(e) => panic!(format!("mysq: invalid utf8 in '{:?}' for row: {:?} ({})", v, value, e))
                 },
-                mysql::Value::Date(year, month, day, hour, minute, second, microsecond) => {
+                mysql::Value::Date(year, month, day, hour, minute, second, _microsecond) => {
                     match column_info[idx].data_type {
                         ColumnType::Date => result.push(
                             Value::Date(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32))
@@ -86,7 +84,8 @@ impl <'a>MysqlSource<'a> {
                         _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
                     }
                 },
-                mysql::Value::Time(negative, day, hour, minute, second, microsecond) => {
+                //TODO: what to do with negative?
+                mysql::Value::Time(_negative, _day, hour, minute, second, _microsecond) => {
                     match column_info[idx].data_type {
                         ColumnType::Time => result.push(
                             Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
@@ -163,7 +162,7 @@ impl <'a>DataSource for MysqlSource<'a> {
 
     fn get_rows(&mut self, count: u32) -> Option<Vec<Row>> {
         let ci = self.get_column_info();
-        let mut results: Vec<Row> =  self.results
+        let results: Vec<Row> =  self.results
             .by_ref()
             .take(count as usize)
             .map(|v|{ MysqlSource::mysql_to_row(&ci, v.unwrap())})

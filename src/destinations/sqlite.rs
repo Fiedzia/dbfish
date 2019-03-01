@@ -19,7 +19,7 @@ impl SqliteDestination {
     pub fn init(sqlite_options: &SqliteDestinationOptions) -> SqliteDestination {
         let path = Path::new(&sqlite_options.filename);
         if path.exists() {
-            std::fs::remove_file(path);
+            std::fs::remove_file(path).unwrap();
         }
         SqliteDestination {
             connection: sqlite::Connection::open(&sqlite_options.filename).unwrap(),
@@ -63,7 +63,7 @@ impl DataDestination for SqliteDestination {
         self.connection.execute(create_table_query).unwrap();
     }
     fn add_rows(&mut self, rows: &[Row]) {
-        let values_part = self.column_names.iter().map(|v| {"?".to_string()}).collect::<Vec<String>>().join(", ");
+        let values_part = self.column_names.iter().map(|_| {"?".to_string()}).collect::<Vec<String>>().join(", ");
         let mut sql = format!(
             "insert into {} ({}) values ({})",
             self.table,
@@ -73,7 +73,7 @@ impl DataDestination for SqliteDestination {
         for _v in 1..rows.len() {
             sql.push_str(&format!(",({})", values_part));
         }
-        let mut statement = self.connection.prepare(sql).unwrap();
+        let statement = self.connection.prepare(sql).unwrap();
         let mut cursor = statement.cursor();
         let mut data: Vec<sqlite::Value> = Vec::with_capacity(self.column_names.len());
         for row in rows {
@@ -96,7 +96,7 @@ impl DataDestination for SqliteDestination {
                 }
             }
         }
-        cursor.bind(&data);
+        cursor.bind(&data).unwrap();
         cursor.next().unwrap();
        
     }

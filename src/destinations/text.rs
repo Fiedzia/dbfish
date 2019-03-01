@@ -1,7 +1,6 @@
 use std;
 use std::io::Write;
 
-use atty;
 use prettytable::{self, Table, Cell};
 use termcolor;
 
@@ -12,10 +11,8 @@ use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
 
 pub struct TextDestination {
-    filename: String,
     truncate: Option<u64>,
     column_names: Vec<String>,
-    use_color: bool,
     writer: FileOrStdout,
     table: Table,
 }
@@ -24,15 +21,12 @@ impl TextDestination {
 
     pub fn init(options: &TextDestinationOptions) -> TextDestination {
         
-        let use_color =  options.filename == "-" && atty::is(atty::Stream::Stdout);
         let mut table = Table::new();
         table.set_format(*prettytable::format::consts::FORMAT_BOX_CHARS);
 
         TextDestination {
-            filename: options.filename.clone(),
             truncate: options.truncate,
             column_names: vec![],
-            use_color,
             writer: match options.filename.as_ref() {
                 "-" =>  FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Auto)),
                 _ => FileOrStdout::File(std::fs::File::create(options.filename.clone()).unwrap())
@@ -104,7 +98,10 @@ impl DataDestination for TextDestination {
         }
     }
 
-    fn close(&mut self) { self.table.print(&mut self.writer); self.writer.flush(); }
+    fn close(&mut self) {
+        self.table.print(&mut self.writer).unwrap();
+        self.writer.flush().unwrap();
+    }
 
 }
 

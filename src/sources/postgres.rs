@@ -5,13 +5,13 @@
 use std::sync::mpsc::sync_channel;
 use std::thread;
 
-use chrono;
+//use chrono;
 use fallible_iterator::FallibleIterator;
-use postgres::{self, Connection, rows::Rows, TlsMode, types::Kind};
+use postgres::{self, Connection, TlsMode, types::Kind};
 
 
 use crate::commands::PostgresSourceOptions;
-use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataDestination};
+use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource};
 
 pub fn get_postgres_url(postgres_options: &PostgresSourceOptions) -> String {
     format!(
@@ -98,7 +98,7 @@ impl PostgresSource {
 
     pub fn postgres_to_row(column_info: &[(String,  postgres::types::Type)], postgres_row: &postgres::rows::Row) -> Row {
         let mut result = Row::with_capacity(postgres_row.len());
-        for (idx, (name, type_)) in column_info.iter().enumerate() {
+        for (idx, (_name, type_)) in column_info.iter().enumerate() {
             match (type_.kind(), type_.name()) {
                 (Kind::Simple, "int4") => result.push(Value::I32( postgres_row.get(idx) )),
                 (Kind::Simple, "int8") => result.push(Value::I64( postgres_row.get(idx) )),

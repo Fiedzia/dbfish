@@ -56,16 +56,18 @@ impl DataDestination for CSVDestination
             .iter()
             .map(|c| c.name.clone())
             .collect();
-        self.csv_writer.write_record(headers);
+        self.csv_writer.write_record(headers).unwrap();
 
     }
     fn add_rows(&mut self, rows: &[Row]) {
         for row in rows {
-            self.csv_writer.write_record(CSVDestination::row_to_csv_row(&row, self.truncate));
+            self.csv_writer
+                .write_record(CSVDestination::row_to_csv_row(&row, self.truncate))
+                .unwrap();
         }
     }
 
     fn close(&mut self) {
-        self.csv_writer.flush();
+        self.csv_writer.flush().unwrap();
     }
 }

@@ -52,7 +52,7 @@ pub enum DestinationCommand {
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     ODS(SpreadsheetDestinationOptions),
     #[cfg(feature = "use_spsheet")]
-    #[structopt(name = "ods", about="ODS spreadsheet")]
+    #[structopt(name = "xlsx", about="XLSX spreadsheet")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     XLSX(SpreadsheetDestinationOptions),
     #[cfg(feature = "use_sqlite")]
