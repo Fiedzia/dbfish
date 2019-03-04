@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use chrono;
 use mysql;
 use mysql::consts::ColumnType as MyColumnType;
@@ -6,26 +8,37 @@ use mysql::consts::ColumnFlags as MyColumnFlags;
 use crate::commands::MysqlSourceOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource};
 
-pub fn get_mysql_url(mysql_options: &MysqlSourceOptions) -> String {
-    format!(
-        "mysql://{user}:{password}@{hostname}:{port}/{database}",
-        user=mysql_options.user,
-        hostname=mysql_options.host,
-        password=mysql_options.password.clone().unwrap_or("".to_string()),
-        port=mysql_options.port,
-        database=mysql_options.database.clone().unwrap_or("".to_string()),
-    )
-}
-
 
 pub fn establish_connection(mysql_options: &MysqlSourceOptions) -> mysql::Pool {
 
-    let database_url = get_mysql_url(&mysql_options);
-    let pool = mysql::Pool::new(database_url).unwrap();
 
-    if let Some(ref init) = mysql_options.init {
-        pool.prep_exec(init, ()).unwrap();
-    }
+    let mut option_builder = mysql::OptsBuilder::new();
+    option_builder
+        .db_name(mysql_options.database.clone())
+        .user(mysql_options.user.clone())
+        .pass(mysql_options.password.clone());
+
+    if let Some(timeout) = mysql_options.timeout {
+         option_builder
+            .read_timeout(Some(Duration::from_secs(timeout)))
+            .write_timeout(Some(Duration::from_secs(timeout)))
+            .tcp_connect_timeout(Some(Duration::from_secs(timeout)));
+    };
+
+    if let Some(ref socket) = mysql_options.socket {
+        option_builder.socket(Some(socket.clone()));
+    } else {
+        option_builder
+            .ip_or_hostname(mysql_options.host.clone().or(Some("localhost".to_string())))
+            .tcp_port(mysql_options.port.unwrap_or(3306));
+    };
+ 
+    if mysql_options.init.len() > 0 {
+        option_builder.init(mysql_options.init.clone());
+    };
+
+    let pool = mysql::Pool::new(option_builder).unwrap();
+
     pool
 }
 
@@ -38,6 +51,7 @@ pub struct MysqlSource<'a> {
 impl <'a>MysqlSource<'a> {
     pub fn init(mysql_options: &MysqlSourceOptions) -> MysqlSource {
 
+        
         let pool = establish_connection(&mysql_options);
         let count: Option<u64> = match mysql_options.count {
             true => {

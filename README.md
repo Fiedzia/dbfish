@@ -43,7 +43,7 @@ Fancy features:
 
 TODO:
 
- * more sources (sqlite, CSV, PostgreSQL, BigQuery, maybe json/Solr/ES)
+ * more sources (SQLite, CSV, PostgreSQL, BigQuery, maybe JSON/Solr/ES)
  * more destinations (HDF5)
  * support a bit more MySQL and PostgreSQL features (few types were ommited)
  * helpful error messages
@@ -64,5 +64,5 @@ Development:
 
 You will need [Rust](https://www.rust-lang.org/). I recommend using latest stable version.
 Once you have that, running cargo build --release should just work, generating target/release/dbexport binary.
-You will also sqlite3 libs and C compiler installed, since its being built and linked statically,
+You will also need SQLite3 libs and C compiler installed, since its being built and linked statically,
 disable use_sqlite feature if that's a problem for you.

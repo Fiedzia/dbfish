@@ -142,22 +142,26 @@ pub struct JSONDestinationOptions {
 #[cfg(feature = "use_mysql")]
 #[derive(Clone, StructOpt)]
 pub struct MysqlSourceOptions {
-    #[structopt(short = "h", long = "host", help = "hostname", default_value = "localhost")]
-    pub host: String,
+    #[structopt(short = "h", long = "host", help = "hostname")]
+    pub host: Option<String>,
     #[structopt(short = "u", long = "user", help = "username")]
-    pub user: String,
+    pub user: Option<String>,
     #[structopt(short = "p", long = "password", help = "password")]
     pub password: Option<String>,
-    #[structopt(short = "P", long = "port", help = "port", default_value = "3306")]
-    pub port: u16,
+    #[structopt(short = "P", long = "port", help = "port")]
+    pub port: Option<u16>,
+    #[structopt(short = "S", long = "socket", help = "socket")]
+    pub socket: Option<String>,
     #[structopt(short = "D", long = "database", help = "database name")]
     pub database: Option<String>,
     #[structopt(short = "i", long = "init", help = "initial sql commands")]
-    pub init: Option<String>,
+    pub init: Vec<String>,
     #[structopt(short = "q", long = "query", help = "sql query")]
     pub query: String,
     #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
     pub count: bool,
+    #[structopt(long = "timeout", help = "connect/read/write timout in seconds")]
+    pub timeout: Option<u64>,
     #[structopt(subcommand)]
     pub destination: DestinationCommand
 }
