@@ -4,6 +4,7 @@ extern crate structopt;
 use structopt::StructOpt;
 
 pub mod commands;
+pub mod config;
 pub mod definitions;
 pub mod destinations;
 pub mod sources;
@@ -17,6 +18,9 @@ fn main() {
     match args.command {
         Command::Export(ref export_cmd) => {
             commands::export::export(&args, &export_cmd);
-        }
+        },
+        Command::Sources(ref sources_cmd) => {
+            commands::sources::sources(&args, &sources_cmd);
+        },
     }
 }

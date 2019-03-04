@@ -1,5 +1,8 @@
-pub mod export;
+use serde_derive::Serialize;
+use toml;
 
+pub mod export;
+pub mod sources;
 
 #[derive(StructOpt)]
 #[structopt(name = "export", about="Export data from database to sqlite/csv/text/html/json file.", after_help="Choose a command to run or to print help for, ie. synonyms --help")]
@@ -12,12 +15,15 @@ pub struct ApplicationArguments {
 }
 
 
-
 #[derive(StructOpt)]
 pub enum Command {
     #[structopt(name = "export", about="export data")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-    Export(ExportCommand)
+    Export(ExportCommand),
+    #[structopt(name = "sources", about="manage data sources")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Sources(SourcesCommand),
+   
 }
 
 #[derive(StructOpt)]
@@ -29,7 +35,7 @@ pub struct ExportCommand {
 }
 
 
-#[derive(StructOpt)]
+#[derive(Clone, StructOpt)]
 pub enum SourceCommand {
     #[cfg(feature = "use_mysql")]
     #[structopt(name = "mysql", about="mysql")]
@@ -39,6 +45,89 @@ pub enum SourceCommand {
     #[structopt(name = "postgres", about="postgres")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Postgres(PostgresSourceOptions),
+}
+
+
+#[derive(Clone, StructOpt)]
+pub struct SourcesCommand {
+    #[structopt(subcommand)]
+    pub command: SourcesSubCommand,
+}
+
+#[derive(Clone, StructOpt)]
+pub enum SourceConfigCommand {
+    #[cfg(feature = "use_mysql")]
+    #[structopt(name = "mysql", about="mysql")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Mysql(MysqlConfigOptions),
+    #[cfg(feature = "use_postgres")]
+    #[structopt(name = "postgres", about="postgres")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Postgres(PostgresConfigOptions),
+}
+
+impl SourceConfigCommand {
+
+    pub fn get_name(&self) -> String {
+        match self {
+            #[cfg(feature = "use_mysql")]
+            SourceConfigCommand::Mysql(_) => "mysql".to_string(),
+            #[cfg(feature = "use_postgres")]
+            SourceConfigCommand::Postgres(_) => "postgres".to_string(),
+        }
+    }
+
+    pub fn to_toml(&self) -> toml::Value {
+
+        match self {
+            #[cfg(feature = "use_mysql")]
+            SourceConfigCommand::Mysql(options) => toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
+            #[cfg(feature = "use_postgres")]
+            SourceConfigCommand::Postgres(options) => toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
+        }
+    }
+
+}
+
+
+#[derive(Clone, StructOpt)]
+pub enum SourcesSubCommand {
+    #[structopt(name = "add", about="add source")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Add(SourcesAddOptions),
+    #[structopt(name = "delete", about="delete source")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Delete(SourcesDeleteOptions),
+    #[structopt(name = "edit", about="edit source definition")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Edit(SourcesEditOptions),
+    #[structopt(name = "list", about="list sources")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    List(SourcesListOptions),
+}
+
+#[derive(Clone, StructOpt)]
+pub struct SourcesAddOptions {
+    #[structopt(help = "source name")]
+    pub name: String,
+    #[structopt(subcommand)]
+    pub source: SourceConfigCommand,
+}
+
+#[derive(Clone, StructOpt)]
+pub struct SourcesDeleteOptions {
+    #[structopt(help = "source name")]
+    pub name: String,
+}
+
+#[derive(Clone, StructOpt)]
+pub struct SourcesEditOptions {
+    #[structopt(help = "source name")]
+    pub name: String,
+}
+
+#[derive(Clone, StructOpt)]
+pub struct SourcesListOptions {
 }
 
 
@@ -146,6 +235,27 @@ pub struct JSONDestinationOptions {
 }
 
 #[cfg(feature = "use_mysql")]
+#[derive(Clone, Serialize, StructOpt)]
+pub struct MysqlConfigOptions {
+    #[structopt(short = "h", long = "host", help = "hostname")]
+    pub host: Option<String>,
+    #[structopt(short = "u", long = "user", help = "username")]
+    pub user: Option<String>,
+    #[structopt(short = "p", long = "password", help = "password")]
+    pub password: Option<String>,
+    #[structopt(short = "P", long = "port", help = "port")]
+    pub port: Option<u16>,
+    #[structopt(short = "S", long = "socket", help = "socket")]
+    pub socket: Option<String>,
+    #[structopt(short = "D", long = "database", help = "database name")]
+    pub database: Option<String>,
+    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    pub init: Vec<String>,
+    #[structopt(long = "timeout", help = "connect/read/write timout in seconds")]
+    pub timeout: Option<u64>,
+}
+
+#[cfg(feature = "use_mysql")]
 #[derive(Clone, StructOpt)]
 pub struct MysqlSourceOptions {
     #[structopt(short = "h", long = "host", help = "hostname")]
@@ -172,6 +282,22 @@ pub struct MysqlSourceOptions {
     pub destination: DestinationCommand
 }
 
+#[cfg(feature = "use_postgres")]
+#[derive(Clone, Serialize, StructOpt)]
+pub struct PostgresConfigOptions {
+    #[structopt(short = "h", long = "host", help = "hostname", default_value = "localhost")]
+    pub host: String,
+    #[structopt(short = "u", long = "user", help = "username")]
+    pub user: String,
+    #[structopt(short = "p", long = "password", help = "password")]
+    pub password: Option<String>,
+    #[structopt(short = "P", long = "port", help = "port", default_value = "5432")]
+    pub port: u16,
+    #[structopt(short = "D", long = "database", help = "database name")]
+    pub database: Option<String>,
+    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    pub init: Option<String>,
+}
 
 #[cfg(feature = "use_postgres")]
 #[derive(Clone, StructOpt)]
