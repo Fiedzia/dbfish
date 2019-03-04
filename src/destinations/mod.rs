@@ -1,5 +1,7 @@
 pub mod csv;
 pub mod html;
+#[cfg(feature = "use_json")]
+pub mod json;
 #[cfg(feature = "use_spsheet")]
 pub mod ods_xlsx;
 #[cfg(feature = "use_sqlite")]

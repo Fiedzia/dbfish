@@ -13,6 +13,8 @@ use crate::destinations::ods_xlsx::{SpreadsheetDestination, SpreadsheetFormat};
 use crate::sources::postgres::PostgresSource;
 use crate::destinations::csv::CSVDestination;
 use crate::destinations::html::HTMLDestination;
+#[cfg(feature = "use_json")]
+use crate::destinations::json::JSONDestination;
 #[cfg(feature = "use_sqlite")]
 use crate::destinations::sqlite::SqliteDestination;
 use crate::destinations::text::TextDestination;
@@ -29,6 +31,8 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             let destination: Box<dyn DataDestination> = match &mysql_options.destination {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 DestinationCommand::HTML(html_options) => Box::new(HTMLDestination::init(&html_options)),
+                #[cfg(feature = "use_json")]
+                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
                 #[cfg(feature = "use_spsheet")]
@@ -46,6 +50,8 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             let destination: Box<dyn DataDestination> = match &postgres_options.destination {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 DestinationCommand::HTML(html_options) => Box::new(HTMLDestination::init(&html_options)),
+                #[cfg(feature = "use_json")]
+                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
                 #[cfg(feature = "use_spsheet")]

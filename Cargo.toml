@@ -20,6 +20,10 @@ unicode-segmentation = "1.2.1"
 optional = true
 version = "0.1.6"
 
+[dependencies.json]
+optional = true
+version = "0.11.13"
+
 [dependencies.mysql]
 optional = true
 version = "15"
@@ -46,11 +50,13 @@ version = "0.2.10"
 
 [features]
 default = [
+    "use_json",
     "use_mysql",
     "use_postgres",
     "use_spsheet",
     "use_sqlite",
 ]
+use_json = ["json"]
 use_mysql = ["mysql"]
 use_postgres = [
     "postgres",

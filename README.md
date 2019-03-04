@@ -51,7 +51,8 @@ TODO:
  * debug source/destination
  * tests
  * config file for storing database credentials
- * compress to zip/tgz
+ * compress to zip/tgz (useful for csv/text/html)
+ * performance (not a priority, but nice to have)
 
 
 Design principles:

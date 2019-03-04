@@ -68,10 +68,10 @@ pub enum DestinationCommand {
     #[structopt(name = "html", about="HTML")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     HTML(HTMLDestinationOptions),
-    /*#[structopt(name = "json", about="JSON")]
+    #[cfg(feature = "use_json")]
+    #[structopt(name = "json", about="JSON")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     JSON(JSONDestinationOptions),
-    */
 }
 
 
@@ -131,12 +131,18 @@ pub struct HTMLDestinationOptions {
     pub title: Option<String>,
 }
 
+
+#[cfg(feature = "use_json")]
 #[derive(Clone, StructOpt)]
 pub struct JSONDestinationOptions {
     #[structopt(help = "json filename")]
     pub filename: String,
     #[structopt(short = "c", long = "compact", help = "Do not indent json content")]
     pub compact: bool,
+    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    pub truncate: Option<u64>,
+    #[structopt(short = "i", long = "indent", help = "amount of spaces for indentation", default_value="4")]
+    pub indent: u16,
 }
 
 #[cfg(feature = "use_mysql")]
