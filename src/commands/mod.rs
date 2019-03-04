@@ -321,3 +321,27 @@ pub struct PostgresSourceOptions {
     #[structopt(subcommand)]
     pub destination: DestinationCommand
 }
+
+#[cfg(feature = "use_sqlite")]
+#[derive(Clone, Serialize, StructOpt)]
+pub struct SqliteConfigOptions {
+    #[structopt(help = "sqlite filename")]
+    pub filename: String,
+    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    pub init: Vec<String>,
+}
+
+#[cfg(feature = "use_sqlite")]
+#[derive(Clone, StructOpt)]
+pub struct SqliteSourceOptions {
+    #[structopt(help = "sqlite filename")]
+    pub filename: String,
+    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    pub init: Vec<String>,
+    #[structopt(short = "q", long = "query", help = "sql query")]
+    pub query: String,
+    #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
+    pub count: bool,
+    #[structopt(subcommand)]
+    pub destination: DestinationCommand
+}
