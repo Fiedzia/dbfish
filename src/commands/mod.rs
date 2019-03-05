@@ -1,5 +1,10 @@
+use clap::Arg;
+
 use serde_derive::Serialize;
+use structopt;
 use toml;
+
+use crate::config;
 
 pub mod export;
 pub mod sources;
@@ -31,11 +36,10 @@ pub struct ExportCommand {
     #[structopt(short = "b", long = "batch-size", help = "batch size", default_value="500")]
     batch_size: u32,
     #[structopt(subcommand)]
-    pub source: SourceCommand,
+    pub source: SourceCommandWrapper,
 }
 
-
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub enum SourceCommand {
     #[cfg(feature = "use_mysql")]
     #[structopt(name = "mysql", about="mysql")]
@@ -47,6 +51,39 @@ pub enum SourceCommand {
     Postgres(PostgresSourceOptions),
 }
 
+pub struct SourceCommandWrapper (pub SourceCommand);
+
+impl SourceCommandWrapper {
+
+    pub fn augment_clap<'a, 'b>(
+            app: ::structopt::clap::App<'a, 'b>,
+        ) -> ::structopt::clap::App<'a, 'b> {
+        let app = SourceCommand::augment_clap(app);
+        let new_app = structopt::clap::SubCommand::with_name("jobdb");
+        let new_app2 = MysqlSourceOptions::augment_clap(new_app);
+        
+        app.subcommand(new_app2)
+
+    }
+
+    pub fn from_subcommand<'a, 'b> (
+        sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
+    ) -> Option<Self> {
+        match sub {
+            ("mysql", Some(matches)) => Some(SourceCommandWrapper(SourceCommand::Mysql(
+                <MysqlSourceOptions as ::structopt::StructOpt>::from_clap(matches),
+            ))),
+            ("postgres", Some(matches)) => Some(SourceCommandWrapper(SourceCommand::Postgres(
+                <PostgresSourceOptions as ::structopt::StructOpt>::from_clap(matches),
+            ))),
+            ("jobdb", Some(matches)) => Some(SourceCommandWrapper(SourceCommand::Mysql(
+                <MysqlSourceOptions as ::structopt::StructOpt>::from_clap(matches),
+            ))),
+            _ => None,
+        }
+    }
+
+}
 
 #[derive(Clone, StructOpt)]
 pub struct SourcesCommand {
@@ -54,7 +91,7 @@ pub struct SourcesCommand {
     pub command: SourcesSubCommand,
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub enum SourceConfigCommand {
     #[cfg(feature = "use_mysql")]
     #[structopt(name = "mysql", about="mysql")]
@@ -90,7 +127,7 @@ impl SourceConfigCommand {
 }
 
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub enum SourcesSubCommand {
     #[structopt(name = "add", about="add source")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
@@ -106,7 +143,7 @@ pub enum SourcesSubCommand {
     List(SourcesListOptions),
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct SourcesAddOptions {
     #[structopt(help = "source name")]
     pub name: String,
@@ -114,24 +151,24 @@ pub struct SourcesAddOptions {
     pub source: SourceConfigCommand,
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct SourcesDeleteOptions {
     #[structopt(help = "source name")]
     pub name: String,
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct SourcesEditOptions {
     #[structopt(help = "source name")]
     pub name: String,
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct SourcesListOptions {
 }
 
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub enum DestinationCommand {
     #[structopt(name = "csv", about="CSV")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
@@ -165,7 +202,7 @@ pub enum DestinationCommand {
 
 
 #[cfg(feature = "use_sqlite")]
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct SqliteDestinationOptions {
     #[structopt(help = "sqlite filename")]
     pub filename: String,
@@ -175,7 +212,7 @@ pub struct SqliteDestinationOptions {
     pub truncate: Option<u64>,
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct CSVDestinationOptions {
     #[structopt(help = "csv filename. Use '-' for stdout")]
     pub filename: String,
@@ -184,7 +221,7 @@ pub struct CSVDestinationOptions {
 }
 
 #[cfg(feature = "use_spsheet")]
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct SpreadsheetDestinationOptions {
     #[structopt(help = "spreadsheet filename")]
     pub filename: String,
@@ -192,7 +229,7 @@ pub struct SpreadsheetDestinationOptions {
     pub truncate: Option<u64>,
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct TextDestinationOptions {
     #[structopt(help = "text filename")]
     pub filename: String,
@@ -200,7 +237,7 @@ pub struct TextDestinationOptions {
     pub truncate: Option<u64>,
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct TextVerticalDestinationOptions {
     #[structopt(help = "filename")]
     pub filename: String,
@@ -210,7 +247,7 @@ pub struct TextVerticalDestinationOptions {
     pub sort_columns: bool,
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct HTMLDestinationOptions {
     #[structopt(help = "html filename")]
     pub filename: String,
@@ -222,7 +259,7 @@ pub struct HTMLDestinationOptions {
 
 
 #[cfg(feature = "use_json")]
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct JSONDestinationOptions {
     #[structopt(help = "json filename")]
     pub filename: String,
@@ -235,7 +272,7 @@ pub struct JSONDestinationOptions {
 }
 
 #[cfg(feature = "use_mysql")]
-#[derive(Clone, Serialize, StructOpt)]
+#[derive(Clone, Debug, Serialize, StructOpt)]
 pub struct MysqlConfigOptions {
     #[structopt(short = "h", long = "host", help = "hostname")]
     pub host: Option<String>,
@@ -256,7 +293,7 @@ pub struct MysqlConfigOptions {
 }
 
 #[cfg(feature = "use_mysql")]
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct MysqlSourceOptions {
     #[structopt(short = "h", long = "host", help = "hostname")]
     pub host: Option<String>,
@@ -283,7 +320,7 @@ pub struct MysqlSourceOptions {
 }
 
 #[cfg(feature = "use_postgres")]
-#[derive(Clone, Serialize, StructOpt)]
+#[derive(Clone, Debug, Serialize, StructOpt)]
 pub struct PostgresConfigOptions {
     #[structopt(short = "h", long = "host", help = "hostname", default_value = "localhost")]
     pub host: String,
@@ -300,7 +337,7 @@ pub struct PostgresConfigOptions {
 }
 
 #[cfg(feature = "use_postgres")]
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct PostgresSourceOptions {
     #[structopt(short = "h", long = "host", help = "hostname", default_value = "localhost")]
     pub host: String,
