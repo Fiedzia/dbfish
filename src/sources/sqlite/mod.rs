@@ -1,4 +1,8 @@
+use std::sync::mpsc::sync_channel;
+use std::thread;
 use std::time::Duration;
+
+
 
 use chrono;
 use sqlite;
@@ -6,17 +10,22 @@ use sqlite;
 use crate::commands::SqliteSourceOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource};
 
-
-pub struct SqliteSource<'a> {
-    connection: sqlite::Connection,
-    count: Option<u64>,
-    statement: sqlite::Statement<'a>,
+enum Message {
+    Columns(Vec<ColumnInfo>),
+    Row(Option<Row>)
 }
 
-impl <'a>SqliteSource<'a> {
+pub struct SqliteSource {
+    columns: Vec<ColumnInfo>,
+    count: Option<u64>,
+    receiving_channel:  std::sync::mpsc::Receiver<Message>,
+    no_more_results: bool,
+}
+
+impl SqliteSource {
     pub fn init(sqlite_options: &SqliteSourceOptions) -> SqliteSource {
 
-        
+        let (sender, receiver) = sync_channel(100);
         let connection = sqlite::Connection::open(&sqlite_options.filename).unwrap();
         if sqlite_options.init.len() > 0 {
             for sql in sqlite_options.init.iter() {
@@ -30,130 +39,95 @@ impl <'a>SqliteSource<'a> {
             connection.iterate(count_query, |row| { count = Some( row[0].1.unwrap().parse::<u64>().unwrap() ); false } ).unwrap();
         };
 
+        let sqlite_options_copy = sqlite_options.to_owned();
+        thread::spawn(move|| {
+            let connection = sqlite::Connection::open(&sqlite_options_copy.filename).unwrap();
+            if sqlite_options_copy.init.len() > 0 {
+                for sql in sqlite_options_copy.init.iter() {
+                    connection.execute(sql).unwrap();
+                }
+            }
+
+            let mut statement = connection.prepare(&sqlite_options_copy.query).unwrap();
+            let columns:Vec<ColumnInfo> = (0..statement.count()).map(|idx| {
+                ColumnInfo {
+                    name: statement.name(idx).to_owned(),
+                    data_type: match statement.kind(idx) {
+                        sqlite::Type::Binary => ColumnType::Bytes,
+                        sqlite::Type::Float => ColumnType::F64,
+                        sqlite::Type::Integer => ColumnType::I64,
+                        sqlite::Type::String => ColumnType::Bytes,
+                        sqlite::Type::Null   => ColumnType::None,
+                    },
+                }
+            }).collect();
+
+            sender.send(Message::Columns(columns.clone())).unwrap();
+            while let sqlite::State::Row = statement.next().unwrap() {
+                sender.send(Message::Row(Some((0..statement.count()).map(|idx| {
+                    let value: sqlite::Value = statement.read(idx).unwrap();
+                    match value {
+                        sqlite::Value::String(s) => Value::String(s),
+                        sqlite::Value::Binary(b) => Value::Bytes(b),
+                        sqlite::Value::Float(f) => Value::F64(f),
+                        sqlite::Value::Integer(i) => Value::I64(i),
+                        sqlite::Value::Null => Value::None,
+                    }
+                }).collect()  )));
+            }
+
+            sender.send(Message::Row(None));
+        });
+
+        let columns = match receiver.recv().unwrap() {
+            Message::Columns(columns) => columns,
+            Message::Row(_) => panic!("sqlite: missing column info")
+        };
+
         SqliteSource {
-            connection,
+            columns,
             count,
-            statement: connection.prepare(sqlite_options.query).unwrap(),
+            receiving_channel: receiver,
+            no_more_results: false,
         }
     }
+ }
 
-    /*pub fn sqlite_to_row(column_info: &[ColumnInfo], mysql_row: mysql::Row) -> Row {
-        let mut result = Row::with_capacity(mysql_row.len());
-        for (idx, value) in mysql_row.unwrap().iter().enumerate() {
-            match &value {
-                mysql::Value::NULL => result.push(Value::None),
-                mysql::Value::Int(v) => result.push(Value::I64(*v)),
-                mysql::Value::UInt(v) => result.push(Value::U64(*v)),
-                mysql::Value::Float(v) => result.push(Value::F64(*v)),
-                mysql::Value::Bytes(v) => match std::str::from_utf8(&v) {
-                    Ok(s) => result.push(Value::String(s.to_string())),
-                    Err(e) => panic!(format!("mysq: invalid utf8 in '{:?}' for row: {:?} ({})", v, value, e))
-                },
-                mysql::Value::Date(year, month, day, hour, minute, second, _microsecond) => {
-                    match column_info[idx].data_type {
-                        ColumnType::Date => result.push(
-                            Value::Date(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32))
-                        ),
-                        ColumnType::DateTime => result.push(
-                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms( *hour as u32, *minute as u32, *second as u32))
-                        ),
-                        ColumnType::Time => result.push(
-                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        ColumnType::Timestamp => result.push(
-                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
-                    }
-                },
-                //TODO: what to do with negative?
-                mysql::Value::Time(_negative, _day, hour, minute, second, _microsecond) => {
-                    match column_info[idx].data_type {
-                        ColumnType::Time => result.push(
-                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
-                    }
-                },
-            }
-        }
-        result
-    }*/
-}
-
-impl <'a>DataSource for SqliteSource<'a> {
+impl DataSource for SqliteSource {
 
     fn get_name(&self) -> String { "sqlite".to_string() }
 
     fn get_column_info(&self) -> Vec<ColumnInfo> {
-        let mut result = vec![];
-        /*for column in  self.results.columns_ref() {
-            let column_type = column.column_type();
-            let flags = column.flags();
-            result.push(ColumnInfo {
-                name: column.name_str().into_owned(),
-                data_type:  match column_type {
-                    MyColumnType::MYSQL_TYPE_DECIMAL => ColumnType::Decimal,
-                    MyColumnType::MYSQL_TYPE_NEWDECIMAL => ColumnType::Decimal,
-                    MyColumnType::MYSQL_TYPE_TINY => 
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U8} else {ColumnType::I8},
-                    MyColumnType::MYSQL_TYPE_SHORT =>
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U16} else {ColumnType::I16},
-                    MyColumnType::MYSQL_TYPE_LONG =>
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U32} else {ColumnType::I32},
-                    MyColumnType::MYSQL_TYPE_LONGLONG =>
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U64} else {ColumnType::I64},
-                    MyColumnType::MYSQL_TYPE_INT24 =>
-                        if flags.contains(MyColumnFlags::UNSIGNED_FLAG) {ColumnType::U32} else {ColumnType::I32},
-                    MyColumnType::MYSQL_TYPE_VARCHAR
-                        | MyColumnType::MYSQL_TYPE_VAR_STRING
-                        | MyColumnType::MYSQL_TYPE_STRING => ColumnType::String,
-                    MyColumnType::MYSQL_TYPE_FLOAT => ColumnType::F32,
-                    MyColumnType::MYSQL_TYPE_DOUBLE => ColumnType::F64,
-                    MyColumnType::MYSQL_TYPE_JSON => ColumnType::JSON,
-                    MyColumnType::MYSQL_TYPE_TINY_BLOB
-                        | MyColumnType::MYSQL_TYPE_MEDIUM_BLOB
-                        | MyColumnType::MYSQL_TYPE_LONG_BLOB
-                        | MyColumnType::MYSQL_TYPE_BLOB => ColumnType::Bytes,
-
-                    MyColumnType::MYSQL_TYPE_TIMESTAMP => ColumnType::Timestamp,
-                    MyColumnType::MYSQL_TYPE_DATE => ColumnType::Date,
-                    MyColumnType::MYSQL_TYPE_TIME => ColumnType::Time,
-                    MyColumnType::MYSQL_TYPE_TIME2 => ColumnType::Time,
-                    MyColumnType::MYSQL_TYPE_DATETIME => ColumnType::DateTime,
-                    MyColumnType::MYSQL_TYPE_DATETIME2 => ColumnType::DateTime,
-                    MyColumnType::MYSQL_TYPE_YEAR => ColumnType::I64,
-                    MyColumnType::MYSQL_TYPE_NEWDATE => ColumnType::Date,
-                    MyColumnType::MYSQL_TYPE_TIMESTAMP2 => ColumnType::Timestamp,
-
-                    /*
-                    MyColumnType::MYSQL_TYPE_NULL,
-                    MyColumnType::MYSQL_TYPE_BIT,
-                    MyColumnType::MYSQL_TYPE_ENUM,
-                    MyColumnType::MYSQL_TYPE_SET,
-                    MyColumnType::MYSQL_TYPE_GEOMETR
-                    */
-                    _ => panic!(format!("mysql: unsupported column type: {:?}", column_type))
-                },
-            });
-        }*/
-        result
+        self.columns.clone()
     }
 
     fn get_count(&self) -> Option<u64> { self.count }
 
     fn get_rows(&mut self, count: u32) -> Option<Vec<Row>> {
-        /*let ci = self.get_column_info();
-        let results: Vec<Row> =  self.results
-            .by_ref()
-            .take(count as usize)
-            .map(|v|{ MysqlSource::mysql_to_row(&ci, v.unwrap())})
-            .collect();
-        match results.len() {
-            0 => None,
-            _ => Some(results)
-        }*/
-        None
+        if self.no_more_results {
+            return None;
+        };
+
+        let mut results: Vec<Row> = vec![];
+        let mut done:bool = results.len() >= count as usize; //in case of count being 0
+        while !done {
+            match self.receiving_channel.recv().unwrap() {
+                Message::Row(potential_row) => match potential_row {
+                    Some(row) => { results.push(row); },
+                    None => {
+                        self.no_more_results = true;
+                        done = true;
+                    }
+                },
+                _ => panic!("sqlite: expected row message, got something else", ),
+            };
+            if results.len() == count as usize {
+                done = true;
+            }
+        }
+
+        Some(results)
+
     }
 }
 

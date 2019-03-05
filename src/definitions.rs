@@ -1,6 +1,6 @@
 use chrono;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum ColumnType {
     U64,
     I64,
@@ -14,7 +14,7 @@ pub enum ColumnType {
     F32,
     String,
     Bytes,
-    //None, ?
+    None, //mysql indicates that the column only stores null values. Not sure about sqlite.
     Date,
     DateTime,
     Time,
@@ -50,7 +50,7 @@ pub enum Value {
 
 pub type Row = Vec<Value>;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ColumnInfo {
     pub name: String,
     pub data_type: ColumnType,

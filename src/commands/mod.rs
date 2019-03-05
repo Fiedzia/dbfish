@@ -45,6 +45,10 @@ pub enum SourceCommand {
     #[structopt(name = "postgres", about="postgres")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Postgres(PostgresSourceOptions),
+    #[cfg(feature = "use_sqlite")]
+    #[structopt(name = "sqlite", about="sqlite")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Sqlite(SqliteSourceOptions),
 }
 
 
@@ -64,6 +68,10 @@ pub enum SourceConfigCommand {
     #[structopt(name = "postgres", about="postgres")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Postgres(PostgresConfigOptions),
+    #[cfg(feature = "use_sqlite")]
+    #[structopt(name = "sqlite", about="sqlite")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Sqlite(SqliteConfigOptions),
 }
 
 impl SourceConfigCommand {
@@ -74,6 +82,8 @@ impl SourceConfigCommand {
             SourceConfigCommand::Mysql(_) => "mysql".to_string(),
             #[cfg(feature = "use_postgres")]
             SourceConfigCommand::Postgres(_) => "postgres".to_string(),
+            #[cfg(feature = "use_sqlite")]
+            SourceConfigCommand::Sqlite(_) => "sqlite".to_string(),
         }
     }
 
@@ -81,9 +91,14 @@ impl SourceConfigCommand {
 
         match self {
             #[cfg(feature = "use_mysql")]
-            SourceConfigCommand::Mysql(options) => toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
+            SourceConfigCommand::Mysql(options) =>
+                toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
             #[cfg(feature = "use_postgres")]
-            SourceConfigCommand::Postgres(options) => toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
+            SourceConfigCommand::Postgres(options)
+                => toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
+            #[cfg(feature = "use_sqlite")]
+            SourceConfigCommand::Sqlite(options)
+                => toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
         }
     }
 
