@@ -14,7 +14,12 @@ use commands::{ApplicationArguments, Command};
 
 
 fn main() {
-    let args = ApplicationArguments::from_args();
+    let clapp_app = ApplicationArguments::clap();
+    let clap_matches = clapp_app.get_matches();
+    println!("matches: {:?}", clap_matches);
+    let args =  ApplicationArguments::from_clap(&clap_matches);
+
+    //let args = ApplicationArguments::from_args();
     match args.command {
         Command::Export(ref export_cmd) => {
             commands::export::export(&args, &export_cmd);

@@ -41,21 +41,11 @@ pub fn sources_edit(args: &ApplicationArguments, sources_command: &SourcesComman
 }
 
 pub fn sources_list(args: &ApplicationArguments, sources_command: &SourcesCommand, list_options: &SourcesListOptions) {
-    let dirname = config::get_sources_config_directory();
-    let mut entries = if std::path::Path::new(&dirname).exists() {
-        std::fs::read_dir(dirname)
-            .unwrap()
-            .map(|entry| entry.unwrap())
-            .filter(|entry| !entry.file_type().unwrap().is_dir())
-            .map(|entry| entry.file_name().into_string().unwrap())
-            .collect()
-    } else {
-            vec![]
-    };
-    entries.sort();
 
-    for entry in entries {
-        println!("{}", entry);
+    let sources = config::get_sources_list();
+
+    for source in sources {
+        println!("{}", source);
     }
 }
 

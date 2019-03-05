@@ -15,6 +15,22 @@ pub fn get_sources_config_directory() -> PathBuf {
     home_dir().unwrap().join(".dbexport").join("sources")
 }
 
+pub fn get_sources_list() -> Vec<String> {
+    let dirname = get_sources_config_directory();
+    let mut entries = if std::path::Path::new(&dirname).exists() {
+        std::fs::read_dir(dirname)
+            .unwrap()
+            .map(|entry| entry.unwrap())
+            .filter(|entry| !entry.file_type().unwrap().is_dir())
+            .map(|entry| entry.file_name().into_string().unwrap())
+            .collect()
+    } else {
+            vec![]
+    };
+    entries.sort();
+    entries
+}
+
 pub fn ensure_config_directory_exists() {
     if !get_config_directory().exists() {
         std::fs::create_dir(&get_config_directory()).unwrap();
@@ -40,6 +56,6 @@ pub fn save_source_config(name: &str, source: &SourceConfigCommand) {
     let toml_content = toml::Value::Table(toml_table);
     let mut file = std::fs::File::create(filename).unwrap();
     file.write_all(toml::to_string(&toml_content).unwrap().as_bytes()).unwrap();
-    file.flush();
+    file.flush().unwrap();
 
 }
