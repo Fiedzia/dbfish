@@ -26,7 +26,9 @@ impl SqliteSource {
     pub fn init(sqlite_options: &SqliteSourceOptions) -> SqliteSource {
 
         let (sender, receiver) = sync_channel(100);
-        let connection = sqlite::Connection::open(&sqlite_options.filename).unwrap();
+        let connection = sqlite::Connection::open(
+            &sqlite_options.filename.clone().unwrap_or(":memory:".to_string())
+        ).unwrap();
         if sqlite_options.init.len() > 0 {
             for sql in sqlite_options.init.iter() {
                 connection.execute(sql).unwrap();
@@ -41,7 +43,7 @@ impl SqliteSource {
 
         let sqlite_options_copy = sqlite_options.to_owned();
         thread::spawn(move|| {
-            let connection = sqlite::Connection::open(&sqlite_options_copy.filename).unwrap();
+            let connection = sqlite::Connection::open(&sqlite_options_copy.filename.unwrap_or(":memory:".to_string())).unwrap();
             if sqlite_options_copy.init.len() > 0 {
                 for sql in sqlite_options_copy.init.iter() {
                     connection.execute(sql).unwrap();

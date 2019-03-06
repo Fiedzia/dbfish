@@ -45,11 +45,11 @@ pub fn sources_list(args: &ApplicationArguments, sources_command: &SourcesComman
     let sources = config::get_sources_list();
 
     for source in sources {
-        println!("{}", source);
+        println!("{}", source.0);
     }
 }
 
-pub fn sources (args: &ApplicationArguments, sources_command: &SourcesCommand) {
+pub fn sources(args: &ApplicationArguments, sources_command: &SourcesCommand) {
     match &sources_command.command {
         SourcesSubCommand::Add(add_options) => sources_add(&args, &sources_command, &add_options),
         SourcesSubCommand::Delete(delete_options) => sources_delete(&args, &sources_command, &delete_options),

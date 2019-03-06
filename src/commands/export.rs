@@ -67,7 +67,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             (source, destination)
         },
         #[cfg(feature = "use_sqlite")]
-        SourceCommand::Sqlite(ref sqlite_options) => {
+        SourceCommandWrapper(SourceCommand::Sqlite(ref sqlite_options)) => {
             let source: Box<dyn DataSource> = Box::new(SqliteSource::init(&sqlite_options));
             let destination: Box<dyn DataDestination> = match &sqlite_options.destination {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),

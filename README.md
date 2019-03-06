@@ -1,7 +1,7 @@
 # dbexport
 Export data from relational databse to CSV/text/Sqlite file, among others.
 I've created this because I was frustrated with usability and functionality of out-of-the box database tools.
-Seriously, psql and mysql clients should do all that long ago. They still don't.
+Seriously, psql and mysql clients should do all that long ago.
 
 usage:
 
@@ -13,7 +13,8 @@ usage:
 Sources:
 
  * MySQL
-
+ * PostgreSQL
+ * SQLite
 
 Destinations:
 
@@ -30,12 +31,13 @@ Examples:
 
 ```bash
     dbexport export mysql --database users -q 'select * from users' csv somefile.csv
-    dbexport export mysql --database users --user joe --password secret -q 'select * from users' sqlite somefile.sqlite
+    dbexport export mysql --database users --user joe --password secret -q 'select * from users' sqlite -f somefile.sqlite
 ```
 
 
 Fancy features:
 
+ * manage database credentials (dbexport sources add mydata sqlite -f my_favourite_file.sqlite; dbexport export mydata ...)
  * progressbar
  * color support
  * truncate long texts
@@ -43,16 +45,17 @@ Fancy features:
 
 TODO:
 
- * more sources (SQLite, CSV, PostgreSQL, BigQuery, maybe JSON/Solr/ES)
+ * more sources (CSV, BigQuery, maybe JSON/Solr/ES/MongoDB)
  * more destinations (HDF5)
  * support a bit more MySQL and PostgreSQL features (few types were ommited)
  * helpful error messages
  * kill all .unwrap()
  * debug source/destination
  * tests
- * config file for storing database credentials
  * compress to zip/tgz (useful for csv/text/html)
  * performance (not a priority, but nice to have)
+ * jump to database shell
+ * have a concept of source providers to integrate with frameworks
 
 
 Design principles:

@@ -14,13 +14,14 @@ use crate::commands::PostgresSourceOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource};
 
 pub fn get_postgres_url(postgres_options: &PostgresSourceOptions) -> String {
+    //TODO: encode parameter values for url
     format!(
-        "postgres://{user}:{password}@{hostname}:{port}/{database}",
-        user=postgres_options.user,
-        hostname=postgres_options.host,
-        password=postgres_options.password.clone().unwrap_or("".to_string()),
-        port=postgres_options.port,
-        database=postgres_options.database.clone().unwrap_or("".to_string()),
+        "postgres://{user}{password}@{hostname}{port}/{database}",
+        user=match &postgres_options.user { None => "", Some(v) => v},
+        hostname=match &postgres_options.host { None => "", Some(v) => v},
+        password=match &postgres_options.password {None => "".to_string(), Some(p) => format!(":{}", p)},
+        port=match &postgres_options.port { None => "".to_string(), Some(p) => format!(":{}", p)},
+        database=match &postgres_options.database { None => "".to_string(), Some(d) => format!("/{}", d)},
     )
 }
 
@@ -30,8 +31,10 @@ pub fn establish_connection(postgres_options: &PostgresSourceOptions) -> Connect
     let database_url = get_postgres_url(&postgres_options);
     let conn = Connection::connect(database_url, TlsMode::None).unwrap();
 
-    if let Some(ref init) = postgres_options.init {
-        conn.execute(init, &[]).unwrap();
+    if postgres_options.init.len() > 0 {
+        for sql in postgres_options.init.iter() {
+            conn.execute(sql, &[]).unwrap();
+        }
     }
     conn
 }
