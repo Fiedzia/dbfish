@@ -30,6 +30,10 @@ version = "0.1.6"
 optional = true
 version = "0.11.13"
 
+[dependencies.json-color]
+optional = true
+version = "0.7.1"
+
 [dependencies.mysql]
 optional = true
 version = "15"
@@ -62,7 +66,7 @@ default = [
     "use_spsheet",
     "use_sqlite",
 ]
-use_json = ["json"]
+use_json = ["json", "json-color"]
 use_mysql = ["mysql"]
 use_postgres = [
     "postgres",

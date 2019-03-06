@@ -1,7 +1,10 @@
 use std::io::Write;
 use json;
 
-use crate::commands::JSONDestinationOptions;
+use atty;
+use json_color;
+
+use crate::commands::{ApplicationArguments, JSONDestinationOptions, UseColor};
 use crate::definitions::{Value, Row, DataSource, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
@@ -13,22 +16,31 @@ pub struct JSONDestination {
     compact: bool,
     first_row: bool,
     column_names: Vec<String>,
+    json_colorizer: json_color::Colorizer,
+    use_color: bool,
 }
 
-impl JSONDestination 
+impl JSONDestination
 {
-    pub fn init(json_options: &JSONDestinationOptions) -> JSONDestination {
+    pub fn init(args: &ApplicationArguments, json_options: &JSONDestinationOptions) -> JSONDestination {
+        let use_color = match args.color {
+            UseColor::Yes => true,
+            UseColor::No => false,
+            UseColor::Auto => json_options.filename == "-" && atty::is(atty::Stream::Stdout),
+        };
         let writer = match json_options.filename.as_str() {
-            "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Never)),
+            "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(if use_color { termcolor::ColorChoice::Always} else { termcolor::ColorChoice::Never })),
             _ => FileOrStdout::File(std::fs::File::create(json_options.filename.to_string()).unwrap())
         };
         JSONDestination {
+            use_color,
             column_names: vec![],
             compact: json_options.compact,
             first_row: true,
             indent: json_options.indent,
             truncate: json_options.truncate,
             writer,
+            json_colorizer: json_color::Colorizer::arbitrary()
         }
     }
 
@@ -79,11 +91,18 @@ impl DataDestination for JSONDestination
             if !self.first_row {
                 self.writer.write_all(if self.compact { b"," } else { b",\n" }).unwrap();
             };
-            if self.compact {
-                self.writer.write_all(json::stringify(json_row).as_bytes()).unwrap();
+            let json_string = if self.compact {
+                json::stringify(json_row)
             } else {
-                self.writer.write_all(json::stringify_pretty(json_row, self.indent).as_bytes()).unwrap();
+                json::stringify_pretty(json_row, self.indent)
             };
+
+            self.writer.write_all(
+                if self.use_color && !self.compact {
+                    self.json_colorizer.colorize_json_str(&json_string).unwrap_or(json_string)
+                } else {
+                    json_string
+                }.as_bytes()).unwrap();
             self.first_row = false;
         }
     }

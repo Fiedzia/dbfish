@@ -34,7 +34,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 DestinationCommand::HTML(html_options) => Box::new(HTMLDestination::init(&html_options)),
                 #[cfg(feature = "use_json")]
-                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&json_options)),
+                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&args, &json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
                 #[cfg(feature = "use_spsheet")]
@@ -54,7 +54,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 DestinationCommand::HTML(html_options) => Box::new(HTMLDestination::init(&html_options)),
                 #[cfg(feature = "use_json")]
-                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&json_options)),
+                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&args, &json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
                 #[cfg(feature = "use_spsheet")]
@@ -73,7 +73,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
                 DestinationCommand::HTML(html_options) => Box::new(HTMLDestination::init(&html_options)),
                 #[cfg(feature = "use_json")]
-                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&json_options)),
+                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&args, &json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Box::new(SqliteDestination::init(&sqlite_options)),
                 #[cfg(feature = "use_spsheet")]
