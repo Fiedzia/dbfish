@@ -70,6 +70,7 @@ impl SourceCommandWrapper {
                 "mysql" => {
                     let subcmd = MysqlSourceOptions::augment_clap(
                         structopt::clap::SubCommand::with_name(&source_name)
+                            .setting(structopt::clap::AppSettings::ColoredHelp)
                     );
                     app = app.subcommand(subcmd);
                 },
@@ -77,6 +78,7 @@ impl SourceCommandWrapper {
                 "postgres" => {
                     let subcmd = PostgresSourceOptions::augment_clap(
                         structopt::clap::SubCommand::with_name(&source_name)
+                            .setting(structopt::clap::AppSettings::ColoredHelp)
                     );
                     app = app.subcommand(subcmd);
                 },
@@ -84,6 +86,7 @@ impl SourceCommandWrapper {
                 "sqlite" => {
                     let subcmd = SqliteSourceOptions::augment_clap(
                         structopt::clap::SubCommand::with_name(&source_name)
+                            .setting(structopt::clap::AppSettings::ColoredHelp)
                     );
                     app = app.subcommand(subcmd);
                 },
