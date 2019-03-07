@@ -1,5 +1,5 @@
 # dbexport
-Export data from relational databse to CSV/text/Sqlite file, among others.
+Export data from relational databse to CSV/HTML/text/SQLite file, among others.
 I've created this because I was frustrated with usability and functionality of out-of-the box database tools.
 Seriously, psql and mysql clients should do all that long ago.
 

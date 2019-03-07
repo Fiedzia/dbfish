@@ -56,16 +56,40 @@ pub struct ColumnInfo {
     pub data_type: ColumnType,
 }
 
-pub trait DataSource {
-    fn get_name(&self) -> String;
-    fn get_column_info(&self) -> Vec<ColumnInfo>;
-    fn get_count(&self) -> Option<u64>;
-    fn get_rows(&mut self, count: u32) -> Option<Vec<Row>>;
 
-}
-
-pub trait DataDestination {
-    fn prepare(&mut self, source: &DataSource);
+pub trait DataDestination
+{
+    fn prepare(&self);
+    //fn prepare_for_results(&self, result_iterator: &DataSourceBatchIterator);
     fn add_rows(&mut self, rows: &[Row]);
     fn close(&mut self);
+}
+
+
+
+pub trait DataSourceBatchIterator {
+    fn get_column_info(&self) -> Vec<ColumnInfo>;
+    fn get_count(&self) -> Option<u64>;
+    fn next(&mut self) -> Option<Vec<Row>>;
+}
+
+
+pub trait DataSourceConnection<'i, I>
+where I: DataSourceBatchIterator + 'i
+{
+    fn batch_iterator(&'i self, batch_size: u64) -> I;
+}
+
+
+
+pub trait DataSource<'c, 'i, C, I>
+where 
+    C: DataSourceConnection<'i, I> + 'c,
+    'c: 'i,
+    I: DataSourceBatchIterator + 'i,
+    C: 'c,
+{
+    fn connect(&'c self) -> C;
+    fn get_type_name(&self) -> String;
+    fn get_name(&self) -> String;
 }

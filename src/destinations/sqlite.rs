@@ -3,7 +3,7 @@ use std::path::Path;
 use sqlite;
 
 use crate::commands::SqliteDestinationOptions;
-use crate::definitions::{ColumnType, Value, Row, DataSource, DataDestination};
+use crate::definitions::{ColumnType, Value, Row, DataSource, DataDestination, DataSourceConnection, DataSourceBatchIterator};
 use crate::utils::truncate_text_with_note;
 
 
@@ -30,10 +30,13 @@ impl SqliteDestination {
     }
 }
 
-impl DataDestination for SqliteDestination {
+impl DataDestination for SqliteDestination
+{
     
-    fn prepare(&mut self, source: &DataSource) {
-        let columns = source
+    fn prepare(&self) {}
+
+    /*fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+        let columns = result_iterator
             .get_column_info()
             .iter()
             .map(|col| { format!("{} {}", col.name, match col.data_type {
@@ -53,7 +56,7 @@ impl DataDestination for SqliteDestination {
             })})
             .collect::<Vec<String>>()
             .join(", ");
-        self.column_names = source
+        self.column_names = result_iterator
             .get_column_info()
             .iter()
             .map(|col| { col.name.clone() })
@@ -61,7 +64,8 @@ impl DataDestination for SqliteDestination {
 
         let create_table_query =format!("create table {} ({})", self.table, columns);
         self.connection.execute(create_table_query).unwrap();
-    }
+    }*/
+
     fn add_rows(&mut self, rows: &[Row]) {
         let values_part = self.column_names.iter().map(|_| {"?".to_string()}).collect::<Vec<String>>().join(", ");
         let mut sql = format!(

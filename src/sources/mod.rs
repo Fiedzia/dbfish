@@ -4,3 +4,15 @@ pub mod mysql;
 pub mod postgres;
 #[cfg(feature = "use_sqlite")] 
 pub mod sqlite;
+
+use crate::definitions::DataSource;
+
+pub enum Source {
+#[cfg(feature = "use_sqlite")]
+    Sqlite(sqlite::SqliteSource)
+}
+
+impl DataSource for Source {
+
+    
+}

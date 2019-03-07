@@ -45,7 +45,7 @@ pub enum Command {
 #[derive(StructOpt)]
 pub struct ExportCommand {
     #[structopt(short = "b", long = "batch-size", help = "batch size", default_value="500")]
-    batch_size: u32,
+    batch_size: u64,
     #[structopt(subcommand)]
     pub source: SourceCommandWrapper,
 }
@@ -315,6 +315,7 @@ pub struct SourcesListOptions {
 
 #[derive(Clone, Debug, StructOpt)]
 pub enum DestinationCommand {
+    #[cfg(feature = "use_csv")]
     #[structopt(name = "csv", about="CSV")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     CSV(CSVDestinationOptions),
@@ -330,12 +331,15 @@ pub enum DestinationCommand {
     #[structopt(name = "sqlite", about="Sqlite file")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Sqlite(SqliteDestinationOptions),
+    #[cfg(feature = "use_text")]
     #[structopt(name = "text", about="Text")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Text(TextDestinationOptions),
+    #[cfg(feature = "use_text")]
     #[structopt(name = "text-vertical", about="Text (columns displayed vertically)")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     TextVertical(TextVerticalDestinationOptions),
+    #[cfg(feature = "use_html")]
     #[structopt(name = "html", about="HTML")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     HTML(HTMLDestinationOptions),
@@ -357,6 +361,7 @@ pub struct SqliteDestinationOptions {
     pub truncate: Option<u64>,
 }
 
+#[cfg(feature = "use_csv")]
 #[derive(Clone, Debug, StructOpt)]
 pub struct CSVDestinationOptions {
     #[structopt(help = "csv filename. Use '-' for stdout")]
@@ -374,6 +379,7 @@ pub struct SpreadsheetDestinationOptions {
     pub truncate: Option<u64>,
 }
 
+#[cfg(feature = "use_text")]
 #[derive(Clone, Debug, StructOpt)]
 pub struct TextDestinationOptions {
     #[structopt(help = "text filename")]
@@ -382,6 +388,7 @@ pub struct TextDestinationOptions {
     pub truncate: Option<u64>,
 }
 
+#[cfg(feature = "use_text")]
 #[derive(Clone, Debug, StructOpt)]
 pub struct TextVerticalDestinationOptions {
     #[structopt(help = "filename")]
@@ -392,6 +399,7 @@ pub struct TextVerticalDestinationOptions {
     pub sort_columns: bool,
 }
 
+#[cfg(feature = "use_html")]
 #[derive(Clone, Debug, StructOpt)]
 pub struct HTMLDestinationOptions {
     #[structopt(help = "html filename")]
