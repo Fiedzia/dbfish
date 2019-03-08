@@ -66,7 +66,6 @@ pub trait DataDestination
 }
 
 
-
 pub trait DataSourceBatchIterator {
     fn get_column_info(&self) -> Vec<ColumnInfo>;
     fn get_count(&self) -> Option<u64>;

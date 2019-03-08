@@ -6,6 +6,9 @@ use indicatif::ProgressBar;
 use crate::commands::{ApplicationArguments, ExportCommand, SourceCommand,  SourceCommandWrapper, DestinationCommand};
 use crate::definitions::{DataSource, DataDestination, DataSourceConnection, DataSourceBatchIterator};
 use crate::destinations::Destination;
+
+use crate::sources::Source;
+
 #[cfg(feature = "use_mysql")]
 use crate::sources::mysql::MysqlSource;
 #[cfg(feature = "use_spsheet")]
@@ -27,7 +30,6 @@ use crate::destinations::text::TextDestination;
 #[cfg(feature = "use_text")]
 use crate::destinations::text_vertical::TextVerticalDestination;
 
-use crate::sources::Source;
 
 pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
 
@@ -35,7 +37,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
     let (mut source, mut destination) = match export_command.source {
         #[cfg(feature = "use_mysql")]
         SourceCommandWrapper(SourceCommand::Mysql(ref mysql_options)) => {
-            let source: Box<dyn DataSource>  = Box::new(MysqlSource::init(&mysql_options));
+            let source: Source  = Source::Mysql(MysqlSource::init(&mysql_options));
             let destination: Box<dyn DataDestination> = match &mysql_options.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
@@ -59,7 +61,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
 
         #[cfg(feature = "use_postgres")]
         SourceCommandWrapper(SourceCommand::Postgres(ref postgres_options)) => {
-            let source: Box<dyn DataSource> = Box::new(PostgresSource::init(&postgres_options));
+            let source: Source  = Source::Postgres(PostgresSource::init(&postgres_options));
             let destination: Box<dyn DataDestination> = match &postgres_options.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
@@ -105,10 +107,8 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         },
     };
     //destination.prepare(&*source);
-        //let mut source_connection: Box<DataSourceConnection<_>> = Box::new(source.connect());
-    {let mut source_connection = source.connect();
-    }
-        /*let mut it = source_connection.batch_iterator(export_command.batch_size);
+    let mut source_connection = source.connect();
+    let mut it = source_connection.batch_iterator(export_command.batch_size);
     let mut processed = 0;
     let progress_bar = match args.verbose {
         true => {
@@ -131,7 +131,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         let rows_option = it.next();
         match rows_option {
             Some(rows) => {
-                destination.add_rows(&rows);
+                //destination.add_rows(&rows);
                 processed += rows.len();
                 if let Some(ref pb) = progress_bar {
                     pb.inc(rows.len() as u64);
@@ -140,7 +140,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             None => { break; }
         }
     };
-    destination.close();
+    //destination.close();
     let duration = Utc::now().signed_duration_since(time_start).to_std().unwrap();
     if let Some(ref pb) = progress_bar {
         pb.tick();
@@ -148,5 +148,5 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
     };
     if args.verbose {
         println!("Done. Exported {} rows in {}", processed, humantime::format_duration(duration).to_string());
-    }*/
+    }
 }
