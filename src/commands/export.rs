@@ -12,7 +12,7 @@ use crate::sources::Source;
 #[cfg(feature = "use_mysql")]
 use crate::sources::mysql::MysqlSource;
 #[cfg(feature = "use_spsheet")]
-use crate::destinations::ods_xlsx::{SpreadsheetDestination, SpreadsheetFormat};
+use crate::destinations::ods_xlsx::{SpreadSheetDestination, SpreadSheetFormat};
 #[cfg(feature = "use_postgres")]
 use crate::sources::postgres::PostgresSource;
 #[cfg(feature = "use_csv")]
@@ -87,28 +87,29 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             let source: Source = Source::Sqlite(SqliteSource::init(&sqlite_options));
             let destination: Destination = match &sqlite_options.destination {
                 #[cfg(feature = "use_csv")]
-                DestinationCommand::CSV(csv_options) => Box::new(CSVDestination::init(&csv_options)),
+                DestinationCommand::CSV(csv_options) => Destination::CSV(CSVDestination::init(&csv_options)),
                 #[cfg(feature = "use_html")]
-                DestinationCommand::HTML(html_options) => Box::new(HTMLDestination::init(&html_options)),
+                DestinationCommand::HTML(html_options) => Destination::HTML(HTMLDestination::init(&html_options)),
                 #[cfg(feature = "use_json")]
-                DestinationCommand::JSON(json_options) => Box::new(JSONDestination::init(&args, &json_options)),
+                DestinationCommand::JSON(json_options) => Destination::JSON(JSONDestination::init(&args, &json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Destination::Sqlite(SqliteDestination::init(&sqlite_options)),
                 #[cfg(feature = "use_spsheet")]
-                DestinationCommand::ODS(spreadsheet_options) => Box::new(SpreadsheetDestination::init(&spreadsheet_options, SpreadsheetFormat::ODS)),
+                DestinationCommand::ODS(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::ODS)),
                 #[cfg(feature = "use_spsheet")]
-                DestinationCommand::XLSX(spreadsheet_options) => Box::new(SpreadsheetDestination::init(&spreadsheet_options, SpreadsheetFormat::XLSX)),
+                DestinationCommand::XLSX(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::XLSX)),
                 #[cfg(feature = "use_text")]
-                DestinationCommand::Text(text_options) => Box::new(TextDestination::init(&text_options)),
+                DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&text_options)),
                 #[cfg(feature = "use_text")]
-                DestinationCommand::TextVertical(text_vertical_options) => Box::new(TextVerticalDestination::init(&text_vertical_options)),
+                DestinationCommand::TextVertical(text_vertical_options) => Destination::TextVertical(TextVerticalDestination::init(&text_vertical_options)),
             };
             (source, destination)
         },
     };
-    //destination.prepare(&*source);
+    destination.prepare();
     let mut source_connection = source.connect();
     let mut it = source_connection.batch_iterator(export_command.batch_size);
+    destination.prepare_for_results(&it);
     let mut processed = 0;
     let progress_bar = match args.verbose {
         true => {
@@ -131,7 +132,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         let rows_option = it.next();
         match rows_option {
             Some(rows) => {
-                //destination.add_rows(&rows);
+                destination.add_rows(&rows);
                 processed += rows.len();
                 if let Some(ref pb) = progress_bar {
                     pb.inc(rows.len() as u64);

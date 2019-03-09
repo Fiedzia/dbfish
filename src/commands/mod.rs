@@ -322,11 +322,11 @@ pub enum DestinationCommand {
     #[cfg(feature = "use_spsheet")]
     #[structopt(name = "ods", about="ODS spreadsheet")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-    ODS(SpreadsheetDestinationOptions),
+    ODS(SpreadSheetDestinationOptions),
     #[cfg(feature = "use_spsheet")]
     #[structopt(name = "xlsx", about="XLSX spreadsheet")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-    XLSX(SpreadsheetDestinationOptions),
+    XLSX(SpreadSheetDestinationOptions),
     #[cfg(feature = "use_sqlite")]
     #[structopt(name = "sqlite", about="Sqlite file")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
@@ -372,7 +372,7 @@ pub struct CSVDestinationOptions {
 
 #[cfg(feature = "use_spsheet")]
 #[derive(Clone, Debug, StructOpt)]
-pub struct SpreadsheetDestinationOptions {
+pub struct SpreadSheetDestinationOptions {
     #[structopt(help = "spreadsheet filename")]
     pub filename: String,
     #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]

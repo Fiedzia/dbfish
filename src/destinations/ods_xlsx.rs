@@ -3,21 +3,21 @@ use spsheet::xlsx;
 use spsheet::{Book, Sheet, Cell, style::Style};
 use std::path::Path;
 
-use crate::commands::{SpreadsheetDestinationOptions};
-use crate::definitions::{Value, Row, DataSource, DataDestination};
+use crate::commands::{SpreadSheetDestinationOptions};
+use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::truncate_text_with_note;
 
 
-pub enum SpreadsheetFormat {
+pub enum SpreadSheetFormat {
     ODS,
     XLSX
 }
 
-pub struct SpreadsheetDestination {
+pub struct SpreadSheetDestination {
     filename: String,
     sheet: Sheet,
     sheet_row_count: usize,
-    format: SpreadsheetFormat,
+    format: SpreadSheetFormat,
     truncate: Option<u64>,
 }
 
@@ -46,10 +46,10 @@ pub fn value_to_cell(value: &Value, truncate: Option<u64>) -> Cell {
     }
 }
 
-impl SpreadsheetDestination 
+impl SpreadSheetDestination 
 {
-    pub fn init(spreadsheet_options: &SpreadsheetDestinationOptions, format: SpreadsheetFormat) -> SpreadsheetDestination {
-        SpreadsheetDestination {
+    pub fn init(spreadsheet_options: &SpreadSheetDestinationOptions, format: SpreadSheetFormat) -> SpreadSheetDestination {
+        SpreadSheetDestination {
             filename: spreadsheet_options.filename.clone(),
             sheet: Sheet::new("sheet 1"),
             sheet_row_count: 0,
@@ -59,10 +59,12 @@ impl SpreadsheetDestination
     }
 }
 
-impl DataDestination for SpreadsheetDestination
+impl DataDestination for SpreadSheetDestination
 {
-    fn prepare(&mut self, source: &DataSource) {
-        for (idx, column) in source.get_column_info().iter().enumerate() {
+    fn prepare(&mut self) {}
+
+    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+        for (idx, column) in result_iterator.get_column_info().iter().enumerate() {
             self.sheet.add_cell(Cell::str(column.name.clone()), 0, idx);
         }
         self.sheet_row_count += 1;
@@ -81,8 +83,8 @@ impl DataDestination for SpreadsheetDestination
         let mut book = Book::new();
         book.add_sheet(self.sheet.clone());
         match self.format {
-            SpreadsheetFormat::ODS => ods::write(&book, Path::new(&self.filename)).unwrap(),
-            SpreadsheetFormat::XLSX => xlsx::write(&book, Path::new(&self.filename)).unwrap(),
+            SpreadSheetFormat::ODS => ods::write(&book, Path::new(&self.filename)).unwrap(),
+            SpreadSheetFormat::XLSX => xlsx::write(&book, Path::new(&self.filename)).unwrap(),
         };
     }
 }

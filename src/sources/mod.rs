@@ -127,9 +127,5 @@ impl <'c, 'i>DataSourceBatchIterator for SourceBatchIterator<'c, 'i> {
             #[cfg(feature = "use_postgres")]
             SourceBatchIterator::SqliteBatchIterator(postgres_source) => postgres_source.next(), 
         }
-  
     }
-
-
-
 }

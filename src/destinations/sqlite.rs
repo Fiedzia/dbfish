@@ -33,9 +33,9 @@ impl SqliteDestination {
 impl DataDestination for SqliteDestination
 {
     
-    fn prepare(&self) {}
+    fn prepare(&mut self) {}
 
-    /*fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
         let columns = result_iterator
             .get_column_info()
             .iter()
@@ -64,7 +64,7 @@ impl DataDestination for SqliteDestination
 
         let create_table_query =format!("create table {} ({})", self.table, columns);
         self.connection.execute(create_table_query).unwrap();
-    }*/
+    }
 
     fn add_rows(&mut self, rows: &[Row]) {
         let values_part = self.column_names.iter().map(|_| {"?".to_string()}).collect::<Vec<String>>().join(", ");

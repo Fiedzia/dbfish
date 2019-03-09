@@ -6,7 +6,7 @@ use termcolor;
 
 
 use crate::commands::TextDestinationOptions;
-use crate::definitions::{Value, Row, DataSource, DataDestination};
+use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
 
@@ -39,8 +39,10 @@ impl TextDestination {
 
 impl DataDestination for TextDestination {
     
-    fn prepare(&mut self, source: &DataSource) {
-        self.column_names = source
+    fn prepare(&mut self) {}
+
+    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+        self.column_names = result_iterator
             .get_column_info()
             .iter()
             .map(|col| { col.name.clone() })

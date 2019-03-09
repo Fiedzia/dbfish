@@ -1,7 +1,5 @@
 use std::time::Duration;
 
-
-
 use chrono;
 use sqlite;
 
@@ -61,7 +59,6 @@ where 'c: 'i,
 
 impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for SqliteSourceConnection<'c>
 {
-
     fn batch_iterator(&'i self, batch_size: u64) -> SqliteSourceBatchIterator<'c, 'i>
     {
         SqliteSourceBatchIterator {
@@ -71,8 +68,6 @@ impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for Sql
             source_connection: &self,
         }
     }
-
-
 }
 
 

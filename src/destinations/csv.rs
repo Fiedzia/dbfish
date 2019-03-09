@@ -2,7 +2,7 @@ use csv;
 use termcolor;
 
 use crate::commands::CSVDestinationOptions;
-use crate::definitions::{Value, Row, DataSource, DataDestination};
+use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
 
@@ -50,8 +50,10 @@ impl CSVDestination
 
 impl DataDestination for CSVDestination
 {
-    fn prepare(&mut self, source: &DataSource) {
-        let headers: Vec<String> = source
+    fn prepare(&mut self) {}
+
+    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+        let headers: Vec<String> = result_iterator
             .get_column_info()
             .iter()
             .map(|c| c.name.clone())

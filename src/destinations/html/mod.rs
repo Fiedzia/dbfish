@@ -4,7 +4,7 @@ use std::io::Write;
 use askama_escape::{self, escape};
 
 use crate::commands::HTMLDestinationOptions;
-use crate::definitions::{Value, Row, DataSource, DataDestination};
+use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
 
@@ -34,12 +34,14 @@ impl HTMLDestination {
 
 impl DataDestination for HTMLDestination {
     
-    fn prepare(&mut self, source: &DataSource) {
+    fn prepare(&mut self) {}
+
+    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
         self.writer
             .write_all(format!(include_str!("html_prefix.html"), title=escape(&self.title, askama_escape::Html)).as_bytes())
             .unwrap();
 
-        self.column_names = source
+        self.column_names = result_iterator
             .get_column_info()
             .iter()
             .map(|col| { col.name.clone() })
