@@ -6,14 +6,14 @@ use lazy_static::lazy_static;
 use toml;
 use dirs::home_dir;
 
-use crate::commands::SourceConfigCommand;
+use crate::commands::common::SourceConfigCommand;
 
 #[cfg(feature = "use_mysql")]
-use crate::commands::MysqlConfigOptions;
+use crate::commands::common::MysqlConfigOptions;
 #[cfg(feature = "use_postgres")]
-use crate::commands::PostgresConfigOptions;
+use crate::commands::common::PostgresConfigOptions;
 #[cfg(feature = "use_sqlite")]
-use crate::commands::SqliteConfigOptions;
+use crate::commands::common::SqliteConfigOptions;
 
 
 lazy_static!{

@@ -2,7 +2,8 @@ use default_editor;
 
 use crate::config;
 
-use crate::commands::{ApplicationArguments, SourcesCommand, SourcesSubCommand, SourcesAddOptions, SourcesDeleteOptions, SourcesEditOptions, SourcesListOptions,  DestinationCommand};
+use crate::commands::ApplicationArguments;
+use crate::commands::common::SourceConfigCommand;
 use crate::definitions::{DataSource, DataDestination};
 #[cfg(feature = "use_mysql")]
 use crate::sources::mysql::MysqlSource;
@@ -57,3 +58,52 @@ pub fn sources(args: &ApplicationArguments, sources_command: &SourcesCommand) {
         SourcesSubCommand::List(list_options) => sources_list(&args, &sources_command, &list_options),
     };
 }
+
+#[derive(Clone, StructOpt)]
+pub struct SourcesCommand {
+    #[structopt(subcommand)]
+    pub command: SourcesSubCommand,
+}
+
+
+#[derive(Clone, Debug, StructOpt)]
+pub enum SourcesSubCommand {
+    #[structopt(name = "add", about="add source")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Add(SourcesAddOptions),
+    #[structopt(name = "delete", about="delete source")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Delete(SourcesDeleteOptions),
+    #[structopt(name = "edit", about="edit source definition")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Edit(SourcesEditOptions),
+    #[structopt(name = "list", about="list sources")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    List(SourcesListOptions),
+}
+
+#[derive(Clone, Debug, StructOpt)]
+pub struct SourcesAddOptions {
+    #[structopt(help = "source name")]
+    pub name: String,
+    #[structopt(subcommand)]
+    pub source: SourceConfigCommand,
+}
+
+#[derive(Clone, Debug, StructOpt)]
+pub struct SourcesDeleteOptions {
+    #[structopt(help = "source name")]
+    pub name: String,
+}
+
+#[derive(Clone, Debug, StructOpt)]
+pub struct SourcesEditOptions {
+    #[structopt(help = "source name")]
+    pub name: String,
+}
+
+#[derive(Clone, Debug, StructOpt)]
+pub struct SourcesListOptions {
+}
+
+

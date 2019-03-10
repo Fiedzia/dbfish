@@ -3,7 +3,7 @@ use std::time::Duration;
 use chrono;
 use sqlite;
 
-use crate::commands::SqliteSourceOptions;
+use crate::commands::export::SqliteSourceOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataSourceConnection, DataSourceBatchIterator};
 
 
@@ -13,7 +13,7 @@ pub struct SqliteSource {
 
 pub struct SqliteSourceConnection<'c> {
     connection: sqlite::Connection,
-    source_connection: &'c SqliteSource,
+    source: &'c SqliteSource,
 }
 
 pub struct SqliteSourceBatchIterator<'c, 'i>
@@ -21,6 +21,7 @@ where 'c: 'i
 {
     batch_size: u64,
     connection: &'i sqlite::Connection,
+    count: Option<u64>,
     statement: sqlite::Statement<'i>,
     source_connection: &'i SqliteSourceConnection<'c>
 }
@@ -47,7 +48,7 @@ where 'c: 'i,
 
         SqliteSourceConnection {
             connection,
-            source_connection: &self,
+            source: &self,
         }
     }
 
@@ -64,7 +65,8 @@ impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for Sql
         SqliteSourceBatchIterator {
             batch_size,
             connection: & self.connection,
-            statement: self.connection.prepare(&self.source_connection.options.query).unwrap(),
+            count: None,
+            statement: self.connection.prepare(&self.source.options.query).unwrap(),
             source_connection: &self,
         }
     }
@@ -90,7 +92,7 @@ impl <'c, 'i>DataSourceBatchIterator for SqliteSourceBatchIterator<'c, 'i>
     }
 
     fn get_count(&self) -> Option<u64> {
-        None
+        self.count
     }
  
     fn next(&mut self) -> Option<Vec<Row>>

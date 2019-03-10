@@ -80,7 +80,6 @@ where I: DataSourceBatchIterator + 'i
 }
 
 
-
 pub trait DataSource<'c, 'i, C, I>
 where 
     C: DataSourceConnection<'i, I> + 'c,

@@ -20,6 +20,9 @@ fn main() {
         Command::Export(ref export_cmd) => {
             commands::export::export(&args, &export_cmd);
         },
+        Command::Schema(ref schema_cmd) => {
+            commands::schema::schema(&args, &schema_cmd);
+        },
         Command::Sources(ref sources_cmd) => {
             commands::sources::sources(&args, &sources_cmd);
         },

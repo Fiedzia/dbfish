@@ -2,7 +2,7 @@ use std::path::Path;
 
 use sqlite;
 
-use crate::commands::SqliteDestinationOptions;
+use crate::commands::export::SqliteDestinationOptions;
 use crate::definitions::{ColumnType, Value, Row, DataSource, DataDestination, DataSourceConnection, DataSourceBatchIterator};
 use crate::utils::truncate_text_with_note;
 

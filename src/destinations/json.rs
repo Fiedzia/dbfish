@@ -4,7 +4,7 @@ use json;
 use atty;
 use json_color;
 
-use crate::commands::{ApplicationArguments, JSONDestinationOptions, UseColor};
+use crate::commands::{ApplicationArguments, export::JSONDestinationOptions, UseColor};
 use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;

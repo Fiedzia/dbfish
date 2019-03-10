@@ -5,7 +5,7 @@ use prettytable::{self, Table, Cell};
 use termcolor;
 
 
-use crate::commands::TextDestinationOptions;
+use crate::commands::export::TextDestinationOptions;
 use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;

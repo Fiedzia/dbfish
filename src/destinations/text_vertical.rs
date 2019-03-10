@@ -6,7 +6,7 @@ use termcolor;
 use termcolor::WriteColor;
 
 
-use crate::commands::TextVerticalDestinationOptions;
+use crate::commands::export::TextVerticalDestinationOptions;
 use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;

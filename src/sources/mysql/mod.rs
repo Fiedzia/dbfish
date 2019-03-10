@@ -5,8 +5,8 @@ use mysql;
 use mysql::consts::ColumnType as MyColumnType;
 use mysql::consts::ColumnFlags as MyColumnFlags;
 
-use crate::commands::MysqlSourceOptions;
-use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource};
+use crate::commands::export::MysqlSourceOptions;
+use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataSourceConnection, DataSourceBatchIterator};
 
 
 pub fn establish_connection(mysql_options: &MysqlSourceOptions) -> mysql::Pool {
@@ -38,36 +38,38 @@ pub fn establish_connection(mysql_options: &MysqlSourceOptions) -> mysql::Pool {
     };
 
     let pool = mysql::Pool::new(option_builder).unwrap();
-
     pool
 }
 
 
-pub struct MysqlSource<'a> {
-    results: mysql::QueryResult<'a>,
-    count: Option<u64>,
+pub struct MysqlSource {
+    options: MysqlSourceOptions,
 }
 
-impl <'a>MysqlSource<'a> {
+impl MysqlSource {
     pub fn init(mysql_options: &MysqlSourceOptions) -> MysqlSource {
-
-        
-        let pool = establish_connection(&mysql_options);
-        let count: Option<u64> = match mysql_options.count {
-            true => {
-                let count_query = format!("select count(*) from ({}) q", mysql_options.query);
-                let count_value = pool.first_exec(count_query, ()).unwrap().unwrap().get(0).unwrap();
-                Some(count_value)
-            },
-            false => None,
-        };
-        let mysql_result = pool.prep_exec(mysql_options.query.clone(), ()).unwrap();
-
-        MysqlSource {
-            count,
-            results: mysql_result,
-        }
+        MysqlSource { options: mysql_options.to_owned() }
     }
+}
+
+
+pub struct MysqlSourceConnection<'c> {
+    connection: mysql::Pool,
+    source: &'c MysqlSource,
+}
+
+pub struct MysqlSourceBatchIterator<'c, 'i>
+where 'c: 'i
+{
+    batch_size: u64,
+    connection: &'i mysql::Pool,
+    count: Option<u64>,
+    results: mysql::QueryResult<'i>,
+    source_connection: &'i MysqlSourceConnection<'c>
+}
+
+impl <'c, 'i>MysqlSourceBatchIterator<'c, 'i>
+where 'c: 'i {
 
     pub fn mysql_to_row(column_info: &[ColumnInfo], mysql_row: mysql::Row) -> Row {
         let mut result = Row::with_capacity(mysql_row.len());
@@ -111,12 +113,60 @@ impl <'a>MysqlSource<'a> {
         }
         result
     }
+
 }
 
-impl <'a>DataSource for MysqlSource<'a> {
 
+impl <'c, 'i> DataSource<'c, 'i, MysqlSourceConnection<'c>, MysqlSourceBatchIterator<'c, 'i>> for MysqlSource
+where 'c: 'i,
+{
+    fn connect(&'c self) -> MysqlSourceConnection
+    {
+
+        let connection = establish_connection(&self.options);
+
+        MysqlSourceConnection {
+            connection,
+            source: &self,
+        }
+    }
+
+    fn get_type_name(&self) -> String {"mysql".to_string()}
     fn get_name(&self) -> String { "mysql".to_string() }
 
+
+}
+
+impl <'c, 'i>DataSourceConnection<'i, MysqlSourceBatchIterator<'c, 'i>> for MysqlSourceConnection<'c>
+{
+    fn batch_iterator(&'i self, batch_size: u64) -> MysqlSourceBatchIterator<'c, 'i>
+    {
+
+        let count: Option<u64> = match self.source.options.count {
+            true => {
+                let count_query = format!("select count(*) from ({}) q", self.source.options.query);
+                let count_value = self.connection.first_exec(count_query.as_str(), ()).unwrap().unwrap().get(0).unwrap();
+                Some(count_value)
+            },
+            false => None,
+        };
+        let mysql_result = self.connection.prep_exec(self.source.options.query.clone(), ()).unwrap();
+
+
+
+        MysqlSourceBatchIterator {
+            batch_size,
+            connection: &self.connection,
+            count,
+            results: mysql_result,
+            source_connection: &self,
+        }
+    }
+}
+
+
+impl <'c, 'i>DataSourceBatchIterator for MysqlSourceBatchIterator<'c, 'i>
+{
     fn get_column_info(&self) -> Vec<ColumnInfo> {
         let mut result = vec![];
         for column in  self.results.columns_ref() {
@@ -170,6 +220,86 @@ impl <'a>DataSource for MysqlSource<'a> {
             });
         }
         result
+
+
+    }
+
+    fn get_count(&self) -> Option<u64> {
+        self.count
+    }
+ 
+    fn next(&mut self) -> Option<Vec<Row>>
+    {
+ 
+        let ci = self.get_column_info();
+        let results: Vec<Row> =  self.results
+            .by_ref()
+            .take(self.batch_size as usize)
+            .map(|v|{ MysqlSourceBatchIterator::mysql_to_row(&ci, v.unwrap())})
+            .collect();
+        match results.len() {
+            0 => None,
+            _ => Some(results)
+        }
+    }
+}
+
+
+
+
+
+/*
+
+impl <'a>MysqlSource<'a> {
+    pub fn mysql_to_row(column_info: &[ColumnInfo], mysql_row: mysql::Row) -> Row {
+        let mut result = Row::with_capacity(mysql_row.len());
+        for (idx, value) in mysql_row.unwrap().iter().enumerate() {
+            match &value {
+                mysql::Value::NULL => result.push(Value::None),
+                mysql::Value::Int(v) => result.push(Value::I64(*v)),
+                mysql::Value::UInt(v) => result.push(Value::U64(*v)),
+                mysql::Value::Float(v) => result.push(Value::F64(*v)),
+                mysql::Value::Bytes(v) => match std::str::from_utf8(&v) {
+                    Ok(s) => result.push(Value::String(s.to_string())),
+                    Err(e) => panic!(format!("mysq: invalid utf8 in '{:?}' for row: {:?} ({})", v, value, e))
+                },
+                mysql::Value::Date(year, month, day, hour, minute, second, _microsecond) => {
+                    match column_info[idx].data_type {
+                        ColumnType::Date => result.push(
+                            Value::Date(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32))
+                        ),
+                        ColumnType::DateTime => result.push(
+                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms( *hour as u32, *minute as u32, *second as u32))
+                        ),
+                        ColumnType::Time => result.push(
+                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
+                        ),
+                        ColumnType::Timestamp => result.push(
+                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms(*hour as u32, *minute as u32, *second as u32))
+                        ),
+                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
+                    }
+                },
+                //TODO: what to do with negative?
+                mysql::Value::Time(_negative, _day, hour, minute, second, _microsecond) => {
+                    match column_info[idx].data_type {
+                        ColumnType::Time => result.push(
+                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
+                        ),
+                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
+                    }
+                },
+            }
+        }
+        result
+    }
+}
+
+impl <'a>DataSource for MysqlSource<'a> {
+
+    fn get_name(&self) -> String { "mysql".to_string() }
+
+    fn get_column_info(&self) -> Vec<ColumnInfo> {
     }
 
     fn get_count(&self) -> Option<u64> { self.count }
@@ -187,5 +317,5 @@ impl <'a>DataSource for MysqlSource<'a> {
         }
     }
 }
-
+*/
 
