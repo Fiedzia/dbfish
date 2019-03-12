@@ -75,7 +75,7 @@ impl SourceConfigCommandWrapper {
                         #[cfg(feature = "use_postgres")]
                         SourceConfigCommand::Postgres(postgres_config_options) => {
 
-                            let mut postgres_options = <PostgresSourceOptions as ::structopt::StructOpt>
+                            let mut postgres_options = <PostgresConfigOptions as ::structopt::StructOpt>
                                 ::from_clap(matches);
                             postgres_options.update_from_config_options(postgres_config_options);
 
@@ -274,6 +274,34 @@ pub struct PostgresConfigOptions {
     pub init: Vec<String>,
     #[structopt(long = "timeout", help = "connect timeout in seconds")]
     pub timeout: Option<u64>,
+}
+
+#[cfg(feature = "use_postgres")]
+impl PostgresConfigOptions {
+    //fill any values that are set in config options and not overriden
+    pub fn update_from_config_options(&mut self, config_options: &PostgresConfigOptions) {
+        if self.host.is_none() && config_options.host.is_some() {
+            self.host = config_options.host.clone();
+        }
+        if self.port.is_none() && config_options.port.is_some() {
+            self.port = config_options.port.clone();
+        }
+        if self.user.is_none() && config_options.user.is_some() {
+            self.user = config_options.user.clone();
+        }
+        if self.password.is_none() && config_options.password.is_some() {
+            self.password = config_options.password.clone();
+        }
+        if self.database.is_none() && config_options.database.is_some() {
+            self.database = config_options.database.clone();
+        }
+        if self.init.len() == 0 && config_options.init.len() > 0 {
+            self.init.extend(config_options.init.iter().cloned());
+        }
+        if self.timeout.is_none() && config_options.timeout.is_some() {
+            self.timeout = config_options.timeout.clone();
+        }
+    }
 }
 
 

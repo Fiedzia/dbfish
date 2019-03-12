@@ -15,7 +15,7 @@ pub enum Source {
     #[cfg(feature = "use_mysql")]
     Mysql(mysql::MysqlSource),
     #[cfg(feature = "use_postgres")]
-    Postgres(postgres::PotgresSource),
+    Postgres(postgres::PostgresSource),
 }
 
 
@@ -25,7 +25,7 @@ pub enum SourceConnection<'c> {
     #[cfg(feature = "use_mysql")]
     MysqlConnection(mysql::MysqlSourceConnection<'c>),
     #[cfg(feature = "use_postgres")]
-    PostgresConnection(postgres::PotgresSourceConnection<'c>),
+    PostgresConnection(postgres::PostgresSourceConnection<'c>),
 }
 
 
@@ -35,7 +35,7 @@ pub enum SourceBatchIterator<'c, 'i> {
     #[cfg(feature = "use_mysql")]
     MysqlBatchIterator(mysql::MysqlSourceBatchIterator<'c, 'i>),
     #[cfg(feature = "use_postgres")]
-    PostgresBatchIterator(postgres::PotgresSourceBatchIterator<'c, 'i>),
+    PostgresBatchIterator(postgres::PostgresSourceBatchIterator<'c, 'i>),
 }
 
 
@@ -48,7 +48,7 @@ where 'c: 'i {
             #[cfg(feature = "use_mysql")]
             Source::Mysql(mysql_source) => SourceConnection::MysqlConnection(mysql_source.connect()), 
             #[cfg(feature = "use_postgres")]
-            Source::Sqlite(postgres_source) => SourceConnection::PostgresConnection(postgres_source.connect()), 
+            Source::Postgres(postgres_source) => SourceConnection::PostgresConnection(postgres_source.connect()), 
         }
     }
 
@@ -59,7 +59,7 @@ where 'c: 'i {
             #[cfg(feature = "use_mysql")]
             Source::Mysql(mysql_source) => mysql_source.get_type_name(), 
             #[cfg(feature = "use_postgres")]
-            Source::Sqlite(postgres_source) => postgres_source.get_type_name(), 
+            Source::Postgres(postgres_source) => postgres_source.get_type_name(), 
         }
     }
 
@@ -70,7 +70,7 @@ where 'c: 'i {
             #[cfg(feature = "use_mysql")]
             Source::Mysql(mysql_source) => mysql_source.get_name(), 
             #[cfg(feature = "use_postgres")]
-            Source::Sqlite(postgres_source) => postgres_source.get_name(), 
+            Source::Postgres(postgres_source) => postgres_source.get_name(), 
         }
     }
 }
@@ -86,7 +86,7 @@ impl <'c, 'i>DataSourceConnection<'i, SourceBatchIterator<'c, 'i>> for SourceCon
             #[cfg(feature = "use_mysql")]
             SourceConnection::MysqlConnection(mysql_connection) => SourceBatchIterator::MysqlBatchIterator(mysql_connection.batch_iterator(batch_size)), 
             #[cfg(feature = "use_postgres")]
-            Source::PostgresConnection(postgres_connection) => SourceBatchIterator::PostgresBatchIterator(postgres_connection.batch_iterator(batch_size)), 
+            SourceConnection::PostgresConnection(postgres_connection) => SourceBatchIterator::PostgresBatchIterator(postgres_connection.batch_iterator(batch_size)), 
         }
    
     }
@@ -102,7 +102,7 @@ impl <'c, 'i>DataSourceBatchIterator for SourceBatchIterator<'c, 'i> {
             #[cfg(feature = "use_mysql")]
             SourceBatchIterator::MysqlBatchIterator(mysql_source) => mysql_source.get_column_info(), 
             #[cfg(feature = "use_postgres")]
-            SourceBatchIterator::SqliteBatchIterator(postgres_source) => postgres_source.get_column_info(), 
+            SourceBatchIterator::PostgresBatchIterator(postgres_source) => postgres_source.get_column_info(), 
         }
     }
     
@@ -113,7 +113,7 @@ impl <'c, 'i>DataSourceBatchIterator for SourceBatchIterator<'c, 'i> {
             #[cfg(feature = "use_mysql")]
             SourceBatchIterator::MysqlBatchIterator(mysql_source) => mysql_source.get_count(), 
             #[cfg(feature = "use_postgres")]
-            SourceBatchIterator::SqliteBatchIterator(postgres_source) => postgres_source.get_count(), 
+            SourceBatchIterator::PostgresBatchIterator(postgres_source) => postgres_source.get_count(), 
         }
    
     }
@@ -125,7 +125,7 @@ impl <'c, 'i>DataSourceBatchIterator for SourceBatchIterator<'c, 'i> {
             #[cfg(feature = "use_mysql")]
             SourceBatchIterator::MysqlBatchIterator(mysql_source) => mysql_source.next(), 
             #[cfg(feature = "use_postgres")]
-            SourceBatchIterator::SqliteBatchIterator(postgres_source) => postgres_source.next(), 
+            SourceBatchIterator::PostgresBatchIterator(postgres_source) => postgres_source.next(), 
         }
     }
 }

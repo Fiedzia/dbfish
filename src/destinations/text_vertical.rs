@@ -6,7 +6,7 @@ use termcolor;
 use termcolor::WriteColor;
 
 
-use crate::commands::export::TextVerticalDestinationOptions;
+use crate::commands::{ApplicationArguments, export::TextVerticalDestinationOptions, UseColor};
 use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
@@ -21,18 +21,23 @@ pub struct TextVerticalDestination {
 
 impl TextVerticalDestination {
 
-    pub fn init(options: &TextVerticalDestinationOptions) -> TextVerticalDestination {
-        
-        let use_color =  options.filename == "-" && atty::is(atty::Stream::Stdout);
+    pub fn init(args: &ApplicationArguments, options: &TextVerticalDestinationOptions) -> TextVerticalDestination {
+        let use_color = match args.color {
+            UseColor::Yes => true,
+            UseColor::No => false,
+            UseColor::Auto => options.filename == "-" && atty::is(atty::Stream::Stdout),
+        };
+        let writer = match options.filename.as_str() {
+            "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(if use_color { termcolor::ColorChoice::Always} else { termcolor::ColorChoice::Never })),
+            _ => FileOrStdout::File(std::fs::File::create(options.filename.to_string()).unwrap())
+        };
+      
         TextVerticalDestination {
             truncate: options.truncate,
             sort_columns: options.sort_columns,
             column_names: vec![],
             use_color,
-            writer: match options.filename.as_ref() {
-                "-" =>  FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Auto)),
-                _ => FileOrStdout::File(std::fs::File::create(options.filename.clone()).unwrap())
-            }
+            writer,
         }
     }
 }

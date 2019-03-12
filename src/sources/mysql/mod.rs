@@ -5,36 +5,70 @@ use mysql;
 use mysql::consts::ColumnType as MyColumnType;
 use mysql::consts::ColumnFlags as MyColumnFlags;
 
+use crate::commands::common::MysqlConfigOptions;
 use crate::commands::export::MysqlSourceOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataSourceConnection, DataSourceBatchIterator};
 
 
-pub fn establish_connection(mysql_options: &MysqlSourceOptions) -> mysql::Pool {
+pub trait GetMysqlConnectionParams {
+    fn get_hostname(&self) -> &Option<String>;
+    fn get_username(&self) -> &Option<String>;
+    fn get_password(&self) -> &Option<String>;
+    fn get_port(&self) -> &Option<u16>;
+    fn get_socket(&self) -> &Option<String>;
+    fn get_database(&self) -> &Option<String>;
+    fn get_init(&self) -> &Vec<String>;
+    fn get_timeout(&self) -> &Option<u64>;
+}
+
+impl GetMysqlConnectionParams for MysqlSourceOptions {
+    fn get_hostname(&self) -> &Option<String> { &self.host }
+    fn get_username(&self) -> &Option<String> { &self.user }
+    fn get_password(&self) -> &Option<String> { &self.password }
+    fn get_port(&self) -> &Option<u16> { &self.port }
+    fn get_socket(&self) -> &Option<String> { &self.socket }
+    fn get_database(&self) -> &Option<String> { &self.database }
+    fn get_init(&self) -> &Vec<String> { &self.init }
+    fn get_timeout(&self) -> &Option<u64> { &self.timeout }
+}
+
+impl GetMysqlConnectionParams for MysqlConfigOptions {
+    fn get_hostname(&self) -> &Option<String> { &self.host }
+    fn get_username(&self) -> &Option<String> { &self.user }
+    fn get_password(&self) -> &Option<String> { &self.password }
+    fn get_port(&self) -> &Option<u16> { &self.port }
+    fn get_socket(&self) -> &Option<String> { &self.socket }
+    fn get_database(&self) -> &Option<String> { &self.database }
+    fn get_init(&self) -> &Vec<String> { &self.init }
+    fn get_timeout(&self) -> &Option<u64> { &self.timeout }
+}
+
+pub fn establish_mysql_connection(mysql_options: &GetMysqlConnectionParams ) -> mysql::Pool {
 
 
     let mut option_builder = mysql::OptsBuilder::new();
     option_builder
-        .db_name(mysql_options.database.clone())
-        .user(mysql_options.user.clone())
-        .pass(mysql_options.password.clone());
+        .db_name(mysql_options.get_database().to_owned())
+        .user(mysql_options.get_username().to_owned())
+        .pass(mysql_options.get_password().to_owned());
 
-    if let Some(timeout) = mysql_options.timeout {
+    if let Some(timeout) = mysql_options.get_timeout() {
          option_builder
-            .read_timeout(Some(Duration::from_secs(timeout)))
-            .write_timeout(Some(Duration::from_secs(timeout)))
-            .tcp_connect_timeout(Some(Duration::from_secs(timeout)));
+            .read_timeout(Some(Duration::from_secs(*timeout)))
+            .write_timeout(Some(Duration::from_secs(*timeout)))
+            .tcp_connect_timeout(Some(Duration::from_secs(*timeout)));
     };
 
-    if let Some(ref socket) = mysql_options.socket {
-        option_builder.socket(Some(socket.clone()));
+    if let Some(ref socket) = mysql_options.get_socket() {
+        option_builder.socket(Some(socket.to_owned()));
     } else {
         option_builder
-            .ip_or_hostname(mysql_options.host.clone().or(Some("localhost".to_string())))
-            .tcp_port(mysql_options.port.unwrap_or(3306));
+            .ip_or_hostname(mysql_options.get_hostname().to_owned().or(Some("localhost".to_string())))
+            .tcp_port(mysql_options.get_port().to_owned().unwrap_or(3306));
     };
  
-    if mysql_options.init.len() > 0 {
-        option_builder.init(mysql_options.init.clone());
+    if mysql_options.get_init().len() > 0 {
+        option_builder.init(mysql_options.get_init().to_owned());
     };
 
     let pool = mysql::Pool::new(option_builder).unwrap();
@@ -123,7 +157,7 @@ where 'c: 'i,
     fn connect(&'c self) -> MysqlSourceConnection
     {
 
-        let connection = establish_connection(&self.options);
+        let connection = establish_mysql_connection(&self.options);
 
         MysqlSourceConnection {
             connection,
@@ -243,79 +277,3 @@ impl <'c, 'i>DataSourceBatchIterator for MysqlSourceBatchIterator<'c, 'i>
         }
     }
 }
-
-
-
-
-
-/*
-
-impl <'a>MysqlSource<'a> {
-    pub fn mysql_to_row(column_info: &[ColumnInfo], mysql_row: mysql::Row) -> Row {
-        let mut result = Row::with_capacity(mysql_row.len());
-        for (idx, value) in mysql_row.unwrap().iter().enumerate() {
-            match &value {
-                mysql::Value::NULL => result.push(Value::None),
-                mysql::Value::Int(v) => result.push(Value::I64(*v)),
-                mysql::Value::UInt(v) => result.push(Value::U64(*v)),
-                mysql::Value::Float(v) => result.push(Value::F64(*v)),
-                mysql::Value::Bytes(v) => match std::str::from_utf8(&v) {
-                    Ok(s) => result.push(Value::String(s.to_string())),
-                    Err(e) => panic!(format!("mysq: invalid utf8 in '{:?}' for row: {:?} ({})", v, value, e))
-                },
-                mysql::Value::Date(year, month, day, hour, minute, second, _microsecond) => {
-                    match column_info[idx].data_type {
-                        ColumnType::Date => result.push(
-                            Value::Date(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32))
-                        ),
-                        ColumnType::DateTime => result.push(
-                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms( *hour as u32, *minute as u32, *second as u32))
-                        ),
-                        ColumnType::Time => result.push(
-                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        ColumnType::Timestamp => result.push(
-                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
-                    }
-                },
-                //TODO: what to do with negative?
-                mysql::Value::Time(_negative, _day, hour, minute, second, _microsecond) => {
-                    match column_info[idx].data_type {
-                        ColumnType::Time => result.push(
-                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
-                        ),
-                        _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
-                    }
-                },
-            }
-        }
-        result
-    }
-}
-
-impl <'a>DataSource for MysqlSource<'a> {
-
-    fn get_name(&self) -> String { "mysql".to_string() }
-
-    fn get_column_info(&self) -> Vec<ColumnInfo> {
-    }
-
-    fn get_count(&self) -> Option<u64> { self.count }
-
-    fn get_rows(&mut self, count: u32) -> Option<Vec<Row>> {
-        let ci = self.get_column_info();
-        let results: Vec<Row> =  self.results
-            .by_ref()
-            .take(count as usize)
-            .map(|v|{ MysqlSource::mysql_to_row(&ci, v.unwrap())})
-            .collect();
-        match results.len() {
-            0 => None,
-            _ => Some(results)
-        }
-    }
-}
-*/
-

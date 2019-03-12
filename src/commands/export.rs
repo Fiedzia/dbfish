@@ -16,7 +16,7 @@ use crate::{commands::common::MysqlConfigOptions, sources::mysql::MysqlSource};
 #[cfg(feature = "use_spsheet")]
 use crate::destinations::ods_xlsx::{SpreadSheetDestination, SpreadSheetFormat};
 #[cfg(feature = "use_postgres")]
-use crate::sources::postgres::PostgresSource;
+use crate::{commands::common::PostgresConfigOptions, sources::postgres::PostgresSource};
 #[cfg(feature = "use_csv")]
 use crate::destinations::csv::CSVDestination;
 #[cfg(feature = "use_html")]
@@ -53,9 +53,9 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 #[cfg(feature = "use_spsheet")]
                 DestinationCommand::XLSX(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::XLSX)),
                 #[cfg(feature = "use_text")]
-                DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&text_options)),
+                DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&args, &text_options)),
                 #[cfg(feature = "use_text")]
-                DestinationCommand::TextVertical(text_vertical_options) => Destination::TextVertical(TextVerticalDestination::init(&text_vertical_options)),
+                DestinationCommand::TextVertical(text_vertical_options) => Destination::TextVertical(TextVerticalDestination::init(&args, &text_vertical_options)),
 
             };
             (source, destination)
@@ -64,7 +64,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         #[cfg(feature = "use_postgres")]
         SourceCommandWrapper(SourceCommand::Postgres(ref postgres_options)) => {
             let source: Source  = Source::Postgres(PostgresSource::init(&postgres_options));
-            let destination: Box<dyn DataDestination> = match &postgres_options.destination {
+            let destination: Destination = match &postgres_options.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Destination::CSV(CSVDestination::init(&csv_options)),
                 #[cfg(feature = "use_html")]
@@ -78,9 +78,9 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 #[cfg(feature = "use_spsheet")]
                 DestinationCommand::XLSX(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::XLSX)),
                 #[cfg(feature = "use_text")]
-                DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&text_options)),
+                DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&args, &text_options)),
                 #[cfg(feature = "use_text")]
-                DestinationCommand::TextVertical(text_vertical_options) => Destination::TextVertical(TextVerticalDestination::init(&text_vertical_options)),
+                DestinationCommand::TextVertical(text_vertical_options) => Destination::TextVertical(TextVerticalDestination::init(&args, &text_vertical_options)),
             };
             (source, destination)
         },
@@ -101,9 +101,9 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 #[cfg(feature = "use_spsheet")]
                 DestinationCommand::XLSX(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::XLSX)),
                 #[cfg(feature = "use_text")]
-                DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&text_options)),
+                DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&args, &text_options)),
                 #[cfg(feature = "use_text")]
-                DestinationCommand::TextVertical(text_vertical_options) => Destination::TextVertical(TextVerticalDestination::init(&text_vertical_options)),
+                DestinationCommand::TextVertical(text_vertical_options) => Destination::TextVertical(TextVerticalDestination::init(&args, &text_vertical_options)),
             };
             (source, destination)
         },
@@ -143,7 +143,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             None => { break; }
         }
     };
-    //destination.close();
+    destination.close();
     let duration = Utc::now().signed_duration_since(time_start).to_std().unwrap();
     if let Some(ref pb) = progress_bar {
         pb.tick();

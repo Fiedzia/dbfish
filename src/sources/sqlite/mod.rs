@@ -3,9 +3,32 @@ use std::time::Duration;
 use chrono;
 use sqlite;
 
-use crate::commands::export::SqliteSourceOptions;
+use crate::commands::{common::SqliteConfigOptions, export::SqliteSourceOptions};
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataSourceConnection, DataSourceBatchIterator};
 
+pub trait GetSqliteConnectionParams {
+    fn get_filename(&self) -> &Option<String>;
+    fn get_init(&self) -> &Vec<String>;
+}
+
+impl GetSqliteConnectionParams for SqliteSourceOptions {
+    fn get_filename(&self) -> &Option<String> { &self.filename }
+    fn get_init(&self) -> &Vec<String> { &self.init }
+}
+
+impl GetSqliteConnectionParams for SqliteConfigOptions {
+    fn get_filename(&self) -> &Option<String> { &self.filename }
+    fn get_init(&self) -> &Vec<String> { &self.init }
+}
+
+pub fn establish_sqlite_connection(options: &GetSqliteConnectionParams) -> sqlite::Connection{
+    sqlite::Connection::open(
+        options
+            .get_filename()
+            .to_owned()
+            .unwrap_or(":memory:".to_string())
+    ).unwrap()
+}
 
 pub struct SqliteSource {
     options: SqliteSourceOptions,
@@ -39,7 +62,7 @@ where 'c: 'i,
     fn connect(&'c self) -> SqliteSourceConnection
     {
         
-        let connection =  sqlite::Connection::open(&self.options.filename.clone().unwrap_or(":memory:".to_string())).unwrap();
+        let connection =  establish_sqlite_connection(&self.options);
         if self.options.init.len() > 0 {
             for sql in self.options.init.iter() {
                 connection.execute(sql).unwrap();

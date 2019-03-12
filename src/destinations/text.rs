@@ -1,11 +1,12 @@
 use std;
 use std::io::Write;
 
+use atty;
 use prettytable::{self, Table, Cell};
 use termcolor;
 
 
-use crate::commands::export::TextDestinationOptions;
+use crate::commands::{ApplicationArguments, export::TextDestinationOptions, UseColor};
 use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
@@ -15,18 +16,26 @@ pub struct TextDestination {
     column_names: Vec<String>,
     writer: FileOrStdout,
     table: Table,
+    use_color: bool,
 }
 
 impl TextDestination {
 
-    pub fn init(options: &TextDestinationOptions) -> TextDestination {
-        
+    pub fn init(args: &ApplicationArguments, options: &TextDestinationOptions) -> TextDestination {
+        let use_color = match args.color {
+            UseColor::Yes => true,
+            UseColor::No => false,
+            UseColor::Auto => options.filename == "-" && atty::is(atty::Stream::Stdout),
+        };
+       
         let mut table = Table::new();
         table.set_format(*prettytable::format::consts::FORMAT_BOX_CHARS);
+        let use_color =  options.filename == "-" && atty::is(atty::Stream::Stdout);
 
         TextDestination {
             truncate: options.truncate,
             column_names: vec![],
+            use_color,
             writer: match options.filename.as_ref() {
                 "-" =>  FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Auto)),
                 _ => FileOrStdout::File(std::fs::File::create(options.filename.clone()).unwrap())
@@ -56,6 +65,7 @@ impl DataDestination for TextDestination {
             )
         );
     }
+
     fn add_rows(&mut self, rows: &[Row]) {
 
         for row in rows {
@@ -104,6 +114,7 @@ impl DataDestination for TextDestination {
         self.table.print(&mut self.writer).unwrap();
         self.writer.flush().unwrap();
     }
+
 
 }
 
