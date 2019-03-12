@@ -90,7 +90,7 @@ impl SourceConfigCommandWrapper {
 
                             let mut sqlite_options = <SqliteConfigOptions as ::structopt::StructOpt>
                                 ::from_clap(matches);
-                            //sqlite_options.update_from_config_options(sqlite_config_options);
+                            sqlite_options.update_from_config_options(sqlite_config_options);
 
                             Some(
                                 SourceConfigCommandWrapper(
@@ -98,8 +98,6 @@ impl SourceConfigCommandWrapper {
                                 )
                             )
                         },
-
-                       _ => None,
                     }
                 }
             } else {

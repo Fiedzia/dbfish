@@ -1,8 +1,3 @@
-use std::sync::mpsc::sync_channel;
-use std::thread;
-
-//use chrono;
-use fallible_iterator::FallibleIterator;
 use postgres::{self, Connection, TlsMode, types::Kind};
 
 use crate::commands::common::PostgresConfigOptions;
@@ -30,28 +25,37 @@ impl GetPostgresConnectionParams for PostgresSourceOptions {
     fn get_timeout(&self) -> &Option<u64> { &self.timeout }
 }
 
+impl GetPostgresConnectionParams for PostgresConfigOptions {
+    fn get_hostname(&self) -> &Option<String> { &self.host }
+    fn get_username(&self) -> &Option<String> { &self.user }
+    fn get_password(&self) -> &Option<String> { &self.password }
+    fn get_port(&self) -> &Option<u16> { &self.port }
+    fn get_database(&self) -> &Option<String> { &self.database }
+    fn get_init(&self) -> &Vec<String> { &self.init }
+    fn get_timeout(&self) -> &Option<u64> { &self.timeout }
+}
 
 
-pub fn get_postgres_url(postgres_options: &PostgresSourceOptions) -> String {
+pub fn get_postgres_url(postgres_options: &GetPostgresConnectionParams) -> String {
     //TODO: encode parameter values for url
     format!(
         "postgres://{user}{password}@{hostname}{port}{database}",
-        user=match &postgres_options.user { None => "", Some(v) => v},
-        hostname=match &postgres_options.host { None => "", Some(v) => v},
-        password=match &postgres_options.password {None => "".to_string(), Some(p) => format!(":{}", p)},
-        port=match &postgres_options.port { None => "".to_string(), Some(p) => format!(":{}", p)},
-        database=match &postgres_options.database { None => "".to_string(), Some(d) => format!("/{}", d)},
+        user=match &postgres_options.get_username() { None => "", Some(v) => v},
+        hostname=match &postgres_options.get_hostname() { None => "", Some(v) => v},
+        password=match &postgres_options.get_password() {None => "".to_string(), Some(p) => format!(":{}", p)},
+        port=match &postgres_options.get_port() { None => "".to_string(), Some(p) => format!(":{}", p)},
+        database=match &postgres_options.get_database() { None => "".to_string(), Some(d) => format!("/{}", d)},
     )
 }
 
 
-pub fn establish_postgres_connection(postgres_options: &PostgresSourceOptions) -> Connection {
+pub fn establish_postgres_connection(postgres_options: &GetPostgresConnectionParams) -> Connection {
 
-    let database_url = get_postgres_url(&postgres_options);
+    let database_url = get_postgres_url(postgres_options);
     let conn = Connection::connect(database_url, TlsMode::None).unwrap();
 
-    if postgres_options.init.len() > 0 {
-        for sql in postgres_options.init.iter() {
+    if postgres_options.get_init().len() > 0 {
+        for sql in postgres_options.get_init().iter() {
             conn.execute(sql, &[]).unwrap();
         }
     }

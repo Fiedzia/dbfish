@@ -7,13 +7,13 @@ use termcolor;
 
 
 use crate::commands::{ApplicationArguments, export::TextDestinationOptions, UseColor};
-use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
+use crate::definitions::{Value, Row, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
 
 pub struct TextDestination {
     truncate: Option<u64>,
-    column_names: Vec<String>,
+    column_names: Vec<String>,  
     writer: FileOrStdout,
     table: Table,
     use_color: bool,

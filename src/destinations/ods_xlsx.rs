@@ -4,7 +4,7 @@ use spsheet::{Book, Sheet, Cell, style::Style};
 use std::path::Path;
 
 use crate::commands::export::SpreadSheetDestinationOptions;
-use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
+use crate::definitions::{Value, Row, DataSourceBatchIterator, DataDestination};
 use crate::utils::truncate_text_with_note;
 
 

@@ -8,13 +8,6 @@ use dirs::home_dir;
 
 use crate::commands::common::SourceConfigCommand;
 
-#[cfg(feature = "use_mysql")]
-use crate::commands::common::MysqlConfigOptions;
-#[cfg(feature = "use_postgres")]
-use crate::commands::common::PostgresConfigOptions;
-#[cfg(feature = "use_sqlite")]
-use crate::commands::common::SqliteConfigOptions;
-
 
 lazy_static!{
     pub static ref USER_DEFINED_SOURCES: HashMap<String, SourceConfigCommand> = {
@@ -57,13 +50,6 @@ pub fn get_sources_list() -> Vec<(String, SourceConfigCommand)> {
                     .into_string()
                     .unwrap();
                 let toml_value = toml_from_file(&entry.path()).unwrap();
-                let data_type = toml_value
-                    .as_table()
-                    .unwrap()
-                    .get("type")
-                    .unwrap()
-                    .as_str()
-                    .unwrap();
                 let source_config_command = SourceConfigCommand::from_toml(&toml_value);
                 (name, source_config_command)
             }).collect()

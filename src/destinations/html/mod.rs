@@ -4,7 +4,7 @@ use std::io::Write;
 use askama_escape::{self, escape};
 
 use crate::commands::export::HTMLDestinationOptions;
-use crate::definitions::{Value, Row, DataSource, DataSourceBatchIterator, DataDestination};
+use crate::definitions::{Value, Row, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::truncate_text_with_note;
 

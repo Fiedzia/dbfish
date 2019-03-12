@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use humantime;
 use indicatif::ProgressBar;
-use serde_derive::{Deserialize, Serialize};
 
 use crate::commands::ApplicationArguments;
 use crate::commands::common::SourceConfigCommand;
@@ -34,7 +33,7 @@ use crate::destinations::text_vertical::TextVerticalDestination;
 pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
 
     let time_start: DateTime<Utc> = Utc::now();
-    let (mut source, mut destination) = match export_command.source {
+    let (source, mut destination) = match export_command.source {
         #[cfg(feature = "use_mysql")]
         SourceCommandWrapper(SourceCommand::Mysql(ref mysql_options)) => {
             let source: Source  = Source::Mysql(MysqlSource::init(&mysql_options));
@@ -109,7 +108,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         },
     };
     destination.prepare();
-    let mut source_connection = source.connect();
+    let source_connection = source.connect();
     let mut it = source_connection.batch_iterator(export_command.batch_size);
     destination.prepare_for_results(&it);
     let mut processed = 0;
@@ -276,8 +275,6 @@ impl SourceCommandWrapper {
                                 )
                             )
                         },
-
-                       _ => None,
                     }
                 }
             } else {

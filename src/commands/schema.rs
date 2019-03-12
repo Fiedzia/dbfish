@@ -3,18 +3,13 @@ use mysql;
 
 use crate::commands::{ApplicationArguments};
 use crate::commands::common::{SourceConfigCommandWrapper, SourceConfigCommand};
-use crate::config;
-use crate::definitions::{DataSource, DataDestination, DataSourceConnection, DataSourceBatchIterator};
-use crate::destinations::Destination;
-
-use crate::sources::Source;
 
 #[cfg(feature = "use_mysql")]
-use crate::sources::mysql::{establish_mysql_connection, MysqlSource};
+use crate::sources::mysql::{establish_mysql_connection};
 #[cfg(feature = "use_postgres")]
-use crate::sources::postgres::PostgresSource;
+use crate::sources::postgres::establish_postgres_connection;
 #[cfg(feature = "use_sqlite")]
-use crate::sources::sqlite::{establish_sqlite_connection, SqliteSource};
+use crate::sources::sqlite::establish_sqlite_connection;
 
 
 #[derive(StructOpt)]
@@ -25,7 +20,7 @@ pub struct SchemaCommand {
 
 
 
-pub fn schema (args: &ApplicationArguments, schema_command: &SchemaCommand) {
+pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
 
     match &schema_command.source.0 {
         #[cfg(feature = "use_mysql")]
@@ -77,6 +72,7 @@ pub fn schema (args: &ApplicationArguments, schema_command: &SchemaCommand) {
         },
         #[cfg(feature = "use_postgres")]
         SourceConfigCommand::Postgres(postgres_config_options) => {
+          let _conn = establish_postgres_connection(postgres_config_options);
         }
     }
 }

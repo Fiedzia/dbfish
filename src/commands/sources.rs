@@ -4,24 +4,17 @@ use crate::config;
 
 use crate::commands::ApplicationArguments;
 use crate::commands::common::SourceConfigCommand;
-use crate::definitions::{DataSource, DataDestination};
-#[cfg(feature = "use_mysql")]
-use crate::sources::mysql::MysqlSource;
-#[cfg(feature = "use_postgres")]
-use crate::sources::postgres::PostgresSource;
-#[cfg(feature = "use_sqlite")]
-use crate::destinations::sqlite::SqliteDestination;
 
-pub fn sources_add(args: &ApplicationArguments, sources_command: &SourcesCommand, add_options: &SourcesAddOptions) {
+pub fn sources_add(_args: &ApplicationArguments, _sources_command: &SourcesCommand, add_options: &SourcesAddOptions) {
     config::save_source_config(&add_options.name, &add_options.source);
 }
 
-pub fn sources_delete(args: &ApplicationArguments, sources_command: &SourcesCommand, delete_options: &SourcesDeleteOptions) {
+pub fn sources_delete(_args: &ApplicationArguments, _sources_command: &SourcesCommand, delete_options: &SourcesDeleteOptions) {
     let filename = config::get_sources_config_directory().join(delete_options.name.clone());
     std::fs::remove_file(filename).unwrap();
 }
 
-pub fn sources_edit(args: &ApplicationArguments, sources_command: &SourcesCommand, edit_options: &SourcesEditOptions) {
+pub fn sources_edit(_args: &ApplicationArguments, _sources_command: &SourcesCommand, edit_options: &SourcesEditOptions) {
     let filename = config::get_sources_config_directory().join(edit_options.name.clone());
     if filename.exists() {
         match default_editor::get() {
@@ -41,7 +34,7 @@ pub fn sources_edit(args: &ApplicationArguments, sources_command: &SourcesComman
     }
 }
 
-pub fn sources_list(args: &ApplicationArguments, sources_command: &SourcesCommand, list_options: &SourcesListOptions) {
+pub fn sources_list(_args: &ApplicationArguments, _sources_command: &SourcesCommand, _list_options: &SourcesListOptions) {
 
     let sources = config::get_sources_list();
 
@@ -105,5 +98,3 @@ pub struct SourcesEditOptions {
 #[derive(Clone, Debug, StructOpt)]
 pub struct SourcesListOptions {
 }
-
-
