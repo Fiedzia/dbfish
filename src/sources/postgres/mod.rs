@@ -54,7 +54,7 @@ pub fn establish_postgres_connection(postgres_options: &GetPostgresConnectionPar
     let database_url = get_postgres_url(postgres_options);
     let conn = Connection::connect(database_url, TlsMode::None).unwrap();
 
-    if postgres_options.get_init().len() > 0 {
+    if !postgres_options.get_init().is_empty() {
         for sql in postgres_options.get_init().iter() {
             conn.execute(sql, &[]).unwrap();
         }
@@ -97,7 +97,7 @@ where 'c: 'i,
     {
         
         let connection =  establish_postgres_connection(&self.options);
-        if self.options.init.len() > 0 {
+        if !self.options.init.is_empty() {
             for sql in self.options.init.iter() {
                 connection.execute(sql, &[]).unwrap();
             }
@@ -189,7 +189,7 @@ impl <'c, 'i>DataSourceBatchIterator for PostgresSourceBatchIterator<'c, 'i>
                 result
             }).collect();
 
-        if rows.len() > 0 {
+        if !rows.is_empty() {
             Some(rows)
         } else {
             None

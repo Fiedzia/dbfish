@@ -53,7 +53,7 @@ impl SourceConfigCommandWrapper {
 
         let result = SourceConfigCommand::from_subcommand(sub);
         //no default sources were matching subcommand, it might be user defined source
-        if let None = result {
+        if result.is_none() {
 
             if let (source_name, Some(matches)) = sub {
                 match config::USER_DEFINED_SOURCES.get(source_name) {
@@ -104,7 +104,7 @@ impl SourceConfigCommandWrapper {
                 None
             }
         } else {
-            result.map(|v| SourceConfigCommandWrapper(v))
+            result.map(SourceConfigCommandWrapper)
         }
     }
 
@@ -230,7 +230,7 @@ impl MysqlConfigOptions {
             self.host = config_options.host.clone();
         }
         if self.port.is_none() && config_options.port.is_some() {
-            self.port = config_options.port.clone();
+            self.port = config_options.port;
         }
         if self.user.is_none() && config_options.user.is_some() {
             self.user = config_options.user.clone();
@@ -244,11 +244,11 @@ impl MysqlConfigOptions {
         if self.database.is_none() && config_options.database.is_some() {
             self.database = config_options.database.clone();
         }
-        if self.init.len() == 0 && config_options.init.len() > 0 {
+        if self.init.is_empty() && !config_options.init.is_empty() {
             self.init.extend(config_options.init.iter().cloned());
         }
         if self.timeout.is_none() && config_options.timeout.is_some() {
-            self.timeout = config_options.timeout.clone();
+            self.timeout = config_options.timeout;
         }
     }
 }
@@ -282,7 +282,7 @@ impl PostgresConfigOptions {
             self.host = config_options.host.clone();
         }
         if self.port.is_none() && config_options.port.is_some() {
-            self.port = config_options.port.clone();
+            self.port = config_options.port;
         }
         if self.user.is_none() && config_options.user.is_some() {
             self.user = config_options.user.clone();
@@ -293,11 +293,11 @@ impl PostgresConfigOptions {
         if self.database.is_none() && config_options.database.is_some() {
             self.database = config_options.database.clone();
         }
-        if self.init.len() == 0 && config_options.init.len() > 0 {
+        if self.init.is_empty() && !config_options.init.is_empty() {
             self.init.extend(config_options.init.iter().cloned());
         }
         if self.timeout.is_none() && config_options.timeout.is_some() {
-            self.timeout = config_options.timeout.clone();
+            self.timeout = config_options.timeout;
         }
     }
 }
@@ -320,7 +320,7 @@ impl SqliteConfigOptions {
         if self.filename.is_none() && config_options.filename.is_some() {
             self.filename = config_options.filename.clone();
         }
-        if self.init.len() == 0 && config_options.init.len() > 0 {
+        if self.init.is_empty() && !config_options.init.is_empty() {
             self.init.extend(config_options.init.iter().cloned());
         }
     }

@@ -33,7 +33,7 @@ pub fn value_to_cell(value: &Value, truncate: Option<u64>) -> Cell {
         Value::U8(value) => Cell::str(value.to_string()),
         Value::I8(value) => Cell::str(value.to_string()),
         Value::F64(value) => Cell::float(*value),
-        Value::F32(value) => Cell::float(*value as f64),
+        Value::F32(value) => Cell::float(f64::from(*value)),
         Value::String(value) => Cell::str(truncate_text_with_note(value.to_string(), truncate)),
         Value::Bool(value) => Cell::str(value.to_string()),
         //Value::Bytes(value) => value.to_string(),

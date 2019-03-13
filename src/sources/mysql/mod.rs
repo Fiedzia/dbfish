@@ -63,16 +63,15 @@ pub fn establish_mysql_connection(mysql_options: &GetMysqlConnectionParams ) -> 
         option_builder.socket(Some(socket.to_owned()));
     } else {
         option_builder
-            .ip_or_hostname(mysql_options.get_hostname().to_owned().or(Some("localhost".to_string())))
+            .ip_or_hostname(mysql_options.get_hostname().to_owned().or_else(||Some("localhost".to_string())))
             .tcp_port(mysql_options.get_port().to_owned().unwrap_or(3306));
     };
  
-    if mysql_options.get_init().len() > 0 {
+    if !mysql_options.get_init().is_empty() {
         option_builder.init(mysql_options.get_init().to_owned());
     };
 
-    let pool = mysql::Pool::new(option_builder).unwrap();
-    pool
+    mysql::Pool::new(option_builder).unwrap()
 }
 
 
@@ -120,16 +119,16 @@ where 'c: 'i {
                 mysql::Value::Date(year, month, day, hour, minute, second, _microsecond) => {
                     match column_info[idx].data_type {
                         ColumnType::Date => result.push(
-                            Value::Date(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32))
+                            Value::Date(chrono::NaiveDate::from_ymd(i32::from(*year), u32::from(*month), u32::from(*day)))
                         ),
                         ColumnType::DateTime => result.push(
-                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms( *hour as u32, *minute as u32, *second as u32))
+                            Value::DateTime(chrono::NaiveDate::from_ymd(i32::from(*year), u32::from(*month), u32::from(*day)).and_hms(u32::from(*hour), u32::from(*minute), u32::from(*second)))
                         ),
                         ColumnType::Time => result.push(
-                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
+                            Value::Time(chrono::NaiveTime::from_hms(u32::from(*hour), u32::from(*minute), u32::from(*second)))
                         ),
                         ColumnType::Timestamp => result.push(
-                            Value::DateTime(chrono::NaiveDate::from_ymd(*year as i32, *month as u32, *day as u32).and_hms(*hour as u32, *minute as u32, *second as u32))
+                            Value::DateTime(chrono::NaiveDate::from_ymd(i32::from(*year), u32::from(*month), u32::from(*day)).and_hms(u32::from(*hour), u32::from(*minute), u32::from(*second)))
                         ),
                         _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
                     }
@@ -138,7 +137,7 @@ where 'c: 'i {
                 mysql::Value::Time(_negative, _day, hour, minute, second, _microsecond) => {
                     match column_info[idx].data_type {
                         ColumnType::Time => result.push(
-                            Value::Time(chrono::NaiveTime::from_hms(*hour as u32, *minute as u32, *second as u32))
+                            Value::Time(chrono::NaiveTime::from_hms(u32::from(*hour), u32::from(*minute), u32::from(*second)))
                         ),
                         _ => panic!("mysql: unsupported conversion: {:?} => {:?}", value, column_info[idx])
                     }
@@ -175,17 +174,14 @@ impl <'c, 'i>DataSourceConnection<'i, MysqlSourceBatchIterator<'c, 'i>> for Mysq
 {
     fn batch_iterator(&'i self, batch_size: u64) -> MysqlSourceBatchIterator<'c, 'i>
     {
-
-        let count: Option<u64> = match self.source.options.count {
-            true => {
-                let count_query = format!("select count(*) from ({}) q", self.source.options.query);
-                let count_value = self.connection.first_exec(count_query.as_str(), ()).unwrap().unwrap().get(0).unwrap();
-                Some(count_value)
-            },
-            false => None,
+        let count: Option<u64> = if self.source.options.count {
+            let count_query = format!("select count(*) from ({}) q", self.source.options.query);
+            let count_value = self.connection.first_exec(count_query.as_str(), ()).unwrap().unwrap().get(0).unwrap();
+            Some(count_value)
+        } else {
+            None
         };
         let mysql_result = self.connection.prep_exec(self.source.options.query.clone(), ()).unwrap();
-
 
 
         MysqlSourceBatchIterator {

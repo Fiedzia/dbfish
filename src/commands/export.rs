@@ -112,21 +112,20 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
     let mut it = source_connection.batch_iterator(export_command.batch_size);
     destination.prepare_for_results(&it);
     let mut processed = 0;
-    let progress_bar = match args.verbose {
-        true => {
-            let pb = ProgressBar::new(
-                match it.get_count() {
-                    Some(c) => c,
-                    None => 0
-                }
-            );
-            pb.set_style(
-                indicatif::ProgressStyle::default_bar()
-                    .template("Processed {pos:>7}/{len:7} rows in {elapsed_precise}")
-            );
-            Some(pb)
-        },
-        false => None
+    let progress_bar = if args.verbose {
+        let pb = ProgressBar::new(
+            match it.get_count() {
+                Some(c) => c,
+                None => 0
+            }
+        );
+        pb.set_style(
+            indicatif::ProgressStyle::default_bar()
+                .template("Processed {pos:>7}/{len:7} rows in {elapsed_precise}")
+        );
+        Some(pb)
+    } else {
+        None
     };
 
     loop {
@@ -230,7 +229,7 @@ impl SourceCommandWrapper {
 
         let result = SourceCommand::from_subcommand(sub);
         //no default sources were matching subcommand, it might be user defined source
-        if let None = result {
+        if result.is_none() {
 
             if let (source_name, Some(matches)) = sub {
                 match config::USER_DEFINED_SOURCES.get(source_name) {
@@ -281,7 +280,7 @@ impl SourceCommandWrapper {
                 None
             }
         } else {
-            result.map(|v| SourceCommandWrapper(v))
+            result.map(SourceCommandWrapper)
         }
     }
 
@@ -435,7 +434,7 @@ impl MysqlSourceOptions {
             self.host = config_options.host.clone();
         }
         if self.port.is_none() && config_options.port.is_some() {
-            self.port = config_options.port.clone();
+            self.port = config_options.port;
         }
         if self.user.is_none() && config_options.user.is_some() {
             self.user = config_options.user.clone();
@@ -449,11 +448,11 @@ impl MysqlSourceOptions {
         if self.database.is_none() && config_options.database.is_some() {
             self.database = config_options.database.clone();
         }
-        if self.init.len() == 0 && config_options.init.len() > 0 {
+        if self.init.is_empty() && !config_options.init.is_empty() {
             self.init.extend(config_options.init.iter().cloned());
         }
         if self.timeout.is_none() && config_options.timeout.is_some() {
-            self.timeout = config_options.timeout.clone();
+            self.timeout = config_options.timeout;
         }
     }
 }
@@ -493,7 +492,7 @@ impl PostgresSourceOptions {
             self.host = config_options.host.clone();
         }
         if self.port.is_none() && config_options.port.is_some() {
-            self.port = config_options.port.clone();
+            self.port = config_options.port;
         }
         if self.user.is_none() && config_options.user.is_some() {
             self.user = config_options.user.clone();
@@ -504,11 +503,11 @@ impl PostgresSourceOptions {
        if self.database.is_none() && config_options.database.is_some() {
             self.database = config_options.database.clone();
         }
-        if self.init.len() == 0 && config_options.init.len() > 0 {
+        if self.init.is_empty() && !config_options.init.is_empty() {
             self.init.extend(config_options.init.iter().cloned());
         }
         if self.timeout.is_none() && config_options.timeout.is_some() {
-            self.timeout = config_options.timeout.clone();
+            self.timeout = config_options.timeout;
         }
     }
 }
@@ -536,7 +535,7 @@ impl SqliteSourceOptions {
         if self.filename.is_none() && config_options.filename.is_some() {
             self.filename = config_options.filename.clone();
         }
-        if self.init.len() == 0 && config_options.init.len() > 0 {
+        if self.init.is_empty() && !config_options.init.is_empty() {
             self.init.extend(config_options.init.iter().cloned());
         }
     }

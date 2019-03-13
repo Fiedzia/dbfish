@@ -89,24 +89,21 @@ impl DataDestination for TextVerticalDestination {
             }
             for (idx, content) in row_data {
 
-                match self.use_color {
-                    true => {
-                         if let FileOrStdout::ColorStdout(ref mut s) = self.writer {
-                            s.set_color(termcolor::ColorSpec::new().set_bold(true)).unwrap();
-                            write!(s, "{}", self.column_names[idx]).unwrap();
-                            s.set_color(&termcolor::ColorSpec::new()).unwrap();
-                            writeln!(s, ": {}", content).unwrap();
-                        }
-                    }, 
-                    false => {
-                        self.writer.write_all(
-                            &format!(
-                                "{}: {}\n",
-                                self.column_names[idx],
-                                content
-                            ).into_bytes()
-                        ).unwrap();
+                if self.use_color {
+                    if let FileOrStdout::ColorStdout(ref mut s) = self.writer {
+                        s.set_color(termcolor::ColorSpec::new().set_bold(true)).unwrap();
+                        write!(s, "{}", self.column_names[idx]).unwrap();
+                        s.set_color(&termcolor::ColorSpec::new()).unwrap();
+                        writeln!(s, ": {}", content).unwrap();
                     }
+                } else {
+                    self.writer.write_all(
+                        &format!(
+                            "{}: {}\n",
+                            self.column_names[idx],
+                            content
+                        ).into_bytes()
+                    ).unwrap();
                 }
             }
         }

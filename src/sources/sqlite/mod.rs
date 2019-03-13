@@ -23,7 +23,7 @@ pub fn establish_sqlite_connection(options: &GetSqliteConnectionParams) -> sqlit
         options
             .get_filename()
             .to_owned()
-            .unwrap_or(":memory:".to_string())
+            .unwrap_or_else(||":memory:".to_string())
     ).unwrap()
 }
 
@@ -60,7 +60,7 @@ where 'c: 'i,
     {
         
         let connection =  establish_sqlite_connection(&self.options);
-        if self.options.init.len() > 0 {
+        if !self.options.init.is_empty() {
             for sql in self.options.init.iter() {
                 connection.execute(sql).unwrap();
             }
@@ -142,7 +142,7 @@ impl <'c, 'i>DataSourceBatchIterator for SqliteSourceBatchIterator<'c, 'i>
             }
         }
 
-        if rows.len() > 0 {
+        if !rows.is_empty() {
             Some(rows)
         } else {
             None

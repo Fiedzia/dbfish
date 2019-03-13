@@ -92,7 +92,7 @@ impl DataDestination for HTMLDestination {
     }
 
     fn close(&mut self) {
-        self.writer.write_all(format!(include_str!("html_suffix.html")).as_bytes()).unwrap();
+        self.writer.write_all(include_bytes!("html_suffix.html")).unwrap();
         self.writer.flush().unwrap();
     }
 
