@@ -200,6 +200,8 @@ impl SourceConfigCommand {
     }
 }
 
+fn empty_vec() -> Vec<String> {vec![]}
+
 #[cfg(feature = "use_mysql")]
 #[derive(Clone, Debug, Deserialize, Serialize, StructOpt)]
 pub struct MysqlConfigOptions {
@@ -216,6 +218,7 @@ pub struct MysqlConfigOptions {
     #[structopt(short = "D", long = "database", help = "database name")]
     pub database: Option<String>,
     #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    #[serde(default="empty_vec")]
     pub init: Vec<String>,
     #[structopt(long = "timeout", help = "connect/read/write timeout in seconds")]
     pub timeout: Option<u64>,
