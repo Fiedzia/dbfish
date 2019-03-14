@@ -11,6 +11,8 @@ usage:
 
 ```bash
     dbfish export SOURCE [source options] DESTINATION [destination options]
+    dbfish schema SOURCE [source options] # display database schema
+    dbfish sources add | edit | remove # manage database credential
     dbfish help
 ```
 
