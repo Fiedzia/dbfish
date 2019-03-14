@@ -1,4 +1,5 @@
 use default_editor;
+use regex::RegexBuilder;
 
 use crate::config;
 
@@ -34,12 +35,17 @@ pub fn sources_edit(_args: &ApplicationArguments, _sources_command: &SourcesComm
     }
 }
 
-pub fn sources_list(_args: &ApplicationArguments, _sources_command: &SourcesCommand, _list_options: &SourcesListOptions) {
+pub fn sources_list(_args: &ApplicationArguments, _sources_command: &SourcesCommand, list_options: &SourcesListOptions) {
 
-    let sources = config::get_sources_list();
-
+    let mut sources = config::get_sources_list();
+    if let Some(ref pattern) = list_options.pattern {
+        let re = RegexBuilder::new(pattern.as_ref()).case_insensitive(true).build().unwrap();
+        sources = sources.into_iter().filter(|(name, src)|{
+            re.is_match(name)
+        }).collect();
+    }
     for source in sources {
-        println!("{}", source.0);
+        println!("{}    {}", source.0, source.1.get_type_name());
     }
 }
 
@@ -97,4 +103,6 @@ pub struct SourcesEditOptions {
 
 #[derive(Clone, Debug, StructOpt)]
 pub struct SourcesListOptions {
+    #[structopt(help = "pattern to search for (using regular expression)")]
+    pub pattern: Option<String>,
 }

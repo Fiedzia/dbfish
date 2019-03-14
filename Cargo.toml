@@ -13,13 +13,13 @@ humantime = "1.2.0"
 indicatif = "0.11.0"
 lazy_static = "1.3.0"
 prettytable-rs = "0.8.0"
+regex = "1.1.2"
 serde = "1.0.89"
 serde_derive = "1.0.89"
 structopt = "0.2"
 termcolor = "1.0.4"
 toml = "0.4.10"
 unicode-segmentation = "1.2.1"
-
 
 [dependencies.askama_escape]
 optional = true
@@ -78,7 +78,10 @@ default = [
 ]
 use_csv = ["csv"]
 use_html = ["askama_escape"]
-use_json = ["json", "json-color"]
+use_json = [
+    "json",
+    "json-color",
+]
 use_mysql = ["mysql"]
 use_postgres = [
     "postgres",
