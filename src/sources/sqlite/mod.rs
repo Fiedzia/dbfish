@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::Read;
+
 use sqlite;
 
 use crate::commands::{common::SqliteConfigOptions, export::SqliteSourceOptions};
@@ -42,8 +45,9 @@ where 'c: 'i
     batch_size: u64,
     connection: &'i sqlite::Connection,
     count: Option<u64>,
+    done: bool, //sqlite iterator resets once done for some reason
     statement: sqlite::Statement<'i>,
-    source_connection: &'i SqliteSourceConnection<'c>
+    source_connection: &'i SqliteSourceConnection<'c>,
 }
 
 impl SqliteSource {
@@ -58,7 +62,7 @@ where 'c: 'i,
 {
     fn connect(&'c self) -> SqliteSourceConnection
     {
-        
+
         let connection =  establish_sqlite_connection(&self.options);
         if !self.options.init.is_empty() {
             for sql in self.options.init.iter() {
@@ -82,11 +86,24 @@ impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for Sql
 {
     fn batch_iterator(&'i self, batch_size: u64) -> SqliteSourceBatchIterator<'c, 'i>
     {
+        let query = match &self.source.options.query {
+            Some(q) => q.to_owned(),
+            None => match &self.source.options.query_file {
+                Some(path_buf) => {
+                    let mut sql = String::new();
+                    File::open(path_buf).unwrap().read_to_string(&mut sql).unwrap();
+                    sql
+                },
+                None => panic!("You need to pass either q or query-file option"),
+            }
+        };
+
         SqliteSourceBatchIterator {
             batch_size,
             connection: & self.connection,
             count: None,
-            statement: self.connection.prepare(&self.source.options.query).unwrap(),
+            done: false,
+            statement: self.connection.prepare(&query).unwrap(),
             source_connection: &self,
         }
     }
@@ -114,16 +131,17 @@ impl <'c, 'i>DataSourceBatchIterator for SqliteSourceBatchIterator<'c, 'i>
     fn get_count(&self) -> Option<u64> {
         self.count
     }
- 
+
     fn next(&mut self) -> Option<Vec<Row>>
     {
+        if self.done { return None };
         let mut rows = vec![];
         loop {
             if rows.len() == self.batch_size as usize {
                 break;
             }
             match self.statement.next().unwrap() {
-                sqlite::State::Done => break,
+                sqlite::State::Done => { self.done=true; break},
                 sqlite::State::Row => {
 
                     let row =(0..self.statement.count()).map(|idx| {
@@ -137,11 +155,9 @@ impl <'c, 'i>DataSourceBatchIterator for SqliteSourceBatchIterator<'c, 'i>
                         }
                     }).collect();
                     rows.push(row);
-
                 }
             }
         }
-
         if !rows.is_empty() {
             Some(rows)
         } else {

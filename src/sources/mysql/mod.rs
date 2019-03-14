@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Read;
 use std::time::Duration;
 
 use chrono;
@@ -174,14 +176,25 @@ impl <'c, 'i>DataSourceConnection<'i, MysqlSourceBatchIterator<'c, 'i>> for Mysq
 {
     fn batch_iterator(&'i self, batch_size: u64) -> MysqlSourceBatchIterator<'c, 'i>
     {
+        let query = match &self.source.options.query {
+            Some(q) => q.to_owned(),
+            None => match &self.source.options.query_file {
+                Some(path_buf) => {
+                    let mut sql = String::new();
+                    File::open(path_buf).unwrap().read_to_string(&mut sql).unwrap();
+                    sql
+                },
+                None => panic!("You need to pass either q or query-file option"),
+            }
+        };
         let count: Option<u64> = if self.source.options.count {
-            let count_query = format!("select count(*) from ({}) q", self.source.options.query);
+            let count_query = format!("select count(*) from ({}) q", query);
             let count_value = self.connection.first_exec(count_query.as_str(), ()).unwrap().unwrap().get(0).unwrap();
             Some(count_value)
         } else {
             None
         };
-        let mysql_result = self.connection.prep_exec(self.source.options.query.clone(), ()).unwrap();
+        let mysql_result = self.connection.prep_exec(query.clone(), ()).unwrap();
 
 
         MysqlSourceBatchIterator {

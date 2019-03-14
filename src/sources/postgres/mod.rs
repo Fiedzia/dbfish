@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::Read;
+
 use postgres::{self, Connection, TlsMode, types::Kind};
 
 use crate::commands::common::PostgresConfigOptions;
@@ -102,8 +105,19 @@ where 'c: 'i,
                 connection.execute(sql, &[]).unwrap();
             }
         }
+        let query = match &self.options.query {
+            Some(q) => q.to_owned(),
+            None => match &self.options.query_file {
+                Some(path_buf) => {
+                    let mut sql = String::new();
+                    File::open(path_buf).unwrap().read_to_string(&mut sql).unwrap();
+                    sql
+                },
+                None => panic!("You need to pass either q or query-file option"),
+            }
+        };
 
-        let results = connection.query(&self.options.query, &[]).unwrap();
+        let results = connection.query(&query, &[]).unwrap();
         PostgresSourceConnection {
             connection,
             source: &self,

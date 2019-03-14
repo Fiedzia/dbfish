@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use chrono::{DateTime, Utc};
 use humantime;
 use indicatif::ProgressBar;
@@ -415,8 +417,10 @@ pub struct MysqlSourceOptions {
     pub database: Option<String>,
     #[structopt(short = "i", long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
-    #[structopt(short = "q", long = "query", help = "sql query")]
-    pub query: String,
+    #[structopt(short = "q", long = "query", help = "sql query", required_unless = "query_file")]
+    pub query: Option<String>,
+    #[structopt(short = "f", long = "query-file", parse(from_os_str), help = "read sql query from file")]
+    pub query_file: Option<PathBuf>,
     #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
     pub count: bool,
     #[structopt(long = "timeout", help = "connect/read/write timeout in seconds")]
@@ -475,8 +479,10 @@ pub struct PostgresSourceOptions {
     pub init: Vec<String>,
     #[structopt(long = "timeout", help = "connect timeout in seconds")]
     pub timeout: Option<u64>,
-    #[structopt(short = "q", long = "query", help = "sql query")]
-    pub query: String,
+    #[structopt(short = "q", long = "query", help = "sql query", required_unless="query_file")]
+    pub query: Option<String>,
+    #[structopt(short = "f", long = "query-file", parse(from_os_str), help = "read sql query from file")]
+    pub query_file: Option<PathBuf>,
     #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
     pub count: bool,
     #[structopt(subcommand)]
@@ -519,8 +525,10 @@ pub struct SqliteSourceOptions {
     pub filename: Option<String>,
     #[structopt(short = "i", long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
-    #[structopt(short = "q", long = "query", help = "sql query")]
-    pub query: String,
+    #[structopt(short = "q", long = "query", help = "sql query", required_unless = "query_file")]
+    pub query: Option<String>,
+    #[structopt(short = "f", long = "query-file", parse(from_os_str), help = "read sql query from file")]
+    pub query_file: Option<PathBuf>,
     #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
     pub count: bool,
     #[structopt(subcommand)]

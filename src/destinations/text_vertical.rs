@@ -58,7 +58,7 @@ impl DataDestination for TextVerticalDestination {
         for row in rows {
             //<column index, value>
             let mut row_data: Vec<(usize, String)> = Vec::with_capacity(self.column_names.len());
-            self.writer.write_all(&"------\n".to_string().into_bytes()).unwrap();
+            self.writer.write_all(&"──────────\n".to_string().into_bytes()).unwrap();
             for (idx, col) in row.iter().enumerate() {
                 let content = match col {
                     Value::U64(value) => value.to_string(),
