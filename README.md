@@ -1,6 +1,6 @@
 # dbfish
 
-Dbfish aims to be to your standard database tools what Fish is to bash:
+Dbfish aims to be to your standard database tools what Fish is to Bash:
 provide more features out of the box, look better and be easier to use.
 
 Right now it can export data from relational database to CSV/HTML/text/SQLite file, among others.
