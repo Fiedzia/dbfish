@@ -48,7 +48,7 @@ Fancy features:
  * color support
  * truncate long texts
  * show database schema ( ```dbfish schema mydata``` )
-
+ * can be compiled to a single binary with no dependencies (statically linked with musl)
 
 TODO: (must-have before calling it usable)
 
@@ -83,3 +83,5 @@ You will need [Rust](https://www.rust-lang.org/). I recommend using latest stabl
 Once you have that, running cargo build --release should just work, generating target/release/dbfish binary.
 You will also need SQLite3 libs and C compiler installed, since its being built and linked statically,
 disable use_sqlite feature if that's a problem for you.
+
+If you want to link it statically, install musl and musl-dev and follow [this guide](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/platform-and-target-support/musl-support-for-fully-static-binaries.html).
