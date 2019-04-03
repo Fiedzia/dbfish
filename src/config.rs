@@ -30,11 +30,11 @@ pub fn toml_from_file(filename: &Path) -> std::io::Result<toml::Value> {
 
 
 pub fn get_config_directory() -> PathBuf {
-    home_dir().unwrap().join(".dbexport")
+    home_dir().unwrap().join(".dbfish")
 }
 
 pub fn get_sources_config_directory() -> PathBuf {
-    home_dir().unwrap().join(".dbexport").join("sources")
+    home_dir().unwrap().join(".dbfish").join("sources")
 }
 
 pub fn get_sources_list() -> Vec<(String, SourceConfigCommand)> {
@@ -73,7 +73,7 @@ pub fn save_source_config(name: &str, source: &SourceConfigCommand) {
     ensure_config_directory_exists();
     let filename = home_dir()
         .unwrap()
-        .join(".dbexport")
+        .join(".dbfish")
         .join("sources")
         .join(name);
 
