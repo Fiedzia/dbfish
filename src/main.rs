@@ -23,6 +23,9 @@ fn main() {
         Command::Schema(ref schema_cmd) => {
             commands::schema::schema(&args, &schema_cmd);
         },
+        Command::Shell(ref shell_cmd) => {
+            commands::shell::shell(&args, &shell_cmd);
+        },
         Command::Sources(ref sources_cmd) => {
             commands::sources::sources(&args, &sources_cmd);
         },

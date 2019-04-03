@@ -4,6 +4,7 @@ use structopt::clap::{arg_enum, _clap_count_exprs};
 pub mod common;
 pub mod export;
 pub mod schema;
+pub mod shell;
 pub mod sources;
 
 
@@ -35,6 +36,9 @@ pub enum Command {
     #[structopt(name = "export", about="export data")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Export(export::ExportCommand),
+    #[structopt(name = "shell", about="jump to shell")]
+    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    Shell(shell::ShellCommand),
     #[structopt(name = "schema", about="show source schema")]
     #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
     Schema(schema::SchemaCommand),
