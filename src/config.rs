@@ -40,16 +40,16 @@ pub fn get_sources_config_directory() -> PathBuf {
 pub fn get_sources_list() -> Vec<(String, SourceConfigCommand)> {
     let dirname = get_sources_config_directory();
     let mut entries = if std::path::Path::new(&dirname).exists() {
-        std::fs::read_dir(dirname)
-            .unwrap()
-            .map(|entry| entry.unwrap())
+        std::fs::read_dir(&dirname)
+            .expect(&format!("could not read directory: {:?}", &dirname))
+            .map(|entry| entry.expect(&format!("could not process path: {:?}", &dirname)))
             .filter(|entry| !entry.file_type().unwrap().is_dir())
             .map(|entry| {
                 let name = entry
                     .file_name()
                     .into_string()
-                    .unwrap();
-                let toml_value = toml_from_file(&entry.path()).unwrap();
+                    .expect(&format!("could not process file: {:?}", entry.file_name()));
+                let toml_value = toml_from_file(&entry.path()).expect(&format!("could not parse toml file: {:?}", name));
                 let source_config_command = SourceConfigCommand::from_toml(&toml_value);
                 (name, source_config_command)
             }).collect()
