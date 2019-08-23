@@ -11,9 +11,10 @@ usage:
 
 ```bash
     dbfish export SOURCE [source options] DESTINATION [destination options]
+    dbfish help
+    shell # jump to shell
     dbfish schema SOURCE [source options] # display database schema
     dbfish sources add | edit | remove # manage database credential
-    dbfish help
 ```
 
 Sources:
@@ -49,6 +50,7 @@ Fancy features:
  * truncate long texts
  * show database schema ( ```dbfish schema mydata``` )
  * can be compiled to a single binary with no dependencies (statically linked with musl)
+ * use python or mycli as shell
 
 TODO: (must-have before calling it usable)
 
@@ -56,7 +58,7 @@ TODO: (must-have before calling it usable)
  * kill most of .unwrap()
  * debug source and destination
  * tests
- * jump to database shell (native client or python shell with connection set up)
+ * jump to database shell (native client, litecli/mycli/pgcli or python shell with connection set up)
  
 
 
