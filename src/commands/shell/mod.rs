@@ -141,6 +141,94 @@ pub fn litecli_client(sqlite_config_options: &commands::common::SqliteConfigOpti
         .expect(&format!("failed to execute litecli ({:?})", cmd));
 }
 
+#[cfg(feature = "use_postgres")]
+pub fn pgcli_client(postgres_config_options: &commands::common::PostgresConfigOptions) {
+    let mut cmd = Command::new("pgcli");
+    if let Some(hostname) =  &postgres_config_options.host {
+        cmd.arg("-h").arg(hostname);
+    }
+    if let Some(username) =  &postgres_config_options.user {
+        cmd.arg("-U").arg(username);
+    }
+    if let Some(port) =  &postgres_config_options.port {
+        cmd.arg("-p").arg(port.to_string());
+    }
+    if let Some(database) =  &postgres_config_options.database {
+        cmd.arg("-d").arg(database);
+    }
+
+    cmd
+        .status()
+        .expect(&format!("failed to execute pgcli ({:?})", cmd));
+}
+
+#[cfg(feature = "use_mysql")]
+pub fn postgres_python_client(postgres_config_options: &commands::common::PostgresConfigOptions) {
+    config::ensure_config_directory_exists();
+    let python_venv_dir = config::get_config_directory().join("python_venv");
+    if !python_venv_dir.exists() {
+        std::fs::create_dir(&python_venv_dir).unwrap();
+    }
+
+    let python_postgres_venv = python_venv_dir.join("postgres");
+    if !python_postgres_venv.exists() {
+        create_python_virtualenv(&python_postgres_venv);
+        Command::new(python_postgres_venv.join("bin").join("pip"))
+            .arg("install")
+            .arg("ipython")
+            .arg("py-postgresql")
+            .status()
+            .expect("could not install dependencies via pip");
+    }
+    let python_file = python_postgres_venv.join("run.py");
+    if !python_file.exists() {
+        let content = include_str!("postgres.py");
+        std::fs::File::create(&python_file).unwrap().write_all(content.as_ref()).unwrap();
+    }
+
+    if let Some(hostname) =  &postgres_config_options.host {
+        std::env::set_var("POSTGRES_HOST", hostname);
+    }
+    if let Some(username) =  &postgres_config_options.user {
+        std::env::set_var("POSTGRES_USER", username);
+    }
+    if let Some(port) =  &postgres_config_options.port {
+        std::env::set_var("POSTGRES_PORT", port.to_string());
+    }
+    if let Some(password) = &postgres_config_options.password {
+        std::env::set_var("POSTGREs_PASSWORD", password);
+    }
+    if let Some(database) =  &postgres_config_options.database {
+        std::env::set_var("POSTGRES_DATABASE", database);
+    }
+
+    Command::new(python_postgres_venv.join("bin").join("python"))
+        .arg(python_file.clone())
+        .status()
+        .expect(&format!("could not run python script: {}", python_file.to_str().unwrap()));
+}
+
+
+#[cfg(feature = "use_postgres")]
+pub fn psql_client(postgres_config_options: &commands::common::PostgresConfigOptions) {
+    let mut cmd = Command::new("pgcli");
+    if let Some(hostname) =  &postgres_config_options.host {
+        cmd.arg("-h").arg(hostname);
+    }
+    if let Some(username) =  &postgres_config_options.user {
+        cmd.arg("-U").arg(username);
+    }
+    if let Some(port) =  &postgres_config_options.port {
+        cmd.arg("-p").arg(port.to_string());
+    }
+    if let Some(database) =  &postgres_config_options.database {
+        cmd.arg("-d").arg(database);
+    }
+
+    cmd
+        .status()
+        .expect(&format!("failed to execute pgcli ({:?})", cmd));
+}
 
 #[cfg(feature = "use_sqlite")]
 pub fn sqlite_client(sqlite_config_options: &commands::common::SqliteConfigOptions) {
@@ -218,7 +306,17 @@ pub fn shell (_args: &ApplicationArguments, shell_command: &ShellCommand) {
             }
         },
         #[cfg(feature = "use_postgres")]
-        SourceConfigCommand::Postgres(_postgres_config_options) => {
+        SourceConfigCommand::Postgres(postgres_config_options) => {
+            match shell_command.client.as_ref() {
+                "pgcli" => pgcli_client(&postgres_config_options),
+                "default" | "psql" => psql_client(&postgres_config_options),
+                "python" => postgres_python_client(&postgres_config_options),
+                _ =>  {
+                    eprintln!("unknown client: {}", shell_command.client);
+                    std::process::exit(1);
+                }
+            }
+
         }
     }
 }
