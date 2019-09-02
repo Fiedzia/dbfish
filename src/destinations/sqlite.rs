@@ -35,7 +35,7 @@ impl DataDestination for SqliteDestination
     
     fn prepare(&mut self) {}
 
-    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+    fn prepare_for_results(&mut self, result_iterator: &dyn DataSourceBatchIterator) {
         let columns = result_iterator
             .get_column_info()
             .iter()

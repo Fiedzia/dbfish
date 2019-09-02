@@ -45,7 +45,7 @@ impl GetMysqlConnectionParams for MysqlConfigOptions {
     fn get_timeout(&self) -> &Option<u64> { &self.timeout }
 }
 
-pub fn establish_mysql_connection(mysql_options: &GetMysqlConnectionParams ) -> mysql::Pool {
+pub fn establish_mysql_connection(mysql_options: &dyn GetMysqlConnectionParams ) -> mysql::Pool {
 
 
     let mut option_builder = mysql::OptsBuilder::new();

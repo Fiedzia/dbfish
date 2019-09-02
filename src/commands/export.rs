@@ -112,7 +112,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
     destination.prepare();
     let source_connection = source.connect();
     let mut it = source_connection.batch_iterator(export_command.batch_size);
-    destination.prepare_for_results(&it);
+    destination.prepare_for_results(&it as &dyn DataSourceBatchIterator);
     let mut processed = 0;
     let progress_bar = if args.verbose {
         let pb = ProgressBar::new(
@@ -168,15 +168,15 @@ pub struct ExportCommand {
 pub enum SourceCommand {
     #[cfg(feature = "use_mysql")]
     #[structopt(name = "mysql", about="mysql")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Mysql(MysqlSourceOptions),
     #[cfg(feature = "use_postgres")]
     #[structopt(name = "postgres", about="postgres")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Postgres(PostgresSourceOptions),
     #[cfg(feature = "use_sqlite")]
     #[structopt(name = "sqlite", about="sqlite")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sqlite(SqliteSourceOptions),
 }
 
@@ -292,35 +292,35 @@ impl SourceCommandWrapper {
 pub enum DestinationCommand {
     #[cfg(feature = "use_csv")]
     #[structopt(name = "csv", about="CSV")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     CSV(CSVDestinationOptions),
     #[cfg(feature = "use_spsheet")]
     #[structopt(name = "ods", about="ODS spreadsheet")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     ODS(SpreadSheetDestinationOptions),
     #[cfg(feature = "use_spsheet")]
     #[structopt(name = "xlsx", about="XLSX spreadsheet")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     XLSX(SpreadSheetDestinationOptions),
     #[cfg(feature = "use_sqlite")]
     #[structopt(name = "sqlite", about="Sqlite file")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sqlite(SqliteDestinationOptions),
     #[cfg(feature = "use_text")]
     #[structopt(name = "text", about="Text")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Text(TextDestinationOptions),
     #[cfg(feature = "use_text")]
     #[structopt(name = "text-vertical", about="Text (columns displayed vertically)")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     TextVertical(TextVerticalDestinationOptions),
     #[cfg(feature = "use_html")]
     #[structopt(name = "html", about="HTML")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     HTML(HTMLDestinationOptions),
     #[cfg(feature = "use_json")]
     #[structopt(name = "json", about="JSON")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     JSON(JSONDestinationOptions),
 }
 

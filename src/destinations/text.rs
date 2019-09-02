@@ -30,7 +30,6 @@ impl TextDestination {
        
         let mut table = Table::new();
         table.set_format(*prettytable::format::consts::FORMAT_BOX_CHARS);
-        let use_color =  options.filename == "-" && atty::is(atty::Stream::Stdout);
 
         TextDestination {
             truncate: options.truncate,
@@ -50,7 +49,7 @@ impl DataDestination for TextDestination {
     
     fn prepare(&mut self) {}
 
-    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+    fn prepare_for_results(&mut self, result_iterator: &dyn DataSourceBatchIterator) {
         self.column_names = result_iterator
             .get_column_info()
             .iter()

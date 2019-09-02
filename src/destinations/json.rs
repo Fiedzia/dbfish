@@ -79,7 +79,7 @@ impl DataDestination for JSONDestination
     fn prepare(&mut self) {
     }
 
-    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+    fn prepare_for_results(&mut self, result_iterator: &dyn DataSourceBatchIterator) {
         self.column_names = result_iterator
             .get_column_info()
             .iter()

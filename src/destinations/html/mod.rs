@@ -36,7 +36,7 @@ impl DataDestination for HTMLDestination {
     
     fn prepare(&mut self) {}
 
-    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator) {
+    fn prepare_for_results(&mut self, result_iterator: &dyn DataSourceBatchIterator) {
         self.writer
             .write_all(format!(include_str!("html_prefix.html"), title=escape(&self.title, askama_escape::Html)).as_bytes())
             .unwrap();

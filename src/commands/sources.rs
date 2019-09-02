@@ -40,7 +40,7 @@ pub fn sources_list(_args: &ApplicationArguments, _sources_command: &SourcesComm
     let mut sources = config::get_sources_list();
     if let Some(ref pattern) = list_options.pattern {
         let re = RegexBuilder::new(pattern.as_ref()).case_insensitive(true).build().unwrap();
-        sources = sources.into_iter().filter(|(name, src)|{
+        sources = sources.into_iter().filter(|(name, _src)|{
             re.is_match(name)
         }).collect();
     }
@@ -68,16 +68,16 @@ pub struct SourcesCommand {
 #[derive(Clone, Debug, StructOpt)]
 pub enum SourcesSubCommand {
     #[structopt(name = "add", about="add source")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Add(SourcesAddOptions),
     #[structopt(name = "delete", about="delete source")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Delete(SourcesDeleteOptions),
     #[structopt(name = "edit", about="edit source definition")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Edit(SourcesEditOptions),
     #[structopt(name = "list", about="list sources")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     List(SourcesListOptions),
 }
 

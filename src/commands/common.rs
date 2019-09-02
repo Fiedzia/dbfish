@@ -115,15 +115,15 @@ impl SourceConfigCommandWrapper {
 pub enum SourceConfigCommand {
     #[cfg(feature = "use_mysql")]
     #[structopt(name = "mysql", about="mysql")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Mysql(MysqlConfigOptions),
     #[cfg(feature = "use_postgres")]
     #[structopt(name = "postgres", about="postgres")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Postgres(PostgresConfigOptions),
     #[cfg(feature = "use_sqlite")]
     #[structopt(name = "sqlite", about="sqlite")]
-    #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sqlite(SqliteConfigOptions),
 }
 

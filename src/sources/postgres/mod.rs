@@ -39,7 +39,7 @@ impl GetPostgresConnectionParams for PostgresConfigOptions {
 }
 
 
-pub fn get_postgres_url(postgres_options: &GetPostgresConnectionParams) -> String {
+pub fn get_postgres_url(postgres_options: &dyn GetPostgresConnectionParams) -> String {
     //TODO: encode parameter values for url
     format!(
         "postgres://{user}{password}@{hostname}{port}{database}",
@@ -52,7 +52,7 @@ pub fn get_postgres_url(postgres_options: &GetPostgresConnectionParams) -> Strin
 }
 
 
-pub fn establish_postgres_connection(postgres_options: &GetPostgresConnectionParams) -> Connection {
+pub fn establish_postgres_connection(postgres_options: &dyn GetPostgresConnectionParams) -> Connection {
 
     let database_url = get_postgres_url(postgres_options);
     let conn = Connection::connect(database_url, TlsMode::None).unwrap();

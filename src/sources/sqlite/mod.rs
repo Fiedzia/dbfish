@@ -21,7 +21,7 @@ impl GetSqliteConnectionParams for SqliteConfigOptions {
     fn get_init(&self) -> &Vec<String> { &self.init }
 }
 
-pub fn establish_sqlite_connection(options: &GetSqliteConnectionParams) -> sqlite::Connection{
+pub fn establish_sqlite_connection(options: &dyn GetSqliteConnectionParams) -> sqlite::Connection{
     sqlite::Connection::open(
         options
             .get_filename()

@@ -60,7 +60,7 @@ pub struct ColumnInfo {
 pub trait DataDestination
 {
     fn prepare(&mut self);
-    fn prepare_for_results(&mut self, result_iterator: &DataSourceBatchIterator);
+    fn prepare_for_results(&mut self, result_iterator: &dyn DataSourceBatchIterator);
     fn add_rows(&mut self, rows: &[Row]);
     fn close(&mut self);
 }

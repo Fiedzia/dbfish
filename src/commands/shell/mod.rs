@@ -218,7 +218,7 @@ pub fn shell (_args: &ApplicationArguments, shell_command: &ShellCommand) {
             }
         },
         #[cfg(feature = "use_postgres")]
-        SourceConfigCommand::Postgres(postgres_config_options) => {
+        SourceConfigCommand::Postgres(_postgres_config_options) => {
         }
     }
 }
