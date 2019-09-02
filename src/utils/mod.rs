@@ -21,3 +21,8 @@ pub fn truncate_text_with_note(text: String, truncate: Option<u64>) -> String {
 
     }
 }
+
+
+pub fn report_query_error(query: &str, error: &str) {
+    eprintln!("The following query have failed:\n\n{}\n\nwith error:\n\n{}", query, error)
+}

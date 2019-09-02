@@ -5,6 +5,7 @@ use sqlite;
 
 use crate::commands::{common::SqliteConfigOptions, export::SqliteSourceOptions};
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataSourceConnection, DataSourceBatchIterator};
+use crate::utils::report_query_error;
 
 pub trait GetSqliteConnectionParams {
     fn get_filename(&self) -> &Option<String>;
@@ -103,7 +104,13 @@ impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for Sql
             connection: & self.connection,
             count: None,
             done: false,
-            statement: self.connection.prepare(&query).unwrap(),
+            statement: match self.connection.prepare(&query) {
+                Ok(v) => v,
+                Err(e) => {
+                    report_query_error(&query, &format!("{:?}", e));
+                    std::process::exit(1);
+                }
+            },
             source_connection: &self,
         }
     }

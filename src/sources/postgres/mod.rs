@@ -6,6 +6,7 @@ use postgres::{self, Connection, TlsMode, types::Kind};
 use crate::commands::common::PostgresConfigOptions;
 use crate::commands::export::PostgresSourceOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataSourceConnection, DataSourceBatchIterator};
+use crate::utils::report_query_error;
 
 
 pub trait GetPostgresConnectionParams {
@@ -117,7 +118,13 @@ where 'c: 'i,
             }
         };
 
-        let results = connection.query(&query, &[]).unwrap();
+        let results = match connection.query(&query, &[]) {
+            Ok(r) => r,
+            Err(e) => {
+                report_query_error(&query, &format!("{:?}", e));
+                std::process::exit(1);
+            }
+        };
         PostgresSourceConnection {
             connection,
             source: &self,

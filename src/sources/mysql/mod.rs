@@ -10,6 +10,7 @@ use mysql::consts::ColumnFlags as MyColumnFlags;
 use crate::commands::common::MysqlConfigOptions;
 use crate::commands::export::MysqlSourceOptions;
 use crate::definitions::{ColumnType, Value, Row, ColumnInfo, DataSource, DataSourceConnection, DataSourceBatchIterator};
+use crate::utils::report_query_error;
 
 
 pub trait GetMysqlConnectionParams {
@@ -194,8 +195,13 @@ impl <'c, 'i>DataSourceConnection<'i, MysqlSourceBatchIterator<'c, 'i>> for Mysq
         } else {
             None
         };
-        let mysql_result = self.connection.prep_exec(query.clone(), ()).unwrap();
-
+        let mysql_result = match self.connection.prep_exec(query.clone(), ()) {
+            Ok(v) => v,
+            Err(e) => {
+                report_query_error(&query, &format!("{:?}", e));
+                std::process::exit(1);
+            }
+        };
 
         MysqlSourceBatchIterator {
             batch_size,
