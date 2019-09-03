@@ -103,7 +103,13 @@ where 'c: 'i,
         let connection =  establish_postgres_connection(&self.options);
         if !self.options.init.is_empty() {
             for sql in self.options.init.iter() {
-                connection.execute(sql, &[]).unwrap();
+                match connection.execute(sql, &[]) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        report_query_error(&sql, &format!("{:?}", e));
+                        std::process::exit(1);
+                    }
+                }
             }
         }
         let query = match &self.options.query {
