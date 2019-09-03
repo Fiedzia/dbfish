@@ -12,7 +12,7 @@ usage:
 ```bash
     dbfish export SOURCE [source options] DESTINATION [destination options]
     dbfish help
-    shell # jump to shell
+    dbfish shell [--client CLIENT] SOURCE # jump to shell, dbfish supports mysql, psql, python, litecli/mycli/pgcli, sqlite
     dbfish schema SOURCE [source options] # display database schema
     dbfish sources add | edit | remove # manage database credential
 ```
@@ -26,7 +26,7 @@ Sources:
 Destinations:
 
  * CSV
- * HTML (done nicely using bootstrap)
+ * HTML (done nicely using Bootstrap)
  * ODS (ODS spreadsheet)
  * SQLite file
  * text (classic table)
