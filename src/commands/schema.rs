@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use id_tree::{InsertBehavior, Node, NodeId, Tree};
 
@@ -32,11 +32,15 @@ pub struct SchemaCommand {
 #[derive(Clone, Debug)]
 pub struct DBItem {
     name: String,
+    description: Option<String>
 }
 
 impl DBItem {
     pub fn print(&self, indentation_level: usize) {
-        println!("{:indent$}{name}", "", indent=indentation_level * 4, name=self.name);
+        match &self.description {
+            None => println!("{:indent$}{name}", "", indent=indentation_level * 4, name=self.name),
+            Some(desc) => println!("{:indent$}{name} {desc}", "", indent=indentation_level * 4, name=self.name, desc=desc),
+        }
     }
 
     pub fn matches(&self, query: &str, is_regex: bool) -> bool {
@@ -162,22 +166,86 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
                     std::process::exit(1);
                 }
             };
-            /*let mut dbitems = DBItems(vec![]);
+            let mut dbitems = DBItems::new();
+            let root_node = dbitems.0.insert(
+                Node::new(
+                    DBItem{name: "".to_string(), description: None}
+                ),
+                InsertBehavior::AsRoot
+            ).unwrap();
+            let mut current_schema = None;
+            let mut current_table = None;
+
             for row in results {
                 let (schema_name, table_name, column_name, column_type):(String, String, String, String) = mysql::from_row(row.unwrap());
-                if dbitems.0.is_empty() {
-                    dbitems.0.push( DBItem {name: schema_name.clone(), items: vec![]} );
-                } else {
-                    if dbitems.0.last().unwrap().name != schema_name {
-                        dbitems.0.push( DBItem {name: schema_name.clone(), items: vec![]} );
+                let field_description = format!(
+                    "({})",
+                    column_type
+                );
+
+                match &current_schema {
+                    None => {
+                        current_schema = Some(
+                            dbitems.0.insert(
+                                Node::new(
+                                    DBItem{name: schema_name.to_string(), description: None}
+                                ),
+                                InsertBehavior::UnderNode(&root_node)
+                            ).unwrap()
+                        );
+                    },
+                    Some(node_id) => {
+                        if schema_name != dbitems.0.get(node_id).unwrap().data().name {
+                            current_table = None;
+                            current_schema = Some(
+                                dbitems.0.insert(
+                                    Node::new(
+                                        DBItem{name: schema_name.to_string(), description: None}
+                                    ),
+                                    InsertBehavior::UnderNode(&root_node)
+                                ).unwrap()
+                            );
+                        }
                     }
-                };
-                dbitems.0.last_mut().unwrap().items.push(DBItem { name: table_name.clone(), items: vec![]} );
+                }
+
+                match &current_table {
+                    None => {
+                        current_table = Some(
+                            dbitems.0.insert(
+                                Node::new(
+                                    DBItem{name: table_name.to_string(), description: None}
+                                ),
+                                InsertBehavior::UnderNode(current_schema.as_ref().unwrap())
+                            ).unwrap()
+                        );
+                    },
+                    Some(node_id) => {
+                        if table_name != dbitems.0.get(node_id).unwrap().data().name {
+                            current_table = Some(
+                                dbitems.0.insert(
+                                    Node::new(
+                                        DBItem{name: table_name.to_string(), description: None}
+                                    ),
+                                    InsertBehavior::UnderNode(current_schema.as_ref().unwrap())
+                                ).unwrap()
+                            );
+                        }
+                    }
+                }
+
+                dbitems.0.insert(
+                    Node::new(
+                        DBItem{name: column_name.to_string(), description: Some(field_description)}
+                    ),
+                    InsertBehavior::UnderNode(current_table.as_ref().unwrap())
+                ).unwrap();
+
             }
-            if let Some(q) = &schema_command.query {
-                dbitems = dbitems.subtree_matching_query(&q);
+            if let Some(query) = &schema_command.query {
+                dbitems = dbitems.subtree_matching_query(&query.to_lowercase(), schema_command.regex);
             }
-            dbitems.print();*/
+            dbitems.print();
         },
         #[cfg(feature = "use_sqlite")]
         SourceConfigCommand::Sqlite(sqlite_config_options) => {
@@ -185,7 +253,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
             let mut dbitems = DBItems::new();
             let root_node = dbitems.0.insert(
                 Node::new(
-                    DBItem{name: "".to_string()}
+                    DBItem{name: "".to_string(), description: None}
                 ),
                 InsertBehavior::AsRoot
             ).unwrap();
@@ -210,12 +278,27 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
                 |row| {
                     let table_name = row[0].1.unwrap();
                     let field_name = row[1].1.unwrap();
+                    let field_description = format!(
+                        "({}{}{})",
+                        row[2].1.unwrap(),
+                        if row[3].1.unwrap() == "0" {
+                            ""
+                        } else {
+                            " NOT NULL"
+                        },
+                        if row[5].1.unwrap() == "1" {
+                            " PRIMARY KEY"
+                        } else {
+                            ""
+                        }
+                        
+                    );
                     match &current_parent {
                         None => {
                             current_parent = Some(
                                 dbitems.0.insert(
                                     Node::new(
-                                        DBItem{name: table_name.to_string()}
+                                        DBItem{name: table_name.to_string(), description: None}
                                     ),
                                     InsertBehavior::UnderNode(&root_node)
                                 ).unwrap()
@@ -226,7 +309,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
                                 current_parent = Some(
                                     dbitems.0.insert(
                                         Node::new(
-                                            DBItem{name: table_name.to_string()}
+                                            DBItem{name: table_name.to_string(), description: None}
                                         ),
                                         InsertBehavior::UnderNode(&root_node)
                                     ).unwrap()
@@ -236,7 +319,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
                     }
                     dbitems.0.insert(
                         Node::new(
-                            DBItem{name: field_name.to_string()}
+                            DBItem{name: field_name.to_string(), description: Some(field_description)}
                         ),
                         InsertBehavior::UnderNode(current_parent.as_ref().unwrap())
                     ).unwrap();
