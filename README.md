@@ -96,8 +96,6 @@ TODO: (must-have before calling it usable)
  * kill most of .unwrap()
  * debug source and destination
  * tests
- * jump to database shell (native client, litecli/mycli/pgcli or python shell with connection set up)
- 
 
 
 TODO: (nice to have)
