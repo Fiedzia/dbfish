@@ -1,0 +1,43 @@
+├── Cargo.lock
+├── Cargo.toml
+├── files.txt    files overview
+├── LICENSE
+├── README.md
+└── src
+    ├── commands    structopt command definitions
+    │   ├── common.rs
+    │   ├── export.rs
+    │   ├── mod.rs
+    │   ├── schema.rs
+    │   ├── shell
+    │   │   ├── mod.rs
+    │   │   ├── mysql.py
+    │   │   ├── postgres.py
+    │   │   └── sqlite.py
+    │   └── sources.rs
+    ├── config.rs   # manage sources toml files
+    ├── definitions.rs # data sources/destinations common types and traits
+    ├── destinations  # data destinations
+    │   ├── csv.rs
+    │   ├── html
+    │   │   ├── html_prefix.html
+    │   │   ├── html_suffix.html
+    │   │   └── mod.rs
+    │   ├── json.rs
+    │   ├── mod.rs
+    │   ├── ods_xlsx.rs
+    │   ├── sqlite.rs
+    │   ├── text.rs
+    │   └── text_vertical.rs
+    ├── main.rs # main entry point
+    ├── sources # supported data sources
+    │   ├── mod.rs
+    │   ├── mysql
+    │   │   └── mod.rs
+    │   ├── postgres
+    │   │   └── mod.rs
+    │   └── sqlite
+    │       └── mod.rs
+    └── utils
+        ├── fileorstdout.rs # some stdout/stderr helpers
+        └── mod.rs # all kind of utility functions
