@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use default_editor;
 use regex::RegexBuilder;
 
@@ -44,8 +46,10 @@ pub fn sources_list(_args: &ApplicationArguments, _sources_command: &SourcesComm
             re.is_match(name)
         }).collect();
     }
+    let mut max_source_length = 0;
+    sources.iter().for_each(|src| max_source_length = max(src.0.len(),max_source_length));
     for source in sources {
-        println!("{}    {}", source.0, source.1.get_type_name());
+        println!("{:spacing$}{}", source.0, source.1.get_type_name(), spacing=max_source_length + 2);
     }
 }
 
