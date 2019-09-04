@@ -3,18 +3,51 @@
 Dbfish aims to be to your standard database tools what Fish is to Bash:
 provide more features out of the box, look better and be easier to use.
 
+Main features:
+
+* Export data to CSV, HTML, text, SQLite
+* Manage database credentials
+* Jump to database shell
+* Jump to python environment with connection being set up for you
+* display and search database schema with one command
+
+
 Right now it can export data from relational database to CSV/HTML/text/SQLite file, among others.
 I've created this because I was frustrated with usability and functionality of out-of-the box database tools.
 Seriously, psql and mysql clients should do all that long ago.
 
-usage:
+Usage:
 
 ```bash
+
     dbfish export SOURCE [source options] DESTINATION [destination options]
+    dbfish export mydata -q 'select * from sometable' html /tmp/output.html
+    dbfish export mydata -q 'select * from sometable' csv /tmp/output.csv
+
     dbfish help
+
     dbfish shell [--client CLIENT] SOURCE # jump to shell, dbfish supports mysql, psql, python, litecli/mycli/pgcli, sqlite
+    dbfish shell mydata # use default shell
+    dbfish shell -c mycli mydata # use mycli shell
+    dbfish shell -c python mydata # use ipython as shell
+
+        Variables and functions:
+            conn: database connection
+            cursor: connection cursor
+            get_conn(): obtain database connection
+            msg: function printing this message
+        
+        Python 3.6.7 (default, Oct 22 2018, 11:32:17) 
+        Type 'copyright', 'credits' or 'license' for more information
+        IPython 7.4.0 -- An enhanced Interactive Python. Type '?' for help.
+        
+        In [1]: conn.execute('select * from sometable') 
+
     dbfish schema SOURCE [source options] # display database schema
-    dbfish sources add | edit | remove # manage database credential
+    dbfish schema -q user SOURCE [source options] # display all parts of database schema that contain phrase "user"
+    dbfish schema -r -q '201[89]' SOURCE [source options] # display all parts of database schema that contain 2018 or 2019
+
+    dbfish sources add | edit | list | remove # manage database credential
 ```
 
 Sources:
