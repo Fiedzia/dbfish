@@ -145,8 +145,11 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
 
             let query = format!("
                 select
-                    t.table_schema, t.table_name,
-                    c.column_name, c.column_type
+                    t.table_schema,
+                    t.table_name,
+                    c.column_name,
+                    c.column_type,
+                    c.is_nullable
                 from
                     information_schema.tables t
                 left join
@@ -177,10 +180,14 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
             let mut current_table = None;
 
             for row in results {
-                let (schema_name, table_name, column_name, column_type):(String, String, String, String) = mysql::from_row(row.unwrap());
+                let (schema_name, table_name, column_name, column_type, is_nullable):(String, String, String, String, String) = mysql::from_row(row.unwrap());
                 let field_description = format!(
-                    "({})",
-                    column_type
+                    "({}{})",
+                    column_type,
+                    match is_nullable.as_ref() {
+                        "NO" => " NOT NULL",
+                        _ => ""
+                    }
                 );
 
                 match &current_schema {
