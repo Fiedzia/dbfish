@@ -211,7 +211,7 @@ pub fn postgres_python_client(postgres_config_options: &commands::common::Postgr
 
 #[cfg(feature = "use_postgres")]
 pub fn psql_client(postgres_config_options: &commands::common::PostgresConfigOptions) {
-    let mut cmd = Command::new("pgcli");
+    let mut cmd = Command::new("psql");
     if let Some(hostname) =  &postgres_config_options.host {
         cmd.arg("-h").arg(hostname);
     }
@@ -227,7 +227,7 @@ pub fn psql_client(postgres_config_options: &commands::common::PostgresConfigOpt
 
     cmd
         .status()
-        .expect(&format!("failed to execute pgcli ({:?})", cmd));
+        .expect(&format!("failed to execute psql ({:?})", cmd));
 }
 
 #[cfg(feature = "use_sqlite")]
