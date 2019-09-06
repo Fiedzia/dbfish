@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::Read;
 
 use postgres::{self, Connection, TlsMode, types::Kind};
+use urlencoding;
 
 use crate::commands::common::PostgresConfigOptions;
 use crate::commands::export::PostgresSourceOptions;
@@ -41,14 +42,25 @@ impl GetPostgresConnectionParams for PostgresConfigOptions {
 
 
 pub fn get_postgres_url(postgres_options: &dyn GetPostgresConnectionParams) -> String {
-    //TODO: encode parameter values for url
     format!(
-        "postgres://{user}{password}@{hostname}{port}{database}",
+        "postgres://{user}{password}{hostname}{port}{database}",
         user=match &postgres_options.get_username() { None => "", Some(v) => v},
-        hostname=match &postgres_options.get_hostname() { None => "", Some(v) => v},
-        password=match &postgres_options.get_password() {None => "".to_string(), Some(p) => format!(":{}", p)},
-        port=match &postgres_options.get_port() { None => "".to_string(), Some(p) => format!(":{}", p)},
-        database=match &postgres_options.get_database() { None => "".to_string(), Some(d) => format!("/{}", d)},
+        hostname=match &postgres_options.get_hostname() {
+            None => "".to_string(),
+            Some(v) => format!("@{}", urlencoding::encode(v))
+        },
+        password=match &postgres_options.get_password() {
+            None => "".to_string(),
+            Some(p) => format!(":{}", urlencoding::encode(p))
+        },
+        port=match &postgres_options.get_port() {
+            None => "".to_string(),
+            Some(p) => format!(":{}", p)
+        },
+        database=match &postgres_options.get_database() {
+            None => "".to_string(),
+            Some(d) => format!("/{}", urlencoding::encode(d))
+        },
     )
 }
 

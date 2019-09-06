@@ -340,7 +340,135 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
         },
         #[cfg(feature = "use_postgres")]
         SourceConfigCommand::Postgres(postgres_config_options) => {
-          let _conn = establish_postgres_connection(postgres_config_options);
+          let conn = establish_postgres_connection(postgres_config_options);
+          let mut where_parts = vec!["t.table_schema='public'"];
+          let mut params:Vec<&dyn postgres::types::ToSql> = vec![];
+          if let Some(dbname) = &postgres_config_options.database {
+              where_parts.push("t.table_catalog=$1");
+              //params.push(&dbname.as_str() as &dyn postgres::types::ToSql);
+              params.push(dbname as &dyn postgres::types::ToSql);
+          }
+          let where_clause = match where_parts.is_empty() {
+              true => "".to_string(),
+              false => format!(" where {}", where_parts.iter().map(|v| format!("({})", v) ).collect::<Vec<String>>().join(" AND "))
+          };
+
+          let query = format!("
+              select
+                  t.table_catalog,
+                  t.table_name,
+                  c.column_name,
+                  c.data_type,
+                  c.is_nullable
+              from
+                  information_schema.tables t
+              left join
+                  information_schema.columns c
+              on
+                  t.table_schema=c.table_schema
+                  and t.table_name=c.table_name
+              {}
+              order by t.table_schema, t.table_name, c.column_name
+              ", where_clause);
+          let result = &conn.query(&query, params.as_slice());
+          let results = match result {
+              Ok(v) => v,
+              Err(e) => {
+                  report_query_error(&query, &format!("{:?}", e));
+                  std::process::exit(1);
+              }
+          };
+          let mut dbitems = DBItems::new();
+          let root_node = dbitems.0.insert(
+              Node::new(
+                  DBItem{name: "".to_string(), description: None}
+              ),
+              InsertBehavior::AsRoot
+          ).unwrap();
+          let mut current_schema = None;
+          let mut current_table = None;
+
+          for row in results {
+              let schema_name:String = row.get(0);
+              let table_name:String  = row.get(1);
+              let column_name:String = row.get(2);
+              let column_type:String = row.get(3);
+              let is_nullable:String = row.get(4);
+              let field_description = format!(
+                  "({}{})",
+                  column_type,
+                  match is_nullable.as_ref() {
+                      "NO" => " NOT NULL",
+                      _ => ""
+                  }
+              );
+
+              match &current_schema {
+                  None => {
+                      current_schema = Some(
+                          dbitems.0.insert(
+                              Node::new(
+                                  DBItem{name: schema_name.to_string(), description: None}
+                              ),
+                              InsertBehavior::UnderNode(&root_node)
+                          ).unwrap()
+                      );
+                  },
+                  Some(node_id) => {
+                      if schema_name != dbitems.0.get(node_id).unwrap().data().name {
+                          current_table = None;
+                          current_schema = Some(
+                              dbitems.0.insert(
+                                  Node::new(
+                                      DBItem{name: schema_name.to_string(), description: None}
+                                  ),
+                                  InsertBehavior::UnderNode(&root_node)
+                              ).unwrap()
+                          );
+                      }
+                  }
+              }
+
+              match &current_table {
+                  None => {
+                      current_table = Some(
+                          dbitems.0.insert(
+                              Node::new(
+                                  DBItem{name: table_name.to_string(), description: None}
+                              ),
+                              InsertBehavior::UnderNode(current_schema.as_ref().unwrap())
+                          ).unwrap()
+                      );
+                  },
+                  Some(node_id) => {
+                      if table_name != dbitems.0.get(node_id).unwrap().data().name {
+                          current_table = Some(
+                              dbitems.0.insert(
+                                  Node::new(
+                                      DBItem{name: table_name.to_string(), description: None}
+                                  ),
+                                  InsertBehavior::UnderNode(current_schema.as_ref().unwrap())
+                              ).unwrap()
+                          );
+                      }
+                  }
+              }
+
+              dbitems.0.insert(
+                  Node::new(
+                      DBItem{name: column_name.to_string(), description: Some(field_description)}
+                  ),
+                  InsertBehavior::UnderNode(current_table.as_ref().unwrap())
+              ).unwrap();
+
+          }
+          if let Some(query) = &schema_command.query {
+              dbitems = dbitems.subtree_matching_query(&query.to_lowercase(), schema_command.regex);
+          }
+          dbitems.print();
+
+
+
         }
     }
 }
