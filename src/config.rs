@@ -56,7 +56,7 @@ pub fn get_sources_list() -> Vec<(String, SourceConfigCommand)> {
     } else {
             vec![]
     };
-    entries.sort_by(|a, b| a.0.cmp(&b.0) );
+    entries.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()) );
     entries
 }
 
