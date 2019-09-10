@@ -65,6 +65,7 @@ Sources:
 Destinations:
 
  * CSV
+ * JSON
  * HTML (done nicely using Bootstrap)
  * ODS (ODS spreadsheet)
  * SQLite file
