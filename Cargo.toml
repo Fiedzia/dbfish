@@ -3,6 +3,10 @@ authors = ["Maciej Dziardziel <fiedzia@gmail.com>"]
 edition = "2018"
 name = "dbfish"
 version = "0.1.0"
+homepage = "https://github.com/Fiedzia/dbfish"
+repository = "https://github.com/Fiedzia/dbfish"
+description = "Better database CLI tools. Export data and manage connections easier and faster."
+license = "MIT"
 
 [dependencies]
 atty = "0.2.11"
