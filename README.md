@@ -5,7 +5,7 @@ provide more features out of the box, look better and be easier to use.
 
 Main features:
 
-* Export data to CSV, HTML, text, SQLite
+* Export data to CSV, HTML, JSON, text, SQLite
 * Manage database credentials
 * Jump to database shell
 * Jump to python environment with connection being set up for you
@@ -28,6 +28,7 @@ Usage:
     dbfish export SOURCE [source options] DESTINATION [destination options]
     dbfish export mydata -q 'select * from sometable' html /tmp/output.html
     dbfish export mydata -q 'select * from sometable' csv /tmp/output.csv
+    dbfish export mydata -q 'select * from sometable' json /tmp/output.json
 
     dbfish help
 
