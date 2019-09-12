@@ -109,7 +109,9 @@ TODO: (nice to have)
  * compress to zip/tgz (useful for csv/text/html)
  * performance (not a priority, but nice to have)
  * have a concept of source providers to integrate with frameworks
-
+ * add command for user management
+ * add command to display database/table sizes
+ * add command to show currently running queries
 
 Design principles:
 
