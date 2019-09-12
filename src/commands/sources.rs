@@ -53,12 +53,31 @@ pub fn sources_list(_args: &ApplicationArguments, _sources_command: &SourcesComm
     }
 }
 
+pub fn sources_show(_args: &ApplicationArguments, _sources_command: &SourcesCommand, show_options: &SourcesShowOptions) {
+
+    let mut sources = config::get_sources_list();
+    if let Some(ref pattern) = show_options.pattern {
+        let re = RegexBuilder::new(pattern.as_ref()).case_insensitive(true).build().unwrap();
+        sources = sources.into_iter().filter(|(name, _src)|{
+            re.is_match(name)
+        }).collect();
+    }
+    let mut max_source_length = 0;
+    sources.iter().for_each(|src| max_source_length = max(src.0.len(),max_source_length));
+    for (name, source) in sources {
+        println!("{}\n{}", name, source.to_full_toml())
+    }
+}
+
+
+
 pub fn sources(args: &ApplicationArguments, sources_command: &SourcesCommand) {
     match &sources_command.command {
         SourcesSubCommand::Add(add_options) => sources_add(&args, &sources_command, &add_options),
         SourcesSubCommand::Delete(delete_options) => sources_delete(&args, &sources_command, &delete_options),
         SourcesSubCommand::Edit(edit_options) => sources_edit(&args, &sources_command, &edit_options),
         SourcesSubCommand::List(list_options) => sources_list(&args, &sources_command, &list_options),
+        SourcesSubCommand::Show(show_options) => sources_show(&args, &sources_command, &show_options),
     };
 }
 
@@ -83,6 +102,9 @@ pub enum SourcesSubCommand {
     #[structopt(name = "list", about="list sources")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     List(SourcesListOptions),
+    #[structopt(name = "show", about="show source details")]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    Show(SourcesShowOptions),
 }
 
 #[derive(Clone, Debug, StructOpt)]
@@ -107,6 +129,12 @@ pub struct SourcesEditOptions {
 
 #[derive(Clone, Debug, StructOpt)]
 pub struct SourcesListOptions {
+    #[structopt(help = "pattern to search for (using regular expression)")]
+    pub pattern: Option<String>,
+}
+
+#[derive(Clone, Debug, StructOpt)]
+pub struct SourcesShowOptions {
     #[structopt(help = "pattern to search for (using regular expression)")]
     pub pattern: Option<String>,
 }

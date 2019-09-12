@@ -77,12 +77,7 @@ pub fn save_source_config(name: &str, source: &SourceConfigCommand) {
         .join("sources")
         .join(name);
 
-    let type_name = source.get_type_name();
-    let mut toml_table = toml::value::Table::new();
-    toml_table.insert("type".to_string(), toml::Value::String(type_name.clone()));
-    toml_table.insert(type_name, source.to_toml());
-
-    let toml_content = toml::Value::Table(toml_table);
+    let toml_content =  source.to_full_toml();
     let mut file = std::fs::File::create(filename).unwrap();
     file.write_all(toml::to_string(&toml_content).unwrap().as_bytes()).unwrap();
     file.flush().unwrap();

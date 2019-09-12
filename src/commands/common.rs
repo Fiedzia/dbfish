@@ -155,6 +155,17 @@ impl SourceConfigCommand {
         }
     }
 
+
+    pub fn to_full_toml(&self) -> toml::Value {
+        let type_name = self.get_type_name();
+        let mut toml_table = toml::value::Table::new();
+        toml_table.insert("type".to_string(), toml::Value::String(type_name.clone()));
+        toml_table.insert(type_name, self.to_toml());
+
+       let toml_content = toml::Value::Table(toml_table);
+       toml_content
+    }
+
     pub fn from_toml(toml_value: &toml::Value) -> Self {
         let toml_table = toml_value.as_table().unwrap();
         let data_type = toml_table.get("type").unwrap().as_str().unwrap();
