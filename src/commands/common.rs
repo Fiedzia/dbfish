@@ -162,8 +162,7 @@ impl SourceConfigCommand {
         toml_table.insert("type".to_string(), toml::Value::String(type_name.clone()));
         toml_table.insert(type_name, self.to_toml());
 
-       let toml_content = toml::Value::Table(toml_table);
-       toml_content
+       toml::Value::Table(toml_table)
     }
 
     pub fn from_toml(toml_value: &toml::Value) -> Self {

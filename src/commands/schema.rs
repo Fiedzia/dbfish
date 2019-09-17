@@ -69,7 +69,7 @@ impl DBItems {
             Some(root_node_id) => {
                 for node_id in self.0.traverse_pre_order_ids(&root_node_id).unwrap() {
                     let node = self.0.get(&node_id).unwrap();
-                    if !node.parent().is_none() {
+                    if node.parent().is_some() {
                         let indentation_level = self.0.ancestors(&node_id).unwrap().count() - 1;
                         node.data().print(indentation_level);
                     }
@@ -89,7 +89,7 @@ impl DBItems {
                         let mut ancestor_ids:Vec<NodeId> = self.0
                             .ancestor_ids(&node_id)
                             .unwrap()
-                            .map(|v| v.clone())
+                            .cloned()
                             .collect();
                         ancestor_ids.reverse();
                         for node_id in ancestor_ids {

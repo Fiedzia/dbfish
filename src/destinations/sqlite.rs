@@ -94,7 +94,7 @@ impl DataDestination for SqliteDestination
                     Value::Bool(value) => data.push(sqlite::Value::Integer(i64::from(*value))),
                     Value::String(value) => data.push(sqlite::Value::String(truncate_text_with_note(value.to_string(), self.truncate))),
                     Value::F64(value) => data.push(sqlite::Value::Float(*value)),
-                    Value::F32(value) => data.push(sqlite::Value::Float(*value as f64)),
+                    Value::F32(value) => data.push(sqlite::Value::Float(f64::from(*value))),
                     Value::Bytes(value) => data.push(sqlite::Value::Binary(value.clone())),
                     _ => panic!(format!("sqlite: unsupported type: {:?}", col))
                 }
