@@ -9,7 +9,7 @@ use termcolor;
 use crate::commands::{ApplicationArguments, export::TextDestinationOptions, UseColor};
 use crate::definitions::{Value, Row, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
-use crate::utils::truncate_text_with_note;
+use crate::utils::{escape_binary_data, truncate_text_with_note};
 
 pub struct TextDestination {
     truncate: Option<u64>,
@@ -84,7 +84,7 @@ impl DataDestination for TextDestination {
                     Value::F32(value) => value.to_string(),
                     Value::String(value) => truncate_text_with_note(value.to_string(), self.truncate),
                     Value::Bool(value) => value.to_string(),
-                    //Value::Bytes(value) => value.to_string(),
+                    Value::Bytes(value) => escape_binary_data(&value),
                     Value::None => "".to_string(),
                     Value::Timestamp(value) => value.to_string(),
                     Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),

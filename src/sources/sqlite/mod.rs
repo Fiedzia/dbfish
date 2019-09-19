@@ -133,8 +133,8 @@ impl <'c, 'i>DataSourceBatchIterator for SqliteSourceBatchIterator<'c, 'i>
                     sqlite::Type::Binary => ColumnType::Bytes,
                     sqlite::Type::Float => ColumnType::F64,
                     sqlite::Type::Integer => ColumnType::I64,
-                    sqlite::Type::String => ColumnType::Bytes,
-                    sqlite::Type::Null   => ColumnType::None,
+                    sqlite::Type::String => ColumnType::String,
+                    sqlite::Type::Null   => ColumnType::Bytes,
                 },
             }
         }).collect();
@@ -161,7 +161,10 @@ impl <'c, 'i>DataSourceBatchIterator for SqliteSourceBatchIterator<'c, 'i>
                         let value: sqlite::Value = self.statement.read(idx).unwrap();
                         match value {
                             sqlite::Value::String(s) => Value::String(s),
-                            sqlite::Value::Binary(b) => Value::Bytes(b),
+                            sqlite::Value::Binary(b) => match String::from_utf8(b.clone()) {
+                                Ok(s) => Value::String(s),
+                                Err(_) => Value::Bytes(b)
+                            },
                             sqlite::Value::Float(f) => Value::F64(f),
                             sqlite::Value::Integer(i) => Value::I64(i),
                             sqlite::Value::Null => Value::None,

@@ -90,13 +90,13 @@ Fancy features:
  * truncate long texts
  * show database schema ( ```dbfish schema mydata``` )
  * can be compiled to a single binary with no dependencies (statically linked with musl)
- * use python or mycli as shell
+ * use python or mycli/litecli/pgcli as shell
 
 TODO: (must-have before calling it usable)
 
  * helpful error messages
  * kill most of .unwrap()
- * debug source and destination
+ * debug source
  * tests
 
 

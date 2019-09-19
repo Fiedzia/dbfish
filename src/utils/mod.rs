@@ -26,3 +26,29 @@ pub fn truncate_text_with_note(text: String, truncate: Option<u64>) -> String {
 pub fn report_query_error(query: &str, error: &str) {
     eprintln!("The following query have failed:\n\n{}\n\nwith error:\n\n{}", query, error)
 }
+
+
+///use std::ascii::escape_default to create printable string from binary data
+///it keeps printable asciii characters and escapes non-printable ones
+pub fn escape_binary_data(value: &[u8]) -> String {
+    let mut result: String = String::with_capacity(value.len());
+    for v in value {
+        for ch in std::ascii::escape_default(*v) {
+            result.push(ch as char);
+        }
+    }
+    result
+}
+
+
+#[cfg(test)]
+mod tests {
+
+    use super::escape_binary_data;
+
+    #[test]
+    fn test_escape_binary_data() {
+        assert_eq!(escape_binary_data(&vec!['a' as u8, 0x0, 'b' as u8, 0x9 ]), "a\\x00b\\t");
+    }
+
+}

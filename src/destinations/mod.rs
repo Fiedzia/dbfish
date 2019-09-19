@@ -2,6 +2,7 @@ use crate::definitions::{DataDestination, DataSourceBatchIterator, Row};
 
 #[cfg(feature = "use_csv")]
 pub mod csv;
+pub mod debug;
 #[cfg(feature = "use_html")]
 pub mod html;
 #[cfg(feature = "use_json")]
@@ -19,6 +20,7 @@ pub mod text_vertical;
 pub enum Destination {
     #[cfg(feature = "use_csv")]
     CSV(csv::CSVDestination),
+    Debug(debug::DebugDestination),
     #[cfg(feature = "use_html")]
     HTML(html::HTMLDestination),
     #[cfg(feature = "use_json")]
@@ -39,6 +41,7 @@ impl DataDestination for Destination {
         match self {
             #[cfg(feature = "use_csv")]
             Destination::CSV(csv_destination) => csv_destination.prepare(),
+            Destination::Debug(debug_destination) => debug_destination.prepare(),
             #[cfg(feature = "use_html")]
             Destination::HTML(html_destination) => html_destination.prepare(),
             #[cfg(feature = "use_json")]
@@ -60,6 +63,7 @@ impl DataDestination for Destination {
         match self {
             #[cfg(feature = "use_csv")]
             Destination::CSV(csv_destination) => csv_destination.prepare_for_results(result_iterator),
+            Destination::Debug(debug_destination) => debug_destination.prepare_for_results(result_iterator),
             #[cfg(feature = "use_html")]
             Destination::HTML(html_destination) => html_destination.prepare_for_results(result_iterator),
             #[cfg(feature = "use_json")]
@@ -79,6 +83,7 @@ impl DataDestination for Destination {
         match self {
             #[cfg(feature = "use_csv")]
             Destination::CSV(csv_destination) => csv_destination.add_rows(rows),
+            Destination::Debug(debug_destination) => debug_destination.add_rows(rows),
             #[cfg(feature = "use_html")]
             Destination::HTML(html_destination) => html_destination.add_rows(rows),
             #[cfg(feature = "use_json")]
@@ -98,6 +103,7 @@ impl DataDestination for Destination {
         match self {
             #[cfg(feature = "use_csv")]
             Destination::CSV(csv_destination) => csv_destination.close(),
+            Destination::Debug(debug_destination) => debug_destination.close(),
             #[cfg(feature = "use_html")]
             Destination::HTML(html_destination) => html_destination.close(),
             #[cfg(feature = "use_json")]

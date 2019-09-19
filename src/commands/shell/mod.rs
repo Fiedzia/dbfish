@@ -6,9 +6,12 @@ use crate::commands;
 use crate::commands::{ApplicationArguments};
 use crate::commands::common::{SourceConfigCommandWrapper, SourceConfigCommand};
 
+static KNOWN_SHELLS:[&str; 8] = ["default", "python", "litecli", "sqlite", "mycli", "mysql", "pgcli", "psql"];
+
+
 #[derive(StructOpt)]
 pub struct ShellCommand {
-    #[structopt(short = "c", long = "client", help = "select shell (client)", default_value="default")]
+    #[structopt(short = "c", long = "client", help = "select shell (client)", default_value="default",  possible_values = &KNOWN_SHELLS)]
     pub client: String,
     #[structopt(subcommand)]
     pub source: SourceConfigCommandWrapper,
@@ -288,7 +291,7 @@ pub fn shell (_args: &ApplicationArguments, shell_command: &ShellCommand) {
                 "default" | "mysql" => mysql_client(&mysql_config_options),
                 "python" => mysql_python_client(&mysql_config_options),
                 _ =>  {
-                    eprintln!("unknown client: {}", shell_command.client);
+                    eprintln!("client unknown or unsuitable for given source: {}", shell_command.client);
                     std::process::exit(1);
                 }
             }
@@ -300,7 +303,7 @@ pub fn shell (_args: &ApplicationArguments, shell_command: &ShellCommand) {
                 "default" | "sqlite" => sqlite_client(&sqlite_config_options),
                 "python" => sqlite_python_client(&sqlite_config_options),
                 _ =>  {
-                    eprintln!("unknown client: {}", shell_command.client);
+                    eprintln!("client unknown or unsuitable for given source: {}", shell_command.client);
                     std::process::exit(1);
                 }
             }
@@ -312,7 +315,7 @@ pub fn shell (_args: &ApplicationArguments, shell_command: &ShellCommand) {
                 "default" | "psql" => psql_client(&postgres_config_options),
                 "python" => postgres_python_client(&postgres_config_options),
                 _ =>  {
-                    eprintln!("unknown client: {}", shell_command.client);
+                    eprintln!("client unknown or unsuitable for given source: {}", shell_command.client);
                     std::process::exit(1);
                 }
             }

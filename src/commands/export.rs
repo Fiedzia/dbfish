@@ -20,6 +20,7 @@ use crate::destinations::ods_xlsx::{SpreadSheetDestination, SpreadSheetFormat};
 use crate::{commands::common::PostgresConfigOptions, sources::postgres::PostgresSource};
 #[cfg(feature = "use_csv")]
 use crate::destinations::csv::CSVDestination;
+use crate::destinations::debug::DebugDestination;
 #[cfg(feature = "use_html")]
 use crate::destinations::html::HTMLDestination;
 #[cfg(feature = "use_json")]
@@ -43,6 +44,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
 
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Destination::CSV(CSVDestination::init(&csv_options)),
+                DestinationCommand::Debug(debug_options) => Destination::Debug(DebugDestination::init(&args, &debug_options)),
                 #[cfg(feature = "use_html")]
                 DestinationCommand::HTML(html_options) => Destination::HTML(HTMLDestination::init(&html_options)),
                 #[cfg(feature = "use_json")]
@@ -68,6 +70,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             let destination: Destination = match &postgres_options.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Destination::CSV(CSVDestination::init(&csv_options)),
+                DestinationCommand::Debug(debug_options) => Destination::Debug(DebugDestination::init(&args, &debug_options)),
                 #[cfg(feature = "use_html")]
                 DestinationCommand::HTML(html_options) => Destination::HTML(HTMLDestination::init(&html_options)),
                 #[cfg(feature = "use_json")]
@@ -91,6 +94,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             let destination: Destination = match &sqlite_options.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Destination::CSV(CSVDestination::init(&csv_options)),
+                DestinationCommand::Debug(debug_options) => Destination::Debug(DebugDestination::init(&args, &debug_options)),
                 #[cfg(feature = "use_html")]
                 DestinationCommand::HTML(html_options) => Destination::HTML(HTMLDestination::init(&html_options)),
                 #[cfg(feature = "use_json")]
@@ -322,6 +326,9 @@ pub enum DestinationCommand {
     #[structopt(name = "json", about="JSON")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     JSON(JSONDestinationOptions),
+    #[structopt(name = "debug", about="Debug output")]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    Debug(DebugDestinationOptions),
 }
 
 
@@ -340,6 +347,14 @@ pub struct SqliteDestinationOptions {
 #[derive(Clone, Debug, StructOpt)]
 pub struct CSVDestinationOptions {
     #[structopt(help = "csv filename. Use '-' for stdout")]
+    pub filename: String,
+    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    pub truncate: Option<u64>,
+}
+
+#[derive(Clone, Debug, StructOpt)]
+pub struct DebugDestinationOptions {
+    #[structopt(help = "output filename")]
     pub filename: String,
     #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,

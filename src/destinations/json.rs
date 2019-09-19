@@ -7,7 +7,7 @@ use json_color;
 use crate::commands::{ApplicationArguments, export::JSONDestinationOptions, UseColor};
 use crate::definitions::{Value, Row, DataSourceBatchIterator, DataDestination};
 use crate::utils::fileorstdout::FileOrStdout;
-use crate::utils::truncate_text_with_note;
+use crate::utils::{escape_binary_data, truncate_text_with_note};
 
 pub struct JSONDestination {
     writer: FileOrStdout,
@@ -60,7 +60,7 @@ impl JSONDestination
                     Value::F32(value) => json::JsonValue::Number(json::number::Number::from(*value)),
                     Value::String(value) => json::JsonValue::String(truncate_text_with_note(value.to_string(), self.truncate)),
                     Value::Bool(value) => json::JsonValue::Boolean(*value),
-                    //Value::Bytes(value) => value.to_string(),
+                    Value::Bytes(value) =>  json::JsonValue::String(escape_binary_data(value)),
                     Value::None => json::JsonValue::Null,
                     Value::Timestamp(value) => json::JsonValue::Number(json::number::Number::from(*value)),
                     Value::Date(date) => json::JsonValue::String(format!("{}", date.format("%Y-%m-%d"))),

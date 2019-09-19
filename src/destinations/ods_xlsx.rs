@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::commands::export::SpreadSheetDestinationOptions;
 use crate::definitions::{Value, Row, DataSourceBatchIterator, DataDestination};
-use crate::utils::truncate_text_with_note;
+use crate::utils::{escape_binary_data, truncate_text_with_note};
 
 
 pub enum SpreadSheetFormat {
@@ -36,7 +36,7 @@ pub fn value_to_cell(value: &Value, truncate: Option<u64>) -> Cell {
         Value::F32(value) => Cell::float(f64::from(*value)),
         Value::String(value) => Cell::str(truncate_text_with_note(value.to_string(), truncate)),
         Value::Bool(value) => Cell::str(value.to_string()),
-        //Value::Bytes(value) => value.to_string(),
+        Value::Bytes(value) => Cell::str(escape_binary_data(&value)),
         Value::None => Cell::str("".to_string()),
         Value::Timestamp(value) => Cell::str(value.to_string()),
         Value::Date(date) => Cell::date_with_style(format!("{}", date.format("%Y-%m-%d")), Style::new("YYYY/MM/DD")),
