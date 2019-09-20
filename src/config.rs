@@ -11,12 +11,26 @@ use crate::commands::common::SourceConfigCommand;
 
 lazy_static!{
     pub static ref USER_DEFINED_SOURCES: HashMap<String, SourceConfigCommand> = {
-        let commands = get_sources_list();
+        let sources = get_sources_list();
         let mut hm = HashMap::new();
-        for (k, v) in commands {
+        for (k, v) in sources {
             hm.insert(k, v);
         };
         hm
+    };
+
+    pub static ref USER_DEFINED_SOURCES_NAMES: String = {
+        let mut s = String::new();
+        let mut sources: Vec<String> = USER_DEFINED_SOURCES.keys().cloned().collect();
+        sources.sort();
+        for (idx, key) in sources.iter().enumerate() {
+            s.push_str(key);
+            s.push(' ');
+            if idx >= 4 && idx % 4 == 0 {
+                s.push('\n');
+            }
+        };
+        s
     };
 }
 
