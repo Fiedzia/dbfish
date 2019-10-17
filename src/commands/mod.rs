@@ -2,6 +2,7 @@ use structopt;
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 
+use crate::commands::common::SourceConfigCommand;
 use crate::config;
 
 #[cfg(feature = "use_mysql")]
@@ -71,6 +72,21 @@ pub enum Command {
     #[structopt(name = ":schema", about="show source schema", rename_all = "verbatim")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Schema(schema::SchemaCommand),*/
+
+    #[cfg(feature = "use_mysql")]
+    #[structopt(name = "mysql", about="mysql")]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    Mysql(export::MysqlSourceOptions),
+    #[cfg(feature = "use_postgres")]
+    #[structopt(name = "postgres", about="postgres")]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    Postgres(export::PostgresSourceOptions),
+    #[cfg(feature = "use_sqlite")]
+    #[structopt(name = "sqlite", about="sqlite")]
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    Sqlite(export::SqliteSourceOptions),
+
+
     #[structopt(name = ":sources", about="manage data sources", rename_all = "verbatim")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sources(sources::SourcesCommand),
@@ -134,7 +150,57 @@ impl CommandWrapper {
 
         let result = Command::from_subcommand(sub);
         if result.is_none() {
-            None
+
+            if let (source_name, Some(matches)) = sub {
+                match config::USER_DEFINED_SOURCES.get(source_name) {
+                    None => None,
+                    Some(source) => match source {
+                        #[cfg(feature = "use_mysql")]
+                        SourceConfigCommand::Mysql(mysql_config_options) => {
+
+                            let mut mysql_options = <export::MysqlSourceOptions as ::structopt::StructOpt>
+                                ::from_clap(matches);
+                            mysql_options.update_from_config_options(mysql_config_options);
+
+                            Some(
+                                CommandWrapper(
+                                    Command::Mysql(mysql_options)
+                                )
+                            )
+                        },
+                        #[cfg(feature = "use_postgres")]
+                        SourceConfigCommand::Postgres(postgres_config_options) => {
+
+                            let mut postgres_options = <export::PostgresSourceOptions as ::structopt::StructOpt>
+                                ::from_clap(matches);
+                            postgres_options.update_from_config_options(postgres_config_options);
+
+                            Some(
+                                CommandWrapper(
+                                    Command::Postgres(postgres_options)
+                                )
+                            )
+                        },
+                        #[cfg(feature = "use_sqlite")]
+                        SourceConfigCommand::Sqlite(sqlite_config_options) => {
+
+                            let mut sqlite_options = <export::SqliteSourceOptions as ::structopt::StructOpt>
+                                ::from_clap(matches);
+                            sqlite_options.update_from_config_options(sqlite_config_options);
+
+                            Some(
+                                CommandWrapper(
+                                    Command::Sqlite(sqlite_options)
+                                )
+                            )
+                        },
+                    }
+                }
+            } else {
+                None
+            }
+
+
         } else {
             result.map(CommandWrapper)
         }
