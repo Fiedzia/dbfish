@@ -28,6 +28,7 @@ use crate::destinations::text_vertical::TextVerticalDestination;
 
 
 pub mod common;
+pub mod data_source;
 pub mod export;
 pub mod schema;
 pub mod shell;
@@ -61,7 +62,10 @@ pub struct ApplicationArguments {
 }
 
 
-#[derive(StructOpt)]
+
+
+
+#[derive(Debug, StructOpt)]
 pub enum Command {
     /*#[structopt(name = ":export", about="export data", rename_all = "verbatim")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
@@ -87,12 +91,15 @@ pub enum Command {
     Sqlite(export::SqliteSourceOptions),
 
 
+    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    DataSource(data_source::DataSourceCommand),
+
     #[structopt(name = ":sources", about="manage data sources", rename_all = "verbatim")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sources(sources::SourcesCommand),
 }
 
-
+#[derive(Debug)]
 pub struct CommandWrapper (pub Command);
 
 impl CommandWrapper {
@@ -114,7 +121,6 @@ impl CommandWrapper {
                         let subcmd = export::MysqlSourceOptions::augment_clap(
                             structopt::clap::SubCommand::with_name(&source_name)
                                 .setting(structopt::clap::AppSettings::ColoredHelp)
-                                //.setting(structopt::clap::AppSettings::Hidden)
                         );
                         app = app.subcommand(subcmd);
                     },
@@ -123,16 +129,14 @@ impl CommandWrapper {
                         let subcmd = export::PostgresSourceOptions::augment_clap(
                             structopt::clap::SubCommand::with_name(&source_name)
                                 .setting(structopt::clap::AppSettings::ColoredHelp)
-                                //.setting(structopt::clap::AppSettings::Hidden)
                         );
                         app = app.subcommand(subcmd);
                     },
                     #[cfg(feature = "use_sqlite")]
                     "sqlite" => {
-                        let subcmd = export::SqliteSourceOptions::augment_clap(
+                        let subcmd = data_source::DataSourceCommand::augment_clap(
                             structopt::clap::SubCommand::with_name(&source_name)
                                 .setting(structopt::clap::AppSettings::ColoredHelp)
-                                //.setting(structopt::clap::AppSettings::Hidden)
                         );
                         app = app.subcommand(subcmd);
                     },
@@ -184,13 +188,16 @@ impl CommandWrapper {
                         #[cfg(feature = "use_sqlite")]
                         SourceConfigCommand::Sqlite(sqlite_config_options) => {
 
-                            let mut sqlite_options = <export::SqliteSourceOptions as ::structopt::StructOpt>
+                            let mut sqlite_options = <data_source::DataSourceCommand as ::structopt::StructOpt>
                                 ::from_clap(matches);
-                            sqlite_options.update_from_config_options(sqlite_config_options);
+                            //sqlite_options.update_from_config_options(sqlite_config_options);
 
                             Some(
                                 CommandWrapper(
-                                    Command::Sqlite(sqlite_options)
+                                    //Command::Sqlite(sqlite_options)
+                                    Command::DataSource(
+                                        data_source::DataSourceCommand::Sqlite(sqlite_options)
+                                    )
                                 )
                             )
                         },

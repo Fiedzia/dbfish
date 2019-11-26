@@ -81,7 +81,7 @@ pub fn sources(args: &ApplicationArguments, sources_command: &SourcesCommand) {
     };
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, StructOpt)]
 pub struct SourcesCommand {
     #[structopt(subcommand)]
     pub command: SourcesSubCommand,

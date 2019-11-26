@@ -29,6 +29,6 @@ fn main() {
         CommandWrapper(Command::Sources(ref sources_cmd)) => {
             commands::sources::sources(&args, &sources_cmd);
         },
-        _ => { println!("what?"); }
+        a => { println!("what? {:?}", a); }
     }
 }
