@@ -13,9 +13,9 @@ readme = "README.md"
 atty = "0.2.11"
 chrono = "0.4"
 default-editor = "0.1.0"
-dirs = "2"
-humantime = "1.2.0"
-indicatif = "0.12"
+dirs = "3"
+humantime = "2"
+indicatif = "0.15"
 lazy_static = "1.3.0"
 prettytable-rs = "0.8.0"
 regex = "1.3"
@@ -24,17 +24,17 @@ serde_derive = "1.0.89"
 structopt = "0.3"
 termcolor = "1.0.4"
 toml = "0.5"
-unicode-segmentation = "1.2.1"
+unicode-segmentation = "1.6"
 id_tree = "1.7.0"
 urlencoding = "1.0.0"
 
 [dependencies.askama_escape]
 optional = true
-version = "0.2.0"
+version = "0.10"
 
 [dependencies.csv]
 optional = true
-version = "1.0"
+version = "1.1"
 
 [dependencies.fallible-iterator]
 optional = true
@@ -50,11 +50,11 @@ version = "0.7.1"
 
 [dependencies.mysql]
 optional = true
-version = "16"
+version = "18"
 
 [dependencies.postgres]
 optional = true
-version = "0.15.2"
+version = "0.17"
 
 [dependencies.spsheet]
 features = [

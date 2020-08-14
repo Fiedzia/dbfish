@@ -21,9 +21,9 @@ Usage:
 ```bash
 
     # define data source named "mydata" which will connect to a database you use
-    dbfish source add mydata mysql --user joe --password secret
-    dbfish source add mydata postgres --user joe --password secret
-    dbfish source add mydata sqlite /tmp/somefile.sqlite3
+    dbfish sources add mydata mysql --user joe --password secret
+    dbfish sources add mydata postgres --user joe --password secret
+    dbfish sources add mydata sqlite /tmp/somefile.sqlite3
 
     dbfish export SOURCE [source options] DESTINATION [destination options]
     dbfish export mydata -q 'select * from sometable' html /tmp/output.html

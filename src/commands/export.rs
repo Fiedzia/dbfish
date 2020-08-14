@@ -3,13 +3,13 @@ use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 use humantime;
 use indicatif::ProgressBar;
+use structopt;
 
 use crate::commands::ApplicationArguments;
 use crate::commands::common::SourceConfigCommand;
 use crate::config;
 use crate::definitions::{DataSource, DataDestination, DataSourceConnection, DataSourceBatchIterator};
 use crate::destinations::Destination;
-
 use crate::sources::Source;
 
 #[cfg(feature = "use_mysql")]
@@ -114,7 +114,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         },
     };
     destination.prepare();
-    let source_connection = source.connect();
+    let mut source_connection = source.connect();
     let mut it = source_connection.batch_iterator(export_command.batch_size);
     destination.prepare_for_results(&it as &dyn DataSourceBatchIterator);
     let mut processed = 0;
@@ -184,13 +184,19 @@ pub enum SourceCommand {
     Sqlite(SqliteSourceOptions),
 }
 
+#[derive(Clone, Debug)]
 pub struct SourceCommandWrapper (pub SourceCommand);
 
 impl SourceCommandWrapper {
 
-    pub fn augment_clap<'a, 'b>(
+}
+
+impl structopt::StructOptInternal for SourceCommandWrapper {
+
+    fn augment_clap<'a, 'b>(
             app: ::structopt::clap::App<'a, 'b>,
         ) -> ::structopt::clap::App<'a, 'b> {
+
         let mut app = SourceCommand::augment_clap(app);
         let sources = config::get_sources_list();
 
@@ -229,7 +235,7 @@ impl SourceCommandWrapper {
         app
     }
 
-    pub fn from_subcommand<'a, 'b> (
+    fn from_subcommand<'a, 'b> (
         sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
     ) -> Option<Self> {
 
@@ -292,6 +298,18 @@ impl SourceCommandWrapper {
 
 }
 
+impl structopt::StructOpt for SourceCommandWrapper {
+
+    fn clap<'a, 'b>() -> structopt::clap::App<'a, 'b> {
+        let app = SourceCommand::clap();
+        <Self as ::structopt::StructOptInternal>::augment_clap(app)
+    }
+
+    fn from_clap(arg_matches: &structopt::clap::ArgMatches<'_>) -> Self {
+        SourceCommandWrapper(SourceCommand::from_clap(arg_matches))
+    }
+}
+
 #[derive(Clone, Debug, StructOpt)]
 pub enum DestinationCommand {
     #[cfg(feature = "use_csv")]
@@ -350,6 +368,9 @@ pub struct CSVDestinationOptions {
     pub filename: String,
     #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
+    #[structopt(long = "no-headers", help = "skip header")]
+    pub no_headers: bool,
+
 }
 
 #[derive(Clone, Debug, StructOpt)]
