@@ -4,6 +4,7 @@ use id_tree::{InsertBehavior, Node, NodeId, Tree};
 
 #[cfg(feature = "use_mysql")]
 use mysql;
+use mysql::prelude::Queryable;
 use regex::RegexBuilder;
 
 use crate::commands::{ApplicationArguments};
@@ -131,7 +132,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
     match &schema_command.source.0 {
         #[cfg(feature = "use_mysql")]
         SourceConfigCommand::Mysql(mysql_config_options) => {
-            let conn = establish_mysql_connection(mysql_config_options);
+            let mut conn = establish_mysql_connection(mysql_config_options);
             let mut where_parts = vec![];
             let mut params = vec![];
             if let Some(dbname) = &mysql_config_options.database {
@@ -161,7 +162,8 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
                 order by t.table_schema, t.table_name, c.column_name
                 ", where_clause);
 
-            let result = conn.prep_exec(&query, params);
+            let stmt = conn.prep(query.as_str()).unwrap();
+            let result = conn.exec_iter(stmt, params);
             let results = match result {
                 Ok(v) => v,
                 Err(e) => {
@@ -340,13 +342,12 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
         },
         #[cfg(feature = "use_postgres")]
         SourceConfigCommand::Postgres(postgres_config_options) => {
-          let conn = establish_postgres_connection(postgres_config_options);
+          let mut conn = establish_postgres_connection(postgres_config_options);
           let mut where_parts = vec!["t.table_schema='public'"];
-          let mut params:Vec<&dyn postgres::types::ToSql> = vec![];
+          let mut params:Vec<&(dyn postgres::types::ToSql + std::marker::Sync)> = vec![];
           if let Some(dbname) = &postgres_config_options.database {
               where_parts.push("t.table_catalog=$1");
-              //params.push(&dbname.as_str() as &dyn postgres::types::ToSql);
-              params.push(dbname as &dyn postgres::types::ToSql);
+              params.push(dbname as &(dyn postgres::types::ToSql + std::marker::Sync));
           }
           let where_clause = match where_parts.is_empty() {
               true => "".to_string(),
@@ -370,7 +371,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
               {}
               order by t.table_schema, t.table_name, c.column_name
               ", where_clause);
-          let result = &conn.query(&query, params.as_slice());
+          let result = &conn.query(query.as_str(), params.as_slice());
           let results = match result {
               Ok(v) => v,
               Err(e) => {

@@ -29,17 +29,17 @@ pub enum SourceConnection<'c> {
 }
 
 
-pub enum SourceBatchIterator<'c, 'i> {
+pub enum SourceBatchIterator<'i> {
     #[cfg(feature = "use_sqlite")]
-    SqliteBatchIterator(sqlite::SqliteSourceBatchIterator<'c, 'i>),
+    SqliteBatchIterator(sqlite::SqliteSourceBatchIterator<'i>),
     #[cfg(feature = "use_mysql")]
-    MysqlBatchIterator(mysql::MysqlSourceBatchIterator<'c, 'i>),
+    MysqlBatchIterator(mysql::MysqlSourceBatchIterator<'i>),
     #[cfg(feature = "use_postgres")]
-    PostgresBatchIterator(postgres::PostgresSourceBatchIterator<'c, 'i>),
+    PostgresBatchIterator(postgres::PostgresSourceBatchIterator<'i>),
 }
 
 
-impl <'c, 'i>DataSource<'c, 'i, SourceConnection<'c>, SourceBatchIterator<'c,'i>> for Source
+impl <'c, 'i>DataSource<'c, 'i, SourceConnection<'c>, SourceBatchIterator<'i>> for Source
 where 'c: 'i {
     fn connect(&'c self) -> SourceConnection {
         match self {
@@ -77,9 +77,9 @@ where 'c: 'i {
 
 
 
-impl <'c, 'i>DataSourceConnection<'i, SourceBatchIterator<'c, 'i>> for SourceConnection<'c> {
+impl <'c, 'i>DataSourceConnection<'i, SourceBatchIterator<'i>> for SourceConnection<'c> {
 
-    fn batch_iterator(&'i self, batch_size: u64) -> SourceBatchIterator<'c, 'i> {
+    fn batch_iterator(&'i mut self, batch_size: u64) -> SourceBatchIterator<'i> {
         match self {
             #[cfg(feature = "use_sqlite")]
             SourceConnection::SqliteConnection(sqlite_connection) => SourceBatchIterator::SqliteBatchIterator((*sqlite_connection).batch_iterator(batch_size)), 
@@ -93,7 +93,7 @@ impl <'c, 'i>DataSourceConnection<'i, SourceBatchIterator<'c, 'i>> for SourceCon
 }
 
 
-impl <'c, 'i>DataSourceBatchIterator for SourceBatchIterator<'c, 'i> {
+impl <'c, 'i>DataSourceBatchIterator for SourceBatchIterator<'i> {
 
     fn get_column_info(&self) -> Vec<ColumnInfo> {
         match self {

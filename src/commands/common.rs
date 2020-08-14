@@ -1,6 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 
 use crate::config;
+use crate::structopt::StructOptInternal;
 
 pub struct SourceConfigCommandWrapper (pub SourceConfigCommand);
 
@@ -47,7 +48,11 @@ impl SourceConfigCommandWrapper {
         app
     }
 
-    pub fn from_subcommand<'a, 'b> (
+}
+
+impl structopt::StructOptInternal for SourceConfigCommandWrapper {
+
+    fn from_subcommand<'a, 'b> (
         sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
     ) -> Option<Self> {
 
@@ -108,6 +113,11 @@ impl SourceConfigCommandWrapper {
         }
     }
 
+}
+
+impl structopt::StructOpt for SourceConfigCommandWrapper {
+    fn clap<'a, 'b>() -> structopt::clap::App<'a, 'b> { SourceConfigCommand::clap() }
+    fn from_clap(arg_matches: &structopt::clap::ArgMatches<'_>) -> Self { SourceConfigCommandWrapper(SourceConfigCommand::from_clap(arg_matches)) }
 }
 
 

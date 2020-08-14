@@ -76,7 +76,7 @@ pub trait DataSourceBatchIterator {
 pub trait DataSourceConnection<'i, I>
 where I: DataSourceBatchIterator + 'i
 {
-    fn batch_iterator(&'i self, batch_size: u64) -> I;
+    fn batch_iterator(&'i mut self, batch_size: u64) -> I;
 }
 
 

@@ -8,7 +8,8 @@ use crate::utils::{escape_binary_data, truncate_text_with_note};
 
 pub struct CSVDestination {
     csv_writer: csv::Writer<FileOrStdout>,
-    truncate: Option<u64>
+    truncate: Option<u64>,
+    no_headers: bool,
 }
 
 impl CSVDestination 
@@ -18,7 +19,7 @@ impl CSVDestination
             "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Never)),
             _ => FileOrStdout::File(std::fs::File::create(csv_options.filename.to_string()).unwrap())
         });
-        CSVDestination { csv_writer, truncate: csv_options.truncate }
+        CSVDestination { csv_writer, truncate: csv_options.truncate, no_headers: csv_options.no_headers }
     }
 
     pub fn row_to_csv_row(row: &Row, truncate: Option<u64>) -> Vec<String> {
@@ -53,14 +54,16 @@ impl DataDestination for CSVDestination
     fn prepare(&mut self) {}
 
     fn prepare_for_results(&mut self, result_iterator: &dyn DataSourceBatchIterator) {
-        let headers: Vec<String> = result_iterator
-            .get_column_info()
-            .iter()
-            .map(|c| c.name.clone())
-            .collect();
-        self.csv_writer.write_record(headers).unwrap();
-
+        if !self.no_headers {
+            let headers: Vec<String> = result_iterator
+                .get_column_info()
+                .iter()
+                .map(|c| c.name.clone())
+                .collect();
+            self.csv_writer.write_record(headers).unwrap();
+        }
     }
+
     fn add_rows(&mut self, rows: &[Row]) {
         for row in rows {
             self.csv_writer

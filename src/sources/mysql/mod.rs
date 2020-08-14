@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use chrono;
 use mysql;
+use mysql::prelude::Queryable;
 use mysql::consts::ColumnType as MyColumnType;
 use mysql::consts::ColumnFlags as MyColumnFlags;
 
@@ -46,35 +47,34 @@ impl GetMysqlConnectionParams for MysqlConfigOptions {
     fn get_timeout(&self) -> &Option<u64> { &self.timeout }
 }
 
-pub fn establish_mysql_connection(mysql_options: &dyn GetMysqlConnectionParams ) -> mysql::Pool {
+pub fn establish_mysql_connection(mysql_options: &dyn GetMysqlConnectionParams ) -> mysql::PooledConn {
 
 
-    let mut option_builder = mysql::OptsBuilder::new();
-    option_builder
+    let mut option_builder = mysql::OptsBuilder::new()
         .db_name(mysql_options.get_database().to_owned())
         .user(mysql_options.get_username().to_owned())
         .pass(mysql_options.get_password().to_owned());
 
     if let Some(timeout) = mysql_options.get_timeout() {
-         option_builder
+         option_builder = option_builder
             .read_timeout(Some(Duration::from_secs(*timeout)))
             .write_timeout(Some(Duration::from_secs(*timeout)))
             .tcp_connect_timeout(Some(Duration::from_secs(*timeout)));
     };
 
     if let Some(ref socket) = mysql_options.get_socket() {
-        option_builder.socket(Some(socket.to_owned()));
+        option_builder = option_builder.socket(Some(socket.to_owned()));
     } else {
-        option_builder
+        option_builder = option_builder
             .ip_or_hostname(mysql_options.get_hostname().to_owned().or_else(||Some("localhost".to_string())))
             .tcp_port(mysql_options.get_port().to_owned().unwrap_or(3306));
     };
  
     if !mysql_options.get_init().is_empty() {
-        option_builder.init(mysql_options.get_init().to_owned());
+        option_builder = option_builder.init(mysql_options.get_init().to_owned());
     };
 
-    mysql::Pool::new(option_builder).unwrap()
+    mysql::Pool::new(option_builder).unwrap().get_conn().unwrap()
 }
 
 
@@ -90,22 +90,19 @@ impl MysqlSource {
 
 
 pub struct MysqlSourceConnection<'c> {
-    connection: mysql::Pool,
+    connection: mysql::PooledConn,
     source: &'c MysqlSource,
 }
 
-pub struct MysqlSourceBatchIterator<'c, 'i>
-where 'c: 'i
-{
+pub struct MysqlSourceBatchIterator<'i> {
     batch_size: u64,
-    connection: &'i mysql::Pool,
+    //connection: &'i mysql::PooledConn,
     count: Option<u64>,
-    results: mysql::QueryResult<'i>,
-    source_connection: &'i MysqlSourceConnection<'c>
+    results: mysql::QueryResult<'i, 'i, 'i, mysql::Text>,
+    //source_connection: &'i mut MysqlSourceConnection<'c>
 }
 
-impl <'c, 'i>MysqlSourceBatchIterator<'c, 'i>
-where 'c: 'i {
+impl <'c, 'i>MysqlSourceBatchIterator<'i> {
 
     pub fn mysql_to_row(column_info: &[ColumnInfo], mysql_row: mysql::Row) -> Row {
         let mut result = Row::with_capacity(mysql_row.len());
@@ -153,7 +150,7 @@ where 'c: 'i {
 }
 
 
-impl <'c, 'i> DataSource<'c, 'i, MysqlSourceConnection<'c>, MysqlSourceBatchIterator<'c, 'i>> for MysqlSource
+impl <'c, 'i> DataSource<'c, 'i, MysqlSourceConnection<'c>, MysqlSourceBatchIterator<'i>> for MysqlSource
 where 'c: 'i,
 {
     fn connect(&'c self) -> MysqlSourceConnection
@@ -173,9 +170,9 @@ where 'c: 'i,
 
 }
 
-impl <'c, 'i>DataSourceConnection<'i, MysqlSourceBatchIterator<'c, 'i>> for MysqlSourceConnection<'c>
+impl <'c, 'i>DataSourceConnection<'i, MysqlSourceBatchIterator<'i>> for MysqlSourceConnection<'c>
 {
-    fn batch_iterator(&'i self, batch_size: u64) -> MysqlSourceBatchIterator<'c, 'i>
+    fn batch_iterator(&'i mut self, batch_size: u64) -> MysqlSourceBatchIterator<'i>
     {
         let query = match &self.source.options.query {
             Some(q) => q.to_owned(),
@@ -188,37 +185,38 @@ impl <'c, 'i>DataSourceConnection<'i, MysqlSourceBatchIterator<'c, 'i>> for Mysq
                 None => panic!("You need to pass either q or query-file option"),
             }
         };
-        let count: Option<u64> = if self.source.options.count {
+        
+        let count: Option<u64> = {if self.source.options.count {
             let count_query = format!("select count(*) from ({}) q", query);
-            let count_value = self.connection.first_exec(count_query.as_str(), ()).unwrap().unwrap().get(0).unwrap();
+            let count_value: u64 = self.connection.query_first(count_query).unwrap().unwrap();
             Some(count_value)
         } else {
             None
-        };
-        let mysql_result = match self.connection.prep_exec(query.clone(), ()) {
+        }};
+        let mysql_result = { match self.connection.query_iter(query.as_str()) {
             Ok(v) => v,
             Err(e) => {
                 report_query_error(&query, &format!("{:?}", e));
                 std::process::exit(1);
             }
-        };
+        }};
 
         MysqlSourceBatchIterator {
             batch_size,
-            connection: &self.connection,
+            //connection: &mut self.connection,
             count,
             results: mysql_result,
-            source_connection: &self,
+            //source_connection: &mut self,
         }
     }
 }
 
 
-impl <'c, 'i>DataSourceBatchIterator for MysqlSourceBatchIterator<'c, 'i>
+impl <'c, 'i>DataSourceBatchIterator for MysqlSourceBatchIterator<'i>
 {
     fn get_column_info(&self) -> Vec<ColumnInfo> {
         let mut result = vec![];
-        for column in  self.results.columns_ref() {
+        for column in  self.results.columns().as_ref() {
             let column_type = column.column_type();
             let flags = column.flags();
             result.push(ColumnInfo {
