@@ -5,9 +5,10 @@ use crate::structopt::StructOptInternal;
 
 pub struct SourceConfigCommandWrapper (pub SourceConfigCommand);
 
-impl SourceConfigCommandWrapper {
 
-    pub fn augment_clap<'a, 'b>(
+impl structopt::StructOptInternal for SourceConfigCommandWrapper {
+
+    fn augment_clap<'a, 'b>(
             app: ::structopt::clap::App<'a, 'b>,
         ) -> ::structopt::clap::App<'a, 'b> {
         let mut app = SourceConfigCommand::augment_clap(app);
@@ -47,10 +48,6 @@ impl SourceConfigCommandWrapper {
         }
         app
     }
-
-}
-
-impl structopt::StructOptInternal for SourceConfigCommandWrapper {
 
     fn from_subcommand<'a, 'b> (
         sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
@@ -116,8 +113,13 @@ impl structopt::StructOptInternal for SourceConfigCommandWrapper {
 }
 
 impl structopt::StructOpt for SourceConfigCommandWrapper {
-    fn clap<'a, 'b>() -> structopt::clap::App<'a, 'b> { SourceConfigCommand::clap() }
-    fn from_clap(arg_matches: &structopt::clap::ArgMatches<'_>) -> Self { SourceConfigCommandWrapper(SourceConfigCommand::from_clap(arg_matches)) }
+    fn clap<'a, 'b>() -> structopt::clap::App<'a, 'b> {
+        <Self as ::structopt::StructOptInternal>::augment_clap(SourceConfigCommand::clap())
+    }
+
+    fn from_clap(arg_matches: &structopt::clap::ArgMatches<'_>) -> Self {
+        SourceConfigCommandWrapper(SourceConfigCommand::from_clap(arg_matches))
+    }
 }
 
 
