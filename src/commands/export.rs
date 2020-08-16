@@ -301,8 +301,7 @@ impl structopt::StructOptInternal for SourceCommandWrapper {
 impl structopt::StructOpt for SourceCommandWrapper {
 
     fn clap<'a, 'b>() -> structopt::clap::App<'a, 'b> {
-        let app = SourceCommand::clap();
-        <Self as ::structopt::StructOptInternal>::augment_clap(app)
+        <Self as ::structopt::StructOptInternal>::augment_clap(SourceCommand::clap())
     }
 
     fn from_clap(arg_matches: &structopt::clap::ArgMatches<'_>) -> Self {
