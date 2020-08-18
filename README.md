@@ -25,7 +25,7 @@ Usage:
     dbfish sources add mydata postgres --user joe --password secret
     dbfish sources add mydata sqlite /tmp/somefile.sqlite3
 
-    dbfish export SOURCE [source options] DESTINATION [destination options]
+    # dbfish export SOURCE [source options] DESTINATION [destination options]
     dbfish export mydata -q 'select * from sometable' html /tmp/output.html
     dbfish export mydata -q 'select * from sometable' csv /tmp/output.csv
     dbfish export mydata -q 'select * from sometable' json /tmp/output.json
@@ -49,7 +49,7 @@ Usage:
         
         In [1]: conn.execute('select * from sometable') 
 
-    dbfish schema SOURCE [source options] # display database schema
+    # dbfish schema SOURCE [source options] # display database schema
     dbfish schema -q user SOURCE [source options] # display all parts of database schema that contain phrase "user"
     dbfish schema -r -q '201[89]' SOURCE [source options] # display all parts of database schema that contain 2018 or 2019
 
