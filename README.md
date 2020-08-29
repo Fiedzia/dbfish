@@ -127,3 +127,6 @@ You will also need SQLite3 libs and C compiler installed, since its being built 
 disable use_sqlite feature if that's a problem for you.
 
 If you want to link it statically, install musl and musl-dev and follow [this guide](https://doc.rust-lang.org/nightly/edition-guide/rust-2018/platform-and-target-support/musl-support-for-fully-static-binaries.html).
+
+
+![Rust](https://github.com/Fiedzia/dbfish/workflows/Rust/badge.svg)
