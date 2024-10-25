@@ -78,7 +78,7 @@ pub trait DataSourceBatchIterator<'conn> {
 
 pub trait DataSourceConnection<'conn>
 {
-    fn batch_iterator(&'conn mut self, batch_size: u64) -> impl DataSourceBatchIterator<'conn>;
+    fn batch_iterator(&'conn mut self, batch_size: u64) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)>;
 }
 
 

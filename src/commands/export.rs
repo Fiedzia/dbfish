@@ -118,7 +118,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
     destination.prepare();
     let mut source_connection = source.connect();
     let mut it = source_connection.batch_iterator(export_command.batch_size);
-    destination.prepare_for_results(&it as &dyn DataSourceBatchIterator);
+    destination.prepare_for_results(&*it);
     let mut processed = 0;
     let progress_bar = if args.verbose {
         let pb = ProgressBar::new(

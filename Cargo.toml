@@ -80,7 +80,7 @@ default = [
     #"use_mysql",
     "use_postgres",
     #"use_spsheet",
-    #"use_sqlite",
+    "use_sqlite",
     "use_text",
 ]
 use_csv = ["csv"]

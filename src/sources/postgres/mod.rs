@@ -105,7 +105,8 @@ impl PostgresSource {
 
 impl <'source: 'conn, 'conn>PostgresSourceConnection<'source> {
 
-    pub fn _batch_iterator(source: &'source PostgresSource, connection: &'source mut Client, batch_size: u64) -> impl DataSourceBatchIterator<'conn> + use<'source, 'conn> {
+    pub fn _batch_iterator(source: &'source PostgresSource, connection: &'source mut Client, batch_size: u64) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)> {
+
 
         let query = match &source.options.query {
             Some(q) => q.to_owned(),
@@ -139,11 +140,11 @@ impl <'source: 'conn, 'conn>PostgresSourceConnection<'source> {
                 };
             });*/
 
-        PostgresSourceBatchIterator {
+        Box::new(PostgresSourceBatchIterator {
             batch_size,
             first_row,
             result_iterator: batch_iterator,
-        }
+        })
 
     }
 
@@ -181,7 +182,7 @@ impl <'source: 'conn, 'conn> DataSource<'source, 'conn, PostgresSourceConnection
 
 impl <'source: 'conn, 'conn>DataSourceConnection<'conn> for PostgresSourceConnection<'source>
 {
-    fn batch_iterator(&'conn mut self, batch_size: u64) -> impl DataSourceBatchIterator<'conn> //PostgresSourceBatchIterator<'c, 'i>
+    fn batch_iterator(&'conn mut self, batch_size: u64) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)>
     {
         PostgresSourceConnection::_batch_iterator(self.source, &mut self.connection, batch_size)
     }

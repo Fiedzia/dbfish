@@ -35,20 +35,18 @@ pub struct SqliteSource {
     options: SqliteSourceOptions,
 }
 
-pub struct SqliteSourceConnection<'c> {
+pub struct SqliteSourceConnection<'source> {
     connection: sqlite::Connection,
-    source: &'c SqliteSource,
+    source: &'source SqliteSource,
 }
 
-pub struct SqliteSourceBatchIterator<'c, 'i>
-where 'c: 'i
+pub struct SqliteSourceBatchIterator<'conn>
 {
     batch_size: u64,
-    connection: &'i sqlite::Connection,
+    connection: &'conn sqlite::Connection,
     count: Option<u64>,
     done: bool, //sqlite iterator resets once done for some reason
-    statement: sqlite::Statement<'i>,
-    source_connection: &'i SqliteSourceConnection<'c>,
+    statement: sqlite::Statement<'conn>,
 }
 
 impl SqliteSource {
@@ -58,10 +56,10 @@ impl SqliteSource {
 }
 
 
-impl <'c, 'i> DataSource<'c, 'i, SqliteSourceConnection<'c>, SqliteSourceBatchIterator<'c, 'i>> for SqliteSource
-where 'c: 'i,
+impl <'source, 'conn> DataSource<'source, 'conn, SqliteSourceConnection<'source>> for SqliteSource
+where 'source: 'conn,
 {
-    fn connect(&'c self) -> SqliteSourceConnection
+    fn connect(&'source self) -> SqliteSourceConnection
     {
 
         let connection =  establish_sqlite_connection(&self.options);
@@ -89,9 +87,9 @@ where 'c: 'i,
 
 }
 
-impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for SqliteSourceConnection<'c>
+impl <'source: 'conn, 'conn>DataSourceConnection<'conn> for SqliteSourceConnection<'source>
 {
-    fn batch_iterator(&'i mut self, batch_size: u64) -> SqliteSourceBatchIterator<'c, 'i>
+    fn batch_iterator(&'conn mut self, batch_size: u64) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)>
     {
         let query = match &self.source.options.query {
             Some(q) => q.to_owned(),
@@ -105,7 +103,7 @@ impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for Sql
             }
         };
 
-        SqliteSourceBatchIterator {
+        Box::new(SqliteSourceBatchIterator {
             batch_size,
             connection: & self.connection,
             count: None,
@@ -117,13 +115,12 @@ impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for Sql
                     std::process::exit(1);
                 }
             },
-            source_connection: &self,
-        }
+        })
     }
 }
 
 
-impl <'c, 'i>DataSourceBatchIterator for SqliteSourceBatchIterator<'c, 'i>
+impl <'conn>DataSourceBatchIterator<'conn> for SqliteSourceBatchIterator<'conn>
 {
     fn get_column_info(&self) -> Vec<ColumnInfo> {
         let columns:Vec<ColumnInfo> = (0..self.statement.count()).map(|idx| {
