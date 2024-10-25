@@ -77,7 +77,7 @@ default = [
     "use_csv",
     "use_html",
     "use_json",
-    #"use_mysql",
+    "use_mysql",
     "use_postgres",
     #"use_spsheet",
     "use_sqlite",

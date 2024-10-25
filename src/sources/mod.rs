@@ -72,7 +72,7 @@ impl <'source, 'conn>DataSourceConnection<'conn> for SourceConnection<'source> {
             #[cfg(feature = "use_sqlite")]
             SourceConnection::SqliteConnection(sqlite_connection) => (*sqlite_connection).batch_iterator(batch_size),
             #[cfg(feature = "use_mysql")]
-            SourceConnection::MysqlConnection(mysql_connection) => SourceBatchIterator::MysqlBatchIterator(mysql_connection.batch_iterator(batch_size)), 
+            SourceConnection::MysqlConnection(mysql_connection) => mysql_connection.batch_iterator(batch_size), 
             #[cfg(feature = "use_postgres")]
             SourceConnection::PostgresConnection(postgres_connection) => postgres_connection.batch_iterator(batch_size),
         }
