@@ -1,8 +1,6 @@
 use std::fs::File;
 use std::io::Read;
-use std::rc::Rc;
 
-use closure::closure;
 use postgres::{self, NoTls, Client, types::Kind};
 use postgres::fallible_iterator::FallibleIterator;
 use urlencoding;
@@ -89,24 +87,15 @@ pub struct PostgresSource {
 
 pub struct PostgresSourceConnection<'source> {
     connection: Client,
-    //results: Vec<postgres::row::Row>,
     source: &'source  PostgresSource,
 }
 
-//pub struct PostgresSourceBatchIterator<'c, 'i>(postgres::RowIter<'c>);
-/*pub struct PostgresSourceBatchIterator<'c, 'i>
-where 'c: 'i
-      //F: FnMut() -> Option<Vec<i32>>
+pub struct PostgresSourceBatchIterator<'conn>
 {
     batch_size: u64,
-    //rows_affected: Option<u64>,
+    result_iterator: postgres::RowIter<'conn>,
     first_row: Option<postgres::row::Row>,
-    result_iterator: postgres::RowIter<'c>
-    //connection: Client,
-    //result_iterator: postgres::RowIter<'c>,
-    //result_iterator: Box<dyn FnMut() -> Result<Option<postgres::row::Row>, postgres::Error>>,
-    //source_connection: &'i mut PostgresSourceConnection<'c>
-}*/
+}
 
 impl PostgresSource {
     pub fn init(postgres_options: &PostgresSourceOptions) -> PostgresSource {
@@ -116,8 +105,7 @@ impl PostgresSource {
 
 impl <'source: 'conn, 'conn>PostgresSourceConnection<'source> {
 
-    pub fn _batch_iterator(source: &'source PostgresSource, mut connection: &'source mut Client, batch_size: u64) -> impl DataSourceBatchIterator<'conn> + use<'source, 'conn> {
-        //PostgresSourceBatchIterator<'c, 'c> {
+    pub fn _batch_iterator(source: &'source PostgresSource, connection: &'source mut Client, batch_size: u64) -> impl DataSourceBatchIterator<'conn> + use<'source, 'conn> {
 
         let query = match &source.options.query {
             Some(q) => q.to_owned(),
@@ -132,12 +120,15 @@ impl <'source: 'conn, 'conn>PostgresSourceConnection<'source> {
         };
 
 
-        let batch_iterator = connection.query_raw::<str,Vec<String>  ,_ >(&query, vec![]).unwrap().peekable();
+        let mut batch_iterator = connection.query_raw::<str,Vec<String>  ,_ >(&query, vec![])
+            .unwrap();
+        let first_row = batch_iterator
+            .by_ref()
+            .peekable()
+            .peek()
+            .unwrap()
+            .map(|r|r.clone());
         /*let batch_iterator = 
-            closure!(move mut conn, || {
-                let mut row_iterator = None;
-                if row_iterator.is_none() {
-            
                     row_iterator = match conn.query_raw::<str,Vec<String>  ,_ >(&query, vec![]) {
                         Ok(r) => Some(r.peekable()),
                         Err(e) => {
@@ -146,29 +137,19 @@ impl <'source: 'conn, 'conn>PostgresSourceConnection<'source> {
                         }
                     };
                 };
-                if let Some(ref mut ri) = row_iterator {
-                    ri.next()
-                } else {
-                    Ok(None)
-                }
             });*/
 
-        //batch_iterator
-        Box::new(batch_iterator)
-        /*PostgresSourceBatchIterator {
+        PostgresSourceBatchIterator {
             batch_size,
-            first_row: None,
+            first_row,
             result_iterator: batch_iterator,
-            //rows_affected: None,
-            //source_connection: self,
-        }*/
+        }
 
     }
 
 }
 
 impl <'source: 'conn, 'conn> DataSource<'source, 'conn, PostgresSourceConnection<'source>> for PostgresSource
-//impl <'c, 'i> DataSource<'c, 'i, PostgresSourceConnection<'c>, postgres::RowIter<'c>> for PostgresSource
 {
     fn connect(&'source self) -> PostgresSourceConnection
     {
@@ -223,15 +204,12 @@ pub fn postgres_to_row(column_info: &[(String,  postgres::types::Type)], postgre
 }
 
 
-//impl <'c, 'i>DataSourceBatchIterator for PostgresSourceBatchIterator<'c, 'i>
-//impl DataSourceBatchIterator for Box<postgres::RowIter<'_>>
-impl <'conn>DataSourceBatchIterator<'conn> for Box<postgres::fallible_iterator::Peekable<postgres::RowIter<'_>>>
+impl <'conn>DataSourceBatchIterator<'conn> for PostgresSourceBatchIterator<'conn>
 
 {
     fn get_column_info(&self) -> Vec<ColumnInfo> {
-       /*let mut result = vec![];
-       match self::Row {
-       //match &self.peek().unwrap() {
+       let mut result = vec![];
+       match &self.first_row {
            Some(row) => {
 
                 for column in row.columns().iter() {
@@ -248,21 +226,19 @@ impl <'conn>DataSourceBatchIterator<'conn> for Box<postgres::fallible_iterator::
             },
             _ => {}
         }
-        result*/
-        vec![]
+        result
     }
 
     fn get_count(&self) -> Option<u64> {
-        //self.rows_affected
-        None
+        self.result_iterator.rows_affected()
     }
  
     fn next(&mut self) -> Option<Vec<Row>>
     {
         let rows :Vec<Row> = self
+            .result_iterator
             .by_ref()
-            //.take(self.batch_size as usize)
-            .take(10usize) //todo!
+            .take(self.batch_size as usize)
             .map(|postgres_row| {
                 let mut result = Row::with_capacity(postgres_row.len());
                 for (idx, column) in postgres_row.columns().iter().enumerate() {

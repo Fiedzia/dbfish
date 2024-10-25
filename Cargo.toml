@@ -12,7 +12,6 @@ version = "0.1.1"
 [dependencies]
 atty = "0.2.11"
 chrono = "0.4"
-closure = "0.3.0"
 default-editor = "0.1.0"
 dirs = "2"
 humantime = "1.2.0"
