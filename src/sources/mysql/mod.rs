@@ -117,7 +117,7 @@ where 'c: 'i {
                 mysql::Value::Float(v) => result.push(Value::F64(*v)),
                 mysql::Value::Bytes(v) => match std::str::from_utf8(&v) {
                     Ok(s) => result.push(Value::String(s.to_string())),
-                    Err(e) => panic!(format!("mysq: invalid utf8 in '{:?}' for row: {:?} ({})", v, value, e))
+                    Err(e) => panic!("mysq: invalid utf8 in '{:?}' for row: {:?} ({})", v, value, e)
                 },
                 mysql::Value::Date(year, month, day, hour, minute, second, _microsecond) => {
                     match column_info[idx].data_type {
@@ -264,7 +264,7 @@ impl <'c, 'i>DataSourceBatchIterator for MysqlSourceBatchIterator<'c, 'i>
                     MyColumnType::MYSQL_TYPE_SET,
                     MyColumnType::MYSQL_TYPE_GEOMETR
                     */
-                    _ => panic!(format!("mysql: unsupported column type: {:?}", column_type))
+                    _ => panic!("mysql: unsupported column type: {:?}", column_type)
                 },
             });
         }

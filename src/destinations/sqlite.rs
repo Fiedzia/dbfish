@@ -52,7 +52,7 @@ impl DataDestination for SqliteDestination
                 ColumnType::Date => "date".to_string(),
                 ColumnType::Time => "time".to_string(),
                 ColumnType::Decimal => "numeric".to_string(),
-                _ => panic!(format!("sqlite: unsupported column type: {:?}", col.data_type))
+                _ => panic!("sqlite: unsupported column type: {:?}", col.data_type)
             })})
             .collect::<Vec<String>>()
             .join(", ");
@@ -96,7 +96,7 @@ impl DataDestination for SqliteDestination
                     Value::F64(value) => data.push(sqlite::Value::Float(*value)),
                     Value::F32(value) => data.push(sqlite::Value::Float(f64::from(*value))),
                     Value::Bytes(value) => data.push(sqlite::Value::Binary(value.clone())),
-                    _ => panic!(format!("sqlite: unsupported type: {:?}", col))
+                    _ => panic!("sqlite: unsupported type: {:?}", col)
                 }
             }
         }

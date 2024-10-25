@@ -66,7 +66,7 @@ impl JSONDestination
                     Value::Date(date) => json::JsonValue::String(format!("{}", date.format("%Y-%m-%d"))),
                     Value::Time(time) => json::JsonValue::String(format!("{}", time.format("%H:%M:%S"))),
                     Value::DateTime(datetime) => json::JsonValue::String(format!("{}", datetime.format("%Y-%m-%d %H:%M:%S"))),
-                    _ => panic!(format!("json: unsupported type: {:?}", v))
+                    _ => panic!("json: unsupported type: {:?}", v)
                 };
                 json_row.insert(&self.column_names[idx], value);
             });

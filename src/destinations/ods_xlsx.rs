@@ -42,7 +42,7 @@ pub fn value_to_cell(value: &Value, truncate: Option<u64>) -> Cell {
         Value::Date(date) => Cell::date_with_style(format!("{}", date.format("%Y-%m-%d")), Style::new("YYYY/MM/DD")),
         Value::Time(time) => Cell::str(format!("{}", time.format("%H:%M:%S"))),
         Value::DateTime(datetime) => Cell::date_with_style(format!("{}", datetime.format("%Y-%m-%dT%H:%M:%S")), Style::new("YYYY/MM/DD\\ HH:MM:SS")),
-        _ => panic!(format!("spsheet: unsupported type: {:?}", value)),
+        _ => panic!("spsheet: unsupported type: {:?}", value),
     }
 }
 

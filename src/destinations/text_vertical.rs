@@ -80,7 +80,7 @@ impl DataDestination for TextVerticalDestination {
                     Value::Time(time) => format!("{}", time.format("%H:%M:%S")),
                     Value::DateTime(datetime) => format!("{}", datetime.format("%Y-%m-%d %H:%M:%S")),
                    
-                    _ => panic!(format!("text-vertical: unsupported type: {:?}", col))
+                    _ => panic!("text-vertical: unsupported type: {:?}", col)
                 };
                 row_data.push((idx, content));
             }

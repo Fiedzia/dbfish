@@ -42,7 +42,7 @@ impl CSVDestination
                 Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),
                 Value::Time(time) => format!("{}", time.format("%H:%M:%S")),
                 Value::DateTime(datetime) => format!("{}", datetime.format("%Y-%m-%d %H:%M:%S")),
-                _ => panic!(format!("csv: unsupported type: {:?}", v))
+                _ => panic!("csv: unsupported type: {:?}", v)
             }
         }).collect()
     }
