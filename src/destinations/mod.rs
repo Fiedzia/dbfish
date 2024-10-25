@@ -7,8 +7,10 @@ pub mod debug;
 pub mod html;
 #[cfg(feature = "use_json")]
 pub mod json;
-#[cfg(feature = "use_spsheet")]
-pub mod ods_xlsx;
+#[cfg(feature = "use_ods")]
+pub mod ods;
+#[cfg(feature = "use_xlsx")]
+pub mod xlsx;
 #[cfg(feature = "use_sqlite")]
 pub mod sqlite;
 #[cfg(feature = "use_text")]
@@ -27,8 +29,10 @@ pub enum Destination {
     JSON(json::JSONDestination),
     #[cfg(feature = "use_sqlite")]
     Sqlite(sqlite::SqliteDestination),
-    #[cfg(feature = "use_spsheet")]
-    SpreadSheet(ods_xlsx::SpreadSheetDestination),
+    #[cfg(feature = "use_ods")]
+    SpreadSheetODS(ods::SpreadSheetODSDestination),
+    #[cfg(feature = "use_xlsx")]
+    SpreadSheetXLSX(xlsx::SpreadSheetXLSXDestination),
     #[cfg(feature = "use_text")]
     Text(text::TextDestination),
     #[cfg(feature = "use_text")]
@@ -46,8 +50,10 @@ impl DataDestination for Destination {
             Destination::HTML(html_destination) => html_destination.prepare(),
             #[cfg(feature = "use_json")]
             Destination::JSON(json_destination) => json_destination.prepare(),
-            #[cfg(feature = "use_spsheet")]
-            Destination::SpreadSheet(spreadsheet_destination) => spreadsheet_destination.prepare(),
+            #[cfg(feature = "use_ods")]
+            Destination::SpreadSheetODS(spreadsheet_destination) => spreadsheet_destination.prepare(),
+            #[cfg(feature = "use_xlsx")]
+            Destination::SpreadSheetXLSX(spreadsheet_destination) => spreadsheet_destination.prepare(),
             #[cfg(feature = "use_sqlite")]
             Destination::Sqlite(sqlite_destination) => sqlite_destination.prepare(),
             #[cfg(feature = "use_text")]
@@ -68,8 +74,10 @@ impl DataDestination for Destination {
             Destination::HTML(html_destination) => html_destination.prepare_for_results(result_iterator),
             #[cfg(feature = "use_json")]
             Destination::JSON(json_destination) => json_destination.prepare_for_results(result_iterator),
-            #[cfg(feature = "use_spsheet")]
-            Destination::SpreadSheet(spreadsheet_destination) => spreadsheet_destination.prepare_for_results(result_iterator),
+            #[cfg(feature = "use_ods")]
+            Destination::SpreadSheetODS(spreadsheet_destination) => spreadsheet_destination.prepare_for_results(result_iterator),
+            #[cfg(feature = "use_xlsx")]
+            Destination::SpreadSheetXLSX(spreadsheet_destination) => spreadsheet_destination.prepare_for_results(result_iterator),
             #[cfg(feature = "use_sqlite")]
             Destination::Sqlite(sqlite_destination) => sqlite_destination.prepare_for_results(result_iterator),
             #[cfg(feature = "use_text")]
@@ -88,8 +96,10 @@ impl DataDestination for Destination {
             Destination::HTML(html_destination) => html_destination.add_rows(rows),
             #[cfg(feature = "use_json")]
             Destination::JSON(json_destination) => json_destination.add_rows(rows),
-            #[cfg(feature = "use_spsheet")]
-            Destination::SpreadSheet(spreadsheet_destination) => spreadsheet_destination.add_rows(rows),
+            #[cfg(feature = "use_ods")]
+            Destination::SpreadSheetODS(spreadsheet_destination) => spreadsheet_destination.add_rows(rows),
+            #[cfg(feature = "use_xlsx")]
+            Destination::SpreadSheetXLSX(spreadsheet_destination) => spreadsheet_destination.add_rows(rows),
             #[cfg(feature = "use_sqlite")]
             Destination::Sqlite(sqlite_destination) => sqlite_destination.add_rows(rows),
             #[cfg(feature = "use_text")]
@@ -108,8 +118,10 @@ impl DataDestination for Destination {
             Destination::HTML(html_destination) => html_destination.close(),
             #[cfg(feature = "use_json")]
             Destination::JSON(json_destination) => json_destination.close(),
-            #[cfg(feature = "use_spsheet")]
-            Destination::SpreadSheet(spreadsheet_destination) => spreadsheet_destination.close(),
+            #[cfg(feature = "use_ods")]
+            Destination::SpreadSheetODS(spreadsheet_destination) => spreadsheet_destination.close(),
+            #[cfg(feature = "use_xlsx")]
+            Destination::SpreadSheetXLSX(spreadsheet_destination) => spreadsheet_destination.close(),
             #[cfg(feature = "use_sqlite")]
             Destination::Sqlite(sqlite_destination) => sqlite_destination.close(),
             #[cfg(feature = "use_text")]

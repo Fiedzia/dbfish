@@ -16,8 +16,10 @@ use crate::structopt::{StructOpt, StructOptInternal, clap};
 
 #[cfg(feature = "use_mysql")]
 use crate::{commands::common::MysqlConfigOptions, sources::mysql::MysqlSource};
-#[cfg(feature = "use_spsheet")]
-use crate::destinations::ods_xlsx::{SpreadSheetDestination, SpreadSheetFormat};
+#[cfg(feature = "use_ods")]
+use crate::destinations::ods::{SpreadSheetODSDestination};
+#[cfg(feature = "use_xlsx")]
+use crate::destinations::xlsx::{SpreadSheetXLSXDestination};
 #[cfg(feature = "use_postgres")]
 use crate::{commands::common::PostgresConfigOptions, sources::postgres::PostgresSource};
 #[cfg(feature = "use_csv")]
@@ -53,10 +55,10 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 DestinationCommand::JSON(json_options) => Destination::JSON(JSONDestination::init(&args, &json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Destination::Sqlite(SqliteDestination::init(&sqlite_options)),
-                #[cfg(feature = "use_spsheet")]
-                DestinationCommand::ODS(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::ODS)),
-                #[cfg(feature = "use_spsheet")]
-                DestinationCommand::XLSX(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::XLSX)),
+                #[cfg(feature = "use_ods")]
+                DestinationCommand::ODS(options) => Destination::SpreadSheetODS(SpreadSheetODSDestination::init(options)),
+                #[cfg(feature = "use_xlsx")]
+                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(SpreadSheetXLSXDestination::init(options)),
                 #[cfg(feature = "use_text")]
                 DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&args, &text_options)),
                 #[cfg(feature = "use_text")]
@@ -79,10 +81,10 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 DestinationCommand::JSON(json_options) => Destination::JSON(JSONDestination::init(&args, &json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Destination::Sqlite(SqliteDestination::init(&sqlite_options)),
-                #[cfg(feature = "use_spsheet")]
-                DestinationCommand::ODS(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::ODS)),
-                #[cfg(feature = "use_spsheet")]
-                DestinationCommand::XLSX(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::XLSX)),
+                #[cfg(feature = "use_ods")]
+                DestinationCommand::ODS(options) => Destination::SpreadSheetODS(SpreadSheetODSDestination::init(options)),
+                #[cfg(feature = "use_xlsx")]
+                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(SpreadSheetXLSXDestination::init(options)),
                 #[cfg(feature = "use_text")]
                 DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&args, &text_options)),
                 #[cfg(feature = "use_text")]
@@ -103,10 +105,10 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
                 DestinationCommand::JSON(json_options) => Destination::JSON(JSONDestination::init(&args, &json_options)),
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => Destination::Sqlite(SqliteDestination::init(&sqlite_options)),
-                #[cfg(feature = "use_spsheet")]
-                DestinationCommand::ODS(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::ODS)),
-                #[cfg(feature = "use_spsheet")]
-                DestinationCommand::XLSX(spreadsheet_options) => Destination::SpreadSheet(SpreadSheetDestination::init(&spreadsheet_options, SpreadSheetFormat::XLSX)),
+                #[cfg(feature = "use_ods")]
+                DestinationCommand::ODS(options) => Destination::SpreadSheetODS(SpreadSheetODSDestination::init(options)),
+                #[cfg(feature = "use_xlsx")]
+                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(SpreadSheetXLSXDestination::init(options)),
                 #[cfg(feature = "use_text")]
                 DestinationCommand::Text(text_options) => Destination::Text(TextDestination::init(&args, &text_options)),
                 #[cfg(feature = "use_text")]
@@ -346,11 +348,11 @@ pub enum DestinationCommand {
     #[structopt(name = "csv", about="CSV")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     CSV(CSVDestinationOptions),
-    #[cfg(feature = "use_spsheet")]
+    #[cfg(feature = "use_ods")]
     #[structopt(name = "ods", about="ODS spreadsheet")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     ODS(SpreadSheetDestinationOptions),
-    #[cfg(feature = "use_spsheet")]
+    #[cfg(feature = "use_xlsx")]
     #[structopt(name = "xlsx", about="XLSX spreadsheet")]
     #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     XLSX(SpreadSheetDestinationOptions),
@@ -408,7 +410,7 @@ pub struct DebugDestinationOptions {
     pub truncate: Option<u64>,
 }
 
-#[cfg(feature = "use_spsheet")]
+#[cfg(any(feature = "use_ods",feature = "use_xlsx"))]
 #[derive(Clone, Debug, StructOpt)]
 pub struct SpreadSheetDestinationOptions {
     #[structopt(help = "spreadsheet filename")]

@@ -42,7 +42,7 @@ pub enum Value {
     Bool(bool),
     JSON(String),
     None, //null
-    Timestamp(u64),
+    Timestamp(u64), //seconds from unix epoch
     Date(chrono::NaiveDate),//year month day
     Time(chrono::NaiveTime),//hours, minutes, seconds
     DateTime(chrono::NaiveDateTime),//year month day, hours, minutes, seconds
