@@ -103,7 +103,7 @@ TODO: (must-have before calling it usable)
 TODO: (nice to have)
 
  * more sources (CSV, BigQuery, maybe JSON/Solr/ES/MongoDB)
- * more destinations (HDF5)
+ * more destinations (HDF5, Parquet)
  * support a bit more MySQL and PostgreSQL features (few types were ommited)
  * kill all .unwrap()
  * compress to zip/tgz (useful for csv/text/html)
@@ -112,6 +112,7 @@ TODO: (nice to have)
  * add command for user management
  * add command to display database/table sizes
  * add command to show currently running queries
+ * add watch command to show periodically query result
 
 Design principles:
 
