@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+
 use chrono::{DateTime, Utc};
 use humantime;
 use indicatif::ProgressBar;
@@ -11,6 +12,7 @@ use crate::definitions::{DataSource, DataDestination, DataSourceConnection, Data
 use crate::destinations::Destination;
 
 use crate::sources::Source;
+use crate::structopt::{StructOpt, StructOptInternal, clap};
 
 #[cfg(feature = "use_mysql")]
 use crate::{commands::common::MysqlConfigOptions, sources::mysql::MysqlSource};
@@ -114,7 +116,7 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         },
     };
     destination.prepare();
-    let source_connection = source.connect();
+    let mut source_connection = source.connect();
     let mut it = source_connection.batch_iterator(export_command.batch_size);
     destination.prepare_for_results(&it as &dyn DataSourceBatchIterator);
     let mut processed = 0;
@@ -186,9 +188,55 @@ pub enum SourceCommand {
 
 pub struct SourceCommandWrapper (pub SourceCommand);
 
-impl SourceCommandWrapper {
+impl StructOpt for SourceCommandWrapper {
 
-    pub fn augment_clap<'a, 'b>(
+    fn clap<'a, 'b>() -> clap::App<'a, 'b> { SourceCommand::clap() }
+
+    fn from_clap(matches: &clap::ArgMatches<'_>) -> Self { SourceCommandWrapper(SourceCommand::from_clap(matches))}
+
+    fn from_args() -> Self
+    where
+        Self: Sized,
+    { SourceCommandWrapper(SourceCommand::from_args())  }
+
+    fn from_args_safe() -> clap::Result<Self>
+    where
+        Self: Sized,
+    { 
+        match SourceCommand::from_args_safe() {
+            Ok(v) => Ok(SourceCommandWrapper(v)),
+            Err(e) => Err(e)
+        }
+    }
+
+    fn from_iter<I>(iter: I) -> Self
+    where
+        Self: Sized,
+        I: IntoIterator,
+        I::Item: Into<std::ffi::OsString> + Clone,
+    {
+        SourceCommandWrapper(SourceCommand::from_iter(iter))
+    }
+
+    fn from_iter_safe<I>(iter: I) -> clap::Result<Self>
+    where
+        Self: Sized,
+        I: IntoIterator,
+        I::Item: Into<std::ffi::OsString> + Clone,
+    { 
+
+        match SourceCommand::from_iter_safe(iter) {
+            Ok(v) => Ok(SourceCommandWrapper(v)),
+            Err(e) => Err(e)
+        }
+    }
+
+
+}
+
+impl StructOptInternal for SourceCommandWrapper {
+
+    fn augment_clap<'a, 'b>(
             app: ::structopt::clap::App<'a, 'b>,
         ) -> ::structopt::clap::App<'a, 'b> {
         let mut app = SourceCommand::augment_clap(app);
@@ -229,7 +277,7 @@ impl SourceCommandWrapper {
         app
     }
 
-    pub fn from_subcommand<'a, 'b> (
+    fn from_subcommand<'a, 'b> (
         sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
     ) -> Option<Self> {
 

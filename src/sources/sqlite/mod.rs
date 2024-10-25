@@ -91,7 +91,7 @@ where 'c: 'i,
 
 impl <'c, 'i>DataSourceConnection<'i, SqliteSourceBatchIterator<'c, 'i>> for SqliteSourceConnection<'c>
 {
-    fn batch_iterator(&'i self, batch_size: u64) -> SqliteSourceBatchIterator<'c, 'i>
+    fn batch_iterator(&'i mut self, batch_size: u64) -> SqliteSourceBatchIterator<'c, 'i>
     {
         let query = match &self.source.options.query {
             Some(q) => q.to_owned(),

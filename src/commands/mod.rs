@@ -1,29 +1,29 @@
 use structopt;
-use structopt::StructOpt;
 use structopt::clap::arg_enum;
 
 use crate::commands::common::SourceConfigCommand;
 use crate::config;
+use crate::structopt::{StructOpt, StructOptInternal, clap};
 
 #[cfg(feature = "use_mysql")]
 use crate::{commands::common::MysqlConfigOptions, sources::mysql::MysqlSource};
-#[cfg(feature = "use_spsheet")]
-use crate::destinations::ods_xlsx::{SpreadSheetDestination, SpreadSheetFormat};
+//#[cfg(feature = "use_spsheet")]
+//use crate::destinations::ods_xlsx::{SpreadSheetDestination, SpreadSheetFormat};
 #[cfg(feature = "use_postgres")]
 use crate::{commands::common::PostgresConfigOptions, sources::postgres::PostgresSource};
-#[cfg(feature = "use_csv")]
-use crate::destinations::csv::CSVDestination;
-use crate::destinations::debug::DebugDestination;
-#[cfg(feature = "use_html")]
-use crate::destinations::html::HTMLDestination;
-#[cfg(feature = "use_json")]
-use crate::destinations::json::JSONDestination;
+//#[cfg(feature = "use_csv")]
+//use crate::destinations::csv::CSVDestination;
+//use crate::destinations::debug::DebugDestination;
+//#[cfg(feature = "use_html")]
+//use crate::destinations::html::HTMLDestination;
+//#[cfg(feature = "use_json")]
+//use crate::destinations::json::JSONDestination;
 #[cfg(feature = "use_sqlite")]
 use crate::{commands::common::SqliteConfigOptions, destinations::sqlite::SqliteDestination, sources::sqlite::SqliteSource};
-#[cfg(feature = "use_text")]
-use crate::destinations::text::TextDestination;
-#[cfg(feature = "use_text")]
-use crate::destinations::text_vertical::TextVerticalDestination;
+//#[cfg(feature = "use_text")]
+//use crate::destinations::text::TextDestination;
+//#[cfg(feature = "use_text")]
+//use crate::destinations::text_vertical::TextVerticalDestination;
 
 
 
@@ -102,9 +102,54 @@ pub enum Command {
 #[derive(Debug)]
 pub struct CommandWrapper (pub Command);
 
-impl CommandWrapper {
+impl StructOpt for CommandWrapper {
 
-    pub fn augment_clap<'a, 'b>(
+    fn clap<'a, 'b>() -> clap::App<'a, 'b> { Command::clap() }
+
+    fn from_clap(matches: &clap::ArgMatches<'_>) -> Self { CommandWrapper(Command::from_clap(matches))}
+
+    fn from_args() -> Self
+    where
+        Self: Sized,
+    { CommandWrapper(Command::from_args())  }
+
+    fn from_args_safe() -> clap::Result<Self>
+    where
+        Self: Sized,
+    { 
+        match Command::from_args_safe() {
+            Ok(v) => Ok(CommandWrapper(v)),
+            Err(e) => Err(e)
+        }
+    }
+
+    fn from_iter<I>(iter: I) -> Self
+    where
+        Self: Sized,
+        I: IntoIterator,
+        I::Item: Into<std::ffi::OsString> + Clone,
+    {
+        CommandWrapper(Command::from_iter(iter))
+    }
+
+    fn from_iter_safe<I>(iter: I) -> clap::Result<Self>
+    where
+        Self: Sized,
+        I: IntoIterator,
+        I::Item: Into<std::ffi::OsString> + Clone,
+    { 
+
+        match Command::from_iter_safe(iter) {
+            Ok(v) => Ok(CommandWrapper(v)),
+            Err(e) => Err(e)
+        }
+    }
+}
+
+
+impl StructOptInternal for CommandWrapper {
+
+    fn augment_clap<'a, 'b>(
             app: ::structopt::clap::App<'a, 'b>,
         ) -> ::structopt::clap::App<'a, 'b> {
         
@@ -148,7 +193,7 @@ impl CommandWrapper {
             app
     }
 
-    pub fn from_subcommand<'a, 'b> (
+    fn from_subcommand<'a, 'b> (
         sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
     ) -> Option<Self> {
 
@@ -188,8 +233,8 @@ impl CommandWrapper {
                         #[cfg(feature = "use_sqlite")]
                         SourceConfigCommand::Sqlite(sqlite_config_options) => {
 
-                            let mut sqlite_options = <data_source::DataSourceCommand as ::structopt::StructOpt>
-                                ::from_clap(matches);
+                            //let mut sqlite_options: SqliteSourceOptions = <data_source::DataSourceCommand as ::structopt::StructOpt>
+                            let mut sqlite_options: export::SqliteSourceOptions = export::SqliteSourceOptions::from_clap(matches);
                             //sqlite_options.update_from_config_options(sqlite_config_options);
 
                             Some(

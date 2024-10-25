@@ -165,7 +165,7 @@ pub fn pgcli_client(postgres_config_options: &commands::common::PostgresConfigOp
         .expect(&format!("failed to execute pgcli ({:?})", cmd));
 }
 
-#[cfg(feature = "use_mysql")]
+#[cfg(feature = "use_postgres")]
 pub fn postgres_python_client(postgres_config_options: &commands::common::PostgresConfigOptions) {
     config::ensure_config_directory_exists();
     let python_venv_dir = config::get_config_directory().join("python_venv");

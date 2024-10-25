@@ -340,13 +340,13 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
         },
         #[cfg(feature = "use_postgres")]
         SourceConfigCommand::Postgres(postgres_config_options) => {
-          let conn = establish_postgres_connection(postgres_config_options);
+          let mut conn = establish_postgres_connection(postgres_config_options);
           let mut where_parts = vec!["t.table_schema='public'"];
-          let mut params:Vec<&dyn postgres::types::ToSql> = vec![];
+          let mut params:Vec<&(dyn postgres::types::ToSql + Sync)> = vec![];
           if let Some(dbname) = &postgres_config_options.database {
               where_parts.push("t.table_catalog=$1");
               //params.push(&dbname.as_str() as &dyn postgres::types::ToSql);
-              params.push(dbname as &dyn postgres::types::ToSql);
+              params.push(dbname as &(dyn postgres::types::ToSql + Sync));
           }
           let where_clause = match where_parts.is_empty() {
               true => "".to_string(),

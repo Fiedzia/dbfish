@@ -1,7 +1,10 @@
 use std::fs::File;
 use std::io::Read;
+use std::rc::Rc;
 
-use postgres::{self, Connection, TlsMode, types::Kind};
+use closure::closure;
+use postgres::{self, NoTls, Client, types::Kind};
+use postgres::fallible_iterator::FallibleIterator;
 use urlencoding;
 
 use crate::commands::common::PostgresConfigOptions;
@@ -65,10 +68,10 @@ pub fn get_postgres_url(postgres_options: &dyn GetPostgresConnectionParams) -> S
 }
 
 
-pub fn establish_postgres_connection(postgres_options: &dyn GetPostgresConnectionParams) -> Connection {
+pub fn establish_postgres_connection(postgres_options: &dyn GetPostgresConnectionParams) -> Client {
 
     let database_url = get_postgres_url(postgres_options);
-    let conn = Connection::connect(database_url, TlsMode::None).unwrap();
+    let mut conn = Client::connect(&database_url, NoTls).unwrap();
 
     if !postgres_options.get_init().is_empty() {
         for sql in postgres_options.get_init().iter() {
@@ -84,20 +87,26 @@ pub struct PostgresSource {
     options: PostgresSourceOptions,
 }
 
-pub struct PostgresSourceConnection<'c> {
-    connection: Connection,
-    results: postgres::rows::Rows,
-    source: &'c  PostgresSource,
+pub struct PostgresSourceConnection<'source> {
+    connection: Client,
+    //results: Vec<postgres::row::Row>,
+    source: &'source  PostgresSource,
 }
 
-pub struct PostgresSourceBatchIterator<'c, 'i>
+//pub struct PostgresSourceBatchIterator<'c, 'i>(postgres::RowIter<'c>);
+/*pub struct PostgresSourceBatchIterator<'c, 'i>
 where 'c: 'i
+      //F: FnMut() -> Option<Vec<i32>>
 {
     batch_size: u64,
-    connection: &'i Connection,
-    result_iterator: postgres::rows::Iter<'i>,
-    source_connection: &'i PostgresSourceConnection<'c>
-}
+    //rows_affected: Option<u64>,
+    first_row: Option<postgres::row::Row>,
+    result_iterator: postgres::RowIter<'c>
+    //connection: Client,
+    //result_iterator: postgres::RowIter<'c>,
+    //result_iterator: Box<dyn FnMut() -> Result<Option<postgres::row::Row>, postgres::Error>>,
+    //source_connection: &'i mut PostgresSourceConnection<'c>
+}*/
 
 impl PostgresSource {
     pub fn init(postgres_options: &PostgresSourceOptions) -> PostgresSource {
@@ -105,14 +114,66 @@ impl PostgresSource {
     }
 }
 
+impl <'source: 'conn, 'conn>PostgresSourceConnection<'source> {
 
-impl <'c, 'i> DataSource<'c, 'i, PostgresSourceConnection<'c>, PostgresSourceBatchIterator<'c, 'i>> for PostgresSource
-where 'c: 'i,
+    pub fn _batch_iterator(source: &'source PostgresSource, mut connection: &'source mut Client, batch_size: u64) -> impl DataSourceBatchIterator<'conn> + use<'source, 'conn> {
+        //PostgresSourceBatchIterator<'c, 'c> {
+
+        let query = match &source.options.query {
+            Some(q) => q.to_owned(),
+            None => match &source.options.query_file {
+                Some(path_buf) => {
+                    let mut sql = String::new();
+                    File::open(path_buf).unwrap().read_to_string(&mut sql).unwrap();
+                    sql
+                },
+                None => panic!("You need to pass either q or query-file option"),
+            }
+        };
+
+
+        let batch_iterator = connection.query_raw::<str,Vec<String>  ,_ >(&query, vec![]).unwrap().peekable();
+        /*let batch_iterator = 
+            closure!(move mut conn, || {
+                let mut row_iterator = None;
+                if row_iterator.is_none() {
+            
+                    row_iterator = match conn.query_raw::<str,Vec<String>  ,_ >(&query, vec![]) {
+                        Ok(r) => Some(r.peekable()),
+                        Err(e) => {
+                            report_query_error(&query, &format!("{:?}", e));
+                            std::process::exit(1);
+                        }
+                    };
+                };
+                if let Some(ref mut ri) = row_iterator {
+                    ri.next()
+                } else {
+                    Ok(None)
+                }
+            });*/
+
+        //batch_iterator
+        Box::new(batch_iterator)
+        /*PostgresSourceBatchIterator {
+            batch_size,
+            first_row: None,
+            result_iterator: batch_iterator,
+            //rows_affected: None,
+            //source_connection: self,
+        }*/
+
+    }
+
+}
+
+impl <'source: 'conn, 'conn> DataSource<'source, 'conn, PostgresSourceConnection<'source>> for PostgresSource
+//impl <'c, 'i> DataSource<'c, 'i, PostgresSourceConnection<'c>, postgres::RowIter<'c>> for PostgresSource
 {
-    fn connect(&'c self) -> PostgresSourceConnection
+    fn connect(&'source self) -> PostgresSourceConnection
     {
         
-        let connection =  establish_postgres_connection(&self.options);
+        let mut connection =  establish_postgres_connection(&self.options);
         if !self.options.init.is_empty() {
             for sql in self.options.init.iter() {
                 match connection.execute(sql, &[]) {
@@ -124,29 +185,10 @@ where 'c: 'i,
                 }
             }
         }
-        let query = match &self.options.query {
-            Some(q) => q.to_owned(),
-            None => match &self.options.query_file {
-                Some(path_buf) => {
-                    let mut sql = String::new();
-                    File::open(path_buf).unwrap().read_to_string(&mut sql).unwrap();
-                    sql
-                },
-                None => panic!("You need to pass either q or query-file option"),
-            }
-        };
 
-        let results = match connection.query(&query, &[]) {
-            Ok(r) => r,
-            Err(e) => {
-                report_query_error(&query, &format!("{:?}", e));
-                std::process::exit(1);
-            }
-        };
         PostgresSourceConnection {
             connection,
             source: &self,
-            results,
         }
     }
 
@@ -156,20 +198,15 @@ where 'c: 'i,
 
 }
 
-impl <'c, 'i>DataSourceConnection<'i, PostgresSourceBatchIterator<'c, 'i>> for PostgresSourceConnection<'c>
+impl <'source: 'conn, 'conn>DataSourceConnection<'conn> for PostgresSourceConnection<'source>
 {
-    fn batch_iterator(&'i self, batch_size: u64) -> PostgresSourceBatchIterator<'c, 'i>
+    fn batch_iterator(&'conn mut self, batch_size: u64) -> impl DataSourceBatchIterator<'conn> //PostgresSourceBatchIterator<'c, 'i>
     {
-        PostgresSourceBatchIterator {
-            batch_size,
-            connection: & self.connection,
-            result_iterator: self.results.iter(),
-            source_connection: &self,
-        }
+        PostgresSourceConnection::_batch_iterator(self.source, &mut self.connection, batch_size)
     }
 }
 
-pub fn postgres_to_row(column_info: &[(String,  postgres::types::Type)], postgres_row: &postgres::rows::Row) -> Row {
+pub fn postgres_to_row(column_info: &[(String,  postgres::types::Type)], postgres_row: &postgres::row::Row) -> Row {
     let mut result = Row::with_capacity(postgres_row.len());
     for (idx, (_name, type_)) in column_info.iter().enumerate() {
         match (type_.kind(), type_.name()) {
@@ -186,33 +223,46 @@ pub fn postgres_to_row(column_info: &[(String,  postgres::types::Type)], postgre
 }
 
 
-impl <'c, 'i>DataSourceBatchIterator for PostgresSourceBatchIterator<'c, 'i>
+//impl <'c, 'i>DataSourceBatchIterator for PostgresSourceBatchIterator<'c, 'i>
+//impl DataSourceBatchIterator for Box<postgres::RowIter<'_>>
+impl <'conn>DataSourceBatchIterator<'conn> for Box<postgres::fallible_iterator::Peekable<postgres::RowIter<'_>>>
+
 {
     fn get_column_info(&self) -> Vec<ColumnInfo> {
-       let mut result = vec![];
-        for column in self.source_connection.results.columns().iter() {
-            //println!("name={}; type_name={}; kind={:?};", column.name(), column.type_().name(), column.type_().kind() );
-            match (column.type_().kind(), column.type_().name()) {
-                (Kind::Simple, "int4") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::I32}),
-                (Kind::Simple, "int8") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::I64}),
-                (Kind::Simple, "float4") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::F32}),
-                (Kind::Simple, "float8") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::F64}),
-                (Kind::Simple, "text") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::String}),
-                _ => panic!("postgres: unsupported type: {:?}", column.type_() )
-            };
+       /*let mut result = vec![];
+       match self::Row {
+       //match &self.peek().unwrap() {
+           Some(row) => {
+
+                for column in row.columns().iter() {
+                    //println!("name={}; type_name={}; kind={:?};", column.name(), column.type_().name(), column.type_().kind() );
+                    match (column.type_().kind(), column.type_().name()) {
+                        (Kind::Simple, "int4") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::I32}),
+                        (Kind::Simple, "int8") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::I64}),
+                        (Kind::Simple, "float4") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::F32}),
+                        (Kind::Simple, "float8") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::F64}),
+                        (Kind::Simple, "text") => result.push(ColumnInfo{name: column.name().to_string(), data_type: ColumnType::String}),
+                        _ => panic!("postgres: unsupported type: {:?}", column.type_() )
+                    };
+                }
+            },
+            _ => {}
         }
-        result
+        result*/
+        vec![]
     }
 
     fn get_count(&self) -> Option<u64> {
-        Some(self.source_connection.results.len() as u64)
+        //self.rows_affected
+        None
     }
  
     fn next(&mut self) -> Option<Vec<Row>>
     {
-        let rows :Vec<Row> = self.result_iterator
+        let rows :Vec<Row> = self
             .by_ref()
-            .take(self.batch_size as usize)
+            //.take(self.batch_size as usize)
+            .take(10usize) //todo!
             .map(|postgres_row| {
                 let mut result = Row::with_capacity(postgres_row.len());
                 for (idx, column) in postgres_row.columns().iter().enumerate() {
@@ -225,8 +275,9 @@ impl <'c, 'i>DataSourceBatchIterator for PostgresSourceBatchIterator<'c, 'i>
                         _ => panic!("postgres: unsupported type: {:?}", column.type_() )
                     }
                 }
-                result
-            }).collect();
+                Ok(result)
+            }).collect()
+            .unwrap();
 
         if !rows.is_empty() {
             Some(rows)

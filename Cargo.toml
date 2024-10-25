@@ -12,6 +12,7 @@ version = "0.1.1"
 [dependencies]
 atty = "0.2.11"
 chrono = "0.4"
+closure = "0.3.0"
 default-editor = "0.1.0"
 dirs = "2"
 humantime = "1.2.0"
@@ -50,11 +51,11 @@ version = "0.7.1"
 
 [dependencies.mysql]
 optional = true
-version = "17"
+version = "25"
 
 [dependencies.postgres]
 optional = true
-version = "0.15.2"
+version = "0.19"
 
 [dependencies.spsheet]
 features = [
@@ -77,10 +78,10 @@ default = [
     "use_csv",
     "use_html",
     "use_json",
-    "use_mysql",
+    #"use_mysql",
     "use_postgres",
-    "use_spsheet",
-    "use_sqlite",
+    #"use_spsheet",
+    #"use_sqlite",
     "use_text",
 ]
 use_csv = ["csv"]

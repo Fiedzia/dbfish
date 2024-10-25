@@ -62,7 +62,7 @@ pub fn establish_mysql_connection(mysql_options: &dyn GetMysqlConnectionParams )
             .tcp_connect_timeout(Some(Duration::from_secs(*timeout)));
     };
 
-    if let Some(ref socket) = mysql_options.get_socket() {
+    option_builder = if let Some(ref socket) = mysql_options.get_socket() {
         option_builder.socket(Some(socket.to_owned()));
     } else {
         option_builder

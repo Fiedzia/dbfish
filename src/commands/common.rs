@@ -1,12 +1,63 @@
 use serde_derive::{Deserialize, Serialize};
+use crate::structopt::{StructOpt, StructOptInternal, clap};
 
 use crate::config;
 
-pub struct SourceConfigCommandWrapper (pub SourceConfigCommand);
+#[derive(Clone, Debug)]
+pub struct SourceConfigCommandWrapper(pub SourceConfigCommand);
 
-impl SourceConfigCommandWrapper {
+//impl SourceConfigCommandWrapper {}
 
-    pub fn augment_clap<'a, 'b>(
+impl StructOpt for SourceConfigCommandWrapper {
+
+    fn clap<'a, 'b>() -> clap::App<'a, 'b> { SourceConfigCommand::clap() }
+
+    fn from_clap(matches: &clap::ArgMatches<'_>) -> Self { SourceConfigCommandWrapper(SourceConfigCommand::from_clap(matches))}
+
+    fn from_args() -> Self
+    where
+        Self: Sized,
+    { SourceConfigCommandWrapper(SourceConfigCommand::from_args())  }
+
+    fn from_args_safe() -> clap::Result<Self>
+    where
+        Self: Sized,
+    { 
+        match SourceConfigCommand::from_args_safe() {
+            Ok(v) => Ok(SourceConfigCommandWrapper(v)),
+            Err(e) => Err(e)
+        }
+    }
+
+    fn from_iter<I>(iter: I) -> Self
+    where
+        Self: Sized,
+        I: IntoIterator,
+        I::Item: Into<std::ffi::OsString> + Clone,
+    {
+        SourceConfigCommandWrapper(SourceConfigCommand::from_iter(iter))
+    }
+
+    fn from_iter_safe<I>(iter: I) -> clap::Result<Self>
+    where
+        Self: Sized,
+        I: IntoIterator,
+        I::Item: Into<std::ffi::OsString> + Clone,
+    { 
+
+        match SourceConfigCommand::from_iter_safe(iter) {
+            Ok(v) => Ok(SourceConfigCommandWrapper(v)),
+            Err(e) => Err(e)
+        }
+    }
+
+
+}
+
+
+impl StructOptInternal for SourceConfigCommandWrapper {
+
+    fn augment_clap<'a, 'b>(
             app: ::structopt::clap::App<'a, 'b>,
         ) -> ::structopt::clap::App<'a, 'b> {
         let mut app = SourceConfigCommand::augment_clap(app);
@@ -47,7 +98,7 @@ impl SourceConfigCommandWrapper {
         app
     }
 
-    pub fn from_subcommand<'a, 'b> (
+    fn from_subcommand<'a, 'b> (
         sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
     ) -> Option<Self> {
 
