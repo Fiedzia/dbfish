@@ -1,7 +1,7 @@
 [package]
 authors = ["Maciej Dziardziel <fiedzia@gmail.com>"]
 description = "Better database CLI tools. Export data and manage connections easier and faster."
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/Fiedzia/dbfish"
 license = "MIT"
 name = "dbfish"
