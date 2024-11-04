@@ -46,7 +46,7 @@ impl SpreadSheetODSDestination
 {
     pub fn init(spreadsheet_options: &SpreadSheetDestinationOptions) -> SpreadSheetODSDestination {
         let mut workbook = spreadsheet_ods::WorkBook::new(locale!("en_US")); //todo!("Support any locales using system settings");
-        let mut sheet = spreadsheet_ods::Sheet::new("Sheet 1");
+        let sheet = spreadsheet_ods::Sheet::new("Sheet 1");
         workbook.push_sheet(sheet);
 
         SpreadSheetODSDestination {

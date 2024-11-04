@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate clap;
 
-use clap::{CommandFactory, FromArgMatches, Parser, Subcommand};
+use clap::{CommandFactory, FromArgMatches, Subcommand};
 
 pub mod commands;
 pub mod config;
@@ -10,7 +10,7 @@ pub mod destinations;
 pub mod sources;
 pub mod utils;
 
-use commands::{ApplicationArguments, CommandSource, CommandWrapper, DataSourceCommand, SourceLevelCommand, UseColor, handle_source_level_command};
+use commands::{ApplicationArguments, CommandSource, CommandWrapper, DataSourceCommand, SourceLevelCommand, handle_source_level_command};
 
 
 fn main() {
