@@ -1,7 +1,7 @@
 use std;
 use std::io::Write;
 
-use atty;
+use is_terminal::IsTerminal;
 use termcolor;
 
 
@@ -22,7 +22,7 @@ impl DebugDestination {
         let use_color = match args.color {
             UseColor::Yes => true,
             UseColor::No => false,
-            UseColor::Auto => options.filename == "-" && atty::is(atty::Stream::Stdout),
+            UseColor::Auto => options.filename == "-" && std::io::stdout().is_terminal(),
         };
 
         DebugDestination {

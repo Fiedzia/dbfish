@@ -1,7 +1,7 @@
 use std::io::Write;
 use json;
 
-use atty;
+use is_terminal::IsTerminal;
 use json_color;
 
 use crate::commands::{ApplicationArguments, export::JSONDestinationOptions, UseColor};
@@ -26,7 +26,7 @@ impl JSONDestination
         let use_color = match args.color {
             UseColor::Yes => true,
             UseColor::No => false,
-            UseColor::Auto => json_options.filename == "-" && atty::is(atty::Stream::Stdout),
+            UseColor::Auto => json_options.filename == "-" && std::io::stdout().is_terminal(),
         };
         let writer = match json_options.filename.as_str() {
             "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(if use_color { termcolor::ColorChoice::Always} else { termcolor::ColorChoice::Never })),

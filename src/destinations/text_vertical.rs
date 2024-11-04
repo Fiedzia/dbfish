@@ -1,7 +1,7 @@
 use std;
 use std::io::Write;
 
-use atty;
+use is_terminal::IsTerminal;
 use termcolor;
 use termcolor::WriteColor;
 
@@ -25,7 +25,7 @@ impl TextVerticalDestination {
         let use_color = match args.color {
             UseColor::Yes => true,
             UseColor::No => false,
-            UseColor::Auto => options.filename == "-" && atty::is(atty::Stream::Stdout),
+            UseColor::Auto => options.filename == "-" && std::io::stdout().is_terminal(),
         };
         let writer = match options.filename.as_str() {
             "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(if use_color { termcolor::ColorChoice::Always} else { termcolor::ColorChoice::Never })),
