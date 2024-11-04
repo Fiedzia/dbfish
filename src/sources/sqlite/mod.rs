@@ -123,10 +123,10 @@ impl <'source: 'conn, 'conn>DataSourceConnection<'conn> for SqliteSourceConnecti
 impl <'conn>DataSourceBatchIterator<'conn> for SqliteSourceBatchIterator<'conn>
 {
     fn get_column_info(&self) -> Vec<ColumnInfo> {
-        let columns:Vec<ColumnInfo> = (0..self.statement.count()).map(|idx| {
+        let columns:Vec<ColumnInfo> = (0..self.statement.column_count()).map(|idx| {
             ColumnInfo {
-                name: self.statement.name(idx).to_owned(),
-                data_type: match self.statement.kind(idx) {
+                name: self.statement.column_name(idx).unwrap_or("").to_string(),
+                data_type: match self.statement.column_type(idx).unwrap() {
                     sqlite::Type::Binary => ColumnType::Bytes,
                     sqlite::Type::Float => ColumnType::F64,
                     sqlite::Type::Integer => ColumnType::I64,
@@ -154,7 +154,7 @@ impl <'conn>DataSourceBatchIterator<'conn> for SqliteSourceBatchIterator<'conn>
                 sqlite::State::Done => { self.done=true; break},
                 sqlite::State::Row => {
 
-                    let row =(0..self.statement.count()).map(|idx| {
+                    let row =(0..self.statement.column_count()).map(|idx| {
                         let value: sqlite::Value = self.statement.read(idx).unwrap();
                         match value {
                             sqlite::Value::String(s) => Value::String(s),

@@ -77,8 +77,8 @@ impl DataDestination for SqliteDestination
         for _v in 1..rows.len() {
             sql.push_str(&format!(",({})", values_part));
         }
-        let statement = self.connection.prepare(sql).unwrap();
-        let mut cursor = statement.cursor();
+        let mut statement = self.connection.prepare(sql).unwrap();
+        //let mut cursor = statement.iter();
         let mut data: Vec<sqlite::Value> = Vec::with_capacity(self.column_names.len());
         for row in rows {
             for col in row.iter() {
@@ -100,12 +100,13 @@ impl DataDestination for SqliteDestination
                 }
             }
         }
-        cursor.bind(&data).unwrap();
-        cursor.next().unwrap();
+        //cursor.bind(&*data).unwrap();
+        statement.bind(&*data).unwrap();
+        //cursor.next().unwrap();
+        statement.next().unwrap();
        
     }
 
     fn close(&mut self) { }
 
 }
-

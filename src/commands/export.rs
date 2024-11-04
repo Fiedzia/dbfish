@@ -130,7 +130,7 @@ pub fn export (args: &ApplicationArguments, src: &DataSourceCommand, export_comm
         );
         pb.set_style(
             indicatif::ProgressStyle::default_bar()
-                .template("Processed {pos:>7}/{len:7} rows in {elapsed_precise}")
+                .template("Processed {pos:>7}/{len:7} rows in {elapsed_precise}").unwrap()
         );
         Some(pb)
     } else {
