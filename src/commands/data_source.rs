@@ -1,21 +1,18 @@
-use structopt;
+use clap::{ArgMatches, Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum};
 
 use crate::commands::export;
 
 
-#[derive(Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub enum DataSourceCommand {
     #[cfg(feature = "use_mysql")]
-    #[structopt(name = "mysql", about="mysql")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "mysql", about="mysql")]
     Mysql(export::MysqlSourceOptions),
     #[cfg(feature = "use_postgres")]
-    #[structopt(name = "postgres", about="postgres")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "postgres", about="postgres")]
     Postgres(export::PostgresSourceOptions),
     #[cfg(feature = "use_sqlite")]
-    #[structopt(name = "sqlite", about="sqlite")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "sqlite", about="sqlite")]
     Sqlite(export::SqliteSourceOptions),
 }
 

@@ -1,18 +1,17 @@
 use std::path::PathBuf;
 
 
+use clap::{ArgMatches, Args, Command, CommandFactory, FromArgMatches, Parser, Subcommand, ValueEnum};
 use chrono::{DateTime, Utc};
 use humantime;
 use indicatif::ProgressBar;
 
 use crate::commands::ApplicationArguments;
-use crate::commands::common::SourceConfigCommand;
-use crate::config;
-use crate::definitions::{DataSource, DataDestination, DataSourceConnection, DataSourceBatchIterator};
+use crate::commands::data_source::DataSourceCommand;
+use crate::definitions::{DataSource, DataDestination, DataSourceConnection};
 use crate::destinations::Destination;
 
 use crate::sources::Source;
-use crate::structopt::{StructOpt, StructOptInternal, clap};
 
 #[cfg(feature = "use_mysql")]
 use crate::{commands::common::MysqlConfigOptions, sources::mysql::MysqlSource};
@@ -37,14 +36,14 @@ use crate::destinations::text::TextDestination;
 use crate::destinations::text_vertical::TextVerticalDestination;
 
 
-pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
-
+pub fn export (args: &ApplicationArguments, src: &DataSourceCommand, export_command: &ExportCommand) {
+    
     let time_start: DateTime<Utc> = Utc::now();
-    let (source, mut destination) = match export_command.source {
+    let (source, mut destination) = match src {
         #[cfg(feature = "use_mysql")]
-        SourceCommandWrapper(SourceCommand::Mysql(ref mysql_options)) => {
+        DataSourceCommand::Mysql(ref mysql_options) => {
             let source: Source  = Source::Mysql(MysqlSource::init(&mysql_options));
-            let destination: Destination = match &mysql_options.destination {
+            let destination: Destination = match &export_command.destination {
 
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Destination::CSV(CSVDestination::init(&csv_options)),
@@ -69,9 +68,9 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
         },
 
         #[cfg(feature = "use_postgres")]
-        SourceCommandWrapper(SourceCommand::Postgres(ref postgres_options)) => {
+        DataSourceCommand::Postgres(ref postgres_options) => {
             let source: Source  = Source::Postgres(PostgresSource::init(&postgres_options));
-            let destination: Destination = match &postgres_options.destination {
+            let destination: Destination = match &export_command.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Destination::CSV(CSVDestination::init(&csv_options)),
                 DestinationCommand::Debug(debug_options) => Destination::Debug(DebugDestination::init(&args, &debug_options)),
@@ -93,9 +92,9 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
             (source, destination)
         },
         #[cfg(feature = "use_sqlite")]
-        SourceCommandWrapper(SourceCommand::Sqlite(ref sqlite_options)) => {
+        DataSourceCommand::Sqlite(ref sqlite_options) => {
             let source: Source = Source::Sqlite(SqliteSource::init(&sqlite_options));
-            let destination: Destination = match &sqlite_options.destination {
+            let destination: Destination = match &export_command.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => Destination::CSV(CSVDestination::init(&csv_options)),
                 DestinationCommand::Debug(debug_options) => Destination::Debug(DebugDestination::init(&args, &debug_options)),
@@ -160,338 +159,176 @@ pub fn export (args: &ApplicationArguments, export_command: &ExportCommand) {
     if args.verbose {
         println!("Done. Exported {} rows in {}", processed, humantime::format_duration(duration).to_string());
     }
+    
 }
 
 
 
-#[derive(StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ExportCommand {
-    #[structopt(short = "b", long = "batch-size", help = "batch size", default_value="500")]
+    #[arg(short = 'b', long = "batch-size", help = "batch size", default_value="500")]
     batch_size: u64,
-    #[structopt(subcommand)]
-    pub source: SourceCommandWrapper,
+    #[command(subcommand)]
+    pub destination: DestinationCommand,
 }
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub enum SourceCommand {
     #[cfg(feature = "use_mysql")]
-    #[structopt(name = "mysql", about="mysql")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "mysql", about="mysql")]
     Mysql(MysqlSourceOptions),
     #[cfg(feature = "use_postgres")]
-    #[structopt(name = "postgres", about="postgres")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "postgres", about="postgres")]
     Postgres(PostgresSourceOptions),
     #[cfg(feature = "use_sqlite")]
-    #[structopt(name = "sqlite", about="sqlite")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "sqlite", about="sqlite")]
     Sqlite(SqliteSourceOptions),
 }
 
 pub struct SourceCommandWrapper (pub SourceCommand);
 
-impl StructOpt for SourceCommandWrapper {
 
-    fn clap<'a, 'b>() -> clap::App<'a, 'b> { SourceCommand::clap() }
-
-    fn from_clap(matches: &clap::ArgMatches<'_>) -> Self { SourceCommandWrapper(SourceCommand::from_clap(matches))}
-
-    fn from_args() -> Self
-    where
-        Self: Sized,
-    { SourceCommandWrapper(SourceCommand::from_args())  }
-
-    fn from_args_safe() -> clap::Result<Self>
-    where
-        Self: Sized,
-    { 
-        match SourceCommand::from_args_safe() {
-            Ok(v) => Ok(SourceCommandWrapper(v)),
-            Err(e) => Err(e)
-        }
-    }
-
-    fn from_iter<I>(iter: I) -> Self
-    where
-        Self: Sized,
-        I: IntoIterator,
-        I::Item: Into<std::ffi::OsString> + Clone,
-    {
-        SourceCommandWrapper(SourceCommand::from_iter(iter))
-    }
-
-    fn from_iter_safe<I>(iter: I) -> clap::Result<Self>
-    where
-        Self: Sized,
-        I: IntoIterator,
-        I::Item: Into<std::ffi::OsString> + Clone,
-    { 
-
-        match SourceCommand::from_iter_safe(iter) {
-            Ok(v) => Ok(SourceCommandWrapper(v)),
-            Err(e) => Err(e)
-        }
-    }
-
-
-}
-
-impl StructOptInternal for SourceCommandWrapper {
-
-    fn augment_clap<'a, 'b>(
-            app: ::structopt::clap::App<'a, 'b>,
-        ) -> ::structopt::clap::App<'a, 'b> {
-        let mut app = SourceCommand::augment_clap(app);
-        let sources = config::get_sources_list();
-
-        for (source_name, source_config_command) in sources {
-
-            match source_config_command.get_type_name().as_str() {
-
-                #[cfg(feature = "use_mysql")]
-                "mysql" => {
-                    let subcmd = MysqlSourceOptions::augment_clap(
-                        structopt::clap::SubCommand::with_name(&source_name)
-                            .setting(structopt::clap::AppSettings::ColoredHelp)
-                    );
-                    app = app.subcommand(subcmd);
-                },
-                #[cfg(feature = "use_postgres")]
-                "postgres" => {
-                    let subcmd = PostgresSourceOptions::augment_clap(
-                        structopt::clap::SubCommand::with_name(&source_name)
-                            .setting(structopt::clap::AppSettings::ColoredHelp)
-                    );
-                    app = app.subcommand(subcmd);
-                },
-                #[cfg(feature = "use_sqlite")]
-                "sqlite" => {
-                    let subcmd = SqliteSourceOptions::augment_clap(
-                        structopt::clap::SubCommand::with_name(&source_name)
-                            .setting(structopt::clap::AppSettings::ColoredHelp)
-                    );
-                    app = app.subcommand(subcmd);
-                },
-
-                unknown => { eprintln!("unknown database type: {} for source: {}", unknown, source_config_command.get_type_name());}
-            }
-        }
-        app
-    }
-
-    fn from_subcommand<'a, 'b> (
-        sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
-    ) -> Option<Self> {
-
-        let result = SourceCommand::from_subcommand(sub);
-        //no default sources were matching subcommand, it might be user defined source
-        if result.is_none() {
-
-            if let (source_name, Some(matches)) = sub {
-                match config::USER_DEFINED_SOURCES.get(source_name) {
-                    None => None,
-                    Some(source) => match source {
-                        #[cfg(feature = "use_mysql")]
-                        SourceConfigCommand::Mysql(mysql_config_options) => {
-
-                            let mut mysql_options = <MysqlSourceOptions as ::structopt::StructOpt>
-                                ::from_clap(matches);
-                            mysql_options.update_from_config_options(mysql_config_options);
-
-                            Some(
-                                SourceCommandWrapper(
-                                    SourceCommand::Mysql(mysql_options)
-                                )
-                            )
-                        },
-                        #[cfg(feature = "use_postgres")]
-                        SourceConfigCommand::Postgres(postgres_config_options) => {
-
-                            let mut postgres_options = <PostgresSourceOptions as ::structopt::StructOpt>
-                                ::from_clap(matches);
-                            postgres_options.update_from_config_options(postgres_config_options);
-
-                            Some(
-                                SourceCommandWrapper(
-                                    SourceCommand::Postgres(postgres_options)
-                                )
-                            )
-                        },
-                        #[cfg(feature = "use_sqlite")]
-                        SourceConfigCommand::Sqlite(sqlite_config_options) => {
-
-                            let mut sqlite_options = <SqliteSourceOptions as ::structopt::StructOpt>
-                                ::from_clap(matches);
-                            sqlite_options.update_from_config_options(sqlite_config_options);
-
-                            Some(
-                                SourceCommandWrapper(
-                                    SourceCommand::Sqlite(sqlite_options)
-                                )
-                            )
-                        },
-                    }
-                }
-            } else {
-                None
-            }
-        } else {
-            result.map(SourceCommandWrapper)
-        }
-    }
-
-}
-
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub enum DestinationCommand {
     #[cfg(feature = "use_csv")]
-    #[structopt(name = "csv", about="CSV")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "csv", about="CSV")]
     CSV(CSVDestinationOptions),
     #[cfg(feature = "use_ods")]
-    #[structopt(name = "ods", about="ODS spreadsheet")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "ods", about="ODS spreadsheet")]
     ODS(SpreadSheetDestinationOptions),
     #[cfg(feature = "use_xlsx")]
-    #[structopt(name = "xlsx", about="XLSX spreadsheet")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "xlsx", about="XLSX spreadsheet")]
     XLSX(SpreadSheetDestinationOptions),
     #[cfg(feature = "use_sqlite")]
-    #[structopt(name = "sqlite", about="Sqlite file")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "sqlite", about="Sqlite file")]
     Sqlite(SqliteDestinationOptions),
     #[cfg(feature = "use_text")]
-    #[structopt(name = "text", about="Text")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "text", about="Text")]
     Text(TextDestinationOptions),
     #[cfg(feature = "use_text")]
-    #[structopt(name = "text-vertical", about="Text (columns displayed vertically)")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "text-vertical", about="Text (columns displayed vertically)")]
     TextVertical(TextVerticalDestinationOptions),
     #[cfg(feature = "use_html")]
-    #[structopt(name = "html", about="HTML")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "html", about="HTML")]
     HTML(HTMLDestinationOptions),
     #[cfg(feature = "use_json")]
-    #[structopt(name = "json", about="JSON")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "json", about="JSON")]
     JSON(JSONDestinationOptions),
-    #[structopt(name = "debug", about="Debug output")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "debug", about="Debug output")]
     Debug(DebugDestinationOptions),
 }
 
 
 #[cfg(feature = "use_sqlite")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SqliteDestinationOptions {
-    #[structopt(help = "sqlite filename")]
+    #[arg(help = "sqlite filename")]
     pub filename: String,
-    #[structopt(help = "sqlite table name", default_value="data")]
+    #[arg(help = "sqlite table name", default_value="data")]
     pub table: String,
-    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
 }
 
 #[cfg(feature = "use_csv")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct CSVDestinationOptions {
-    #[structopt(help = "csv filename. Use '-' for stdout")]
+    #[arg(help = "csv filename. Use '-' for stdout")]
     pub filename: String,
-    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
 }
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct DebugDestinationOptions {
-    #[structopt(help = "output filename")]
+    #[arg(help = "output filename")]
     pub filename: String,
-    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
 }
 
 #[cfg(any(feature = "use_ods",feature = "use_xlsx"))]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SpreadSheetDestinationOptions {
-    #[structopt(help = "spreadsheet filename")]
+    #[arg(help = "spreadsheet filename")]
     pub filename: String,
-    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
 }
 
 #[cfg(feature = "use_text")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct TextDestinationOptions {
-    #[structopt(help = "text filename")]
+    #[arg(help = "text filename")]
     pub filename: String,
-    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
 }
 
 #[cfg(feature = "use_text")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct TextVerticalDestinationOptions {
-    #[structopt(help = "filename")]
+    #[arg(help = "filename")]
     pub filename: String,
-    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
-    #[structopt(short = "s", long = "sort-columns", help = "sort columns by name")]
+    #[arg(short = 's', long = "sort-columns", help = "sort columns by name")]
     pub sort_columns: bool,
 }
 
 #[cfg(feature = "use_html")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct HTMLDestinationOptions {
-    #[structopt(help = "html filename")]
+    #[arg(help = "html filename")]
     pub filename: String,
-    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
-    #[structopt(long = "title", help = "html page title")]
+    #[arg(long = "title", help = "html page title")]
     pub title: Option<String>,
 }
 
 
 #[cfg(feature = "use_json")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct JSONDestinationOptions {
-    #[structopt(help = "json filename")]
+    #[arg(help = "json filename")]
     pub filename: String,
-    #[structopt(short = "c", long = "compact", help = "Do not indent json content")]
+    #[arg(short = 'c', long = "compact", help = "Do not indent json content")]
     pub compact: bool,
-    #[structopt(short = "t", long = "truncate", help = "truncate data to given amount of graphemes")]
+    #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
-    #[structopt(short = "i", long = "indent", help = "amount of spaces for indentation", default_value="4")]
+    #[arg(short = 'i', long = "indent", help = "amount of spaces for indentation", default_value="4")]
     pub indent: u16,
 }
 
 
 #[cfg(feature = "use_mysql")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct MysqlSourceOptions {
-    #[structopt(short = "h", long = "host", help = "hostname")]
+    #[arg(long = "host", help = "hostname")]
     pub host: Option<String>,
-    #[structopt(short = "u", long = "user", help = "username")]
+    #[arg(short = 'u', long = "user", help = "username")]
     pub user: Option<String>,
-    #[structopt(short = "p", long = "password", help = "password")]
+    #[arg(short = 'p', long = "password", help = "password")]
     pub password: Option<String>,
-    #[structopt(short = "P", long = "port", help = "port")]
+    #[arg(short = 'P', long = "port", help = "port")]
     pub port: Option<u16>,
-    #[structopt(short = "S", long = "socket", help = "socket")]
+    #[arg(short = 'S', long = "socket", help = "socket")]
     pub socket: Option<String>,
-    #[structopt(short = "D", long = "database", help = "database name")]
+    #[arg(short = 'D', long = "database", help = "database name")]
     pub database: Option<String>,
-    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    #[arg(short = 'i', long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
-    #[structopt(short = "q", long = "query", help = "sql query", required_unless = "query-file")]
+    #[arg(short = 'q', long = "query", help = "sql query")]
     pub query: Option<String>,
-    #[structopt(short = "f", long = "query-file", parse(from_os_str), help = "read sql query from file")]
+    #[arg(short = 'f', long = "query-file", help = "read sql query from file")]
     pub query_file: Option<PathBuf>,
-    #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
+    #[arg(short = 'c', long = "count", help = "run another query to get row count first")]
     pub count: bool,
-    #[structopt(long = "timeout", help = "connect/read/write timeout in seconds")]
+    #[arg(short = 't', long = "timeout", help = "connect/read/write timeout in seconds")]
     pub timeout: Option<u64>,
-    #[structopt(subcommand)]
-    pub destination: DestinationCommand
+    //#[structopt(subcommand)]
+    //pub destination: DestinationCommand
 }
 
 #[cfg(feature = "use_mysql")]
@@ -528,30 +365,28 @@ impl MysqlSourceOptions {
 
 
 #[cfg(feature = "use_postgres")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct PostgresSourceOptions {
-    #[structopt(short = "h", long = "host", help = "hostname")]
+    #[arg(long = "host", help = "hostname")]
     pub host: Option<String>,
-    #[structopt(short = "u", long = "user", help = "username")]
+    #[arg(short = 'u', long = "user", help = "username")]
     pub user: Option<String>,
-    #[structopt(short = "p", long = "password", help = "password")]
+    #[arg(short = 'p', long = "password", help = "password")]
     pub password: Option<String>,
-    #[structopt(short = "P", long = "port", help = "port")]
+    #[arg(short = 'P', long = "port", help = "port")]
     pub port: Option<u16>,
-    #[structopt(short = "D", long = "database", help = "database name")]
+    #[arg(short = 'D', long = "database", help = "database name")]
     pub database: Option<String>,
-    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    #[arg(short = 'i', long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
-    #[structopt(long = "timeout", help = "connect timeout in seconds")]
+    #[arg(long = "timeout", help = "connect timeout in seconds")]
     pub timeout: Option<u64>,
-    #[structopt(short = "q", long = "query", help = "sql query", required_unless="query-file")]
+    #[arg(short = 'q', long = "query", help = "sql query")]
     pub query: Option<String>,
-    #[structopt(short = "f", long = "query-file", parse(from_os_str), help = "read sql query from file")]
+    #[arg(short = 'f', long = "query-file", help = "read sql query from file")]
     pub query_file: Option<PathBuf>,
-    #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
+    #[arg(short = 'c', long = "count", help = "run another query to get row count first")]
     pub count: bool,
-    #[structopt(subcommand)]
-    pub destination: DestinationCommand
 }
 
 #[cfg(feature = "use_postgres")]
@@ -571,7 +406,7 @@ impl PostgresSourceOptions {
         if self.password.is_none() && config_options.password.is_some() {
             self.password = config_options.password.clone();
         }
-       if self.database.is_none() && config_options.database.is_some() {
+        if self.database.is_none() && config_options.database.is_some() {
             self.database = config_options.database.clone();
         }
         if self.init.is_empty() && !config_options.init.is_empty() {
@@ -584,20 +419,18 @@ impl PostgresSourceOptions {
 }
 
 #[cfg(feature = "use_sqlite")]
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SqliteSourceOptions {
-    #[structopt(help = "sqlite filename")]
+    #[arg(help = "sqlite filename")]
     pub filename: Option<String>,
-    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    #[arg(short = 'i', long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
-    #[structopt(short = "q", long = "query", help = "sql query", required_unless = "query-file")]
+    #[arg(short = 'q', long = "query", help = "sql query")]
     pub query: Option<String>,
-    #[structopt(short = "f", long = "query-file", parse(from_os_str), help = "read sql query from file")]
+    #[arg(short = 'f', long = "query-file", help = "read sql query from file")]
     pub query_file: Option<PathBuf>,
-    #[structopt(short = "c", long = "count", help = "run another query to get row count first")]
+    #[arg(short = 'c', long = "count", help = "run another query to get row count first")]
     pub count: bool,
-    #[structopt(subcommand)]
-    pub destination: DestinationCommand
 }
 
 #[cfg(feature = "use_sqlite")]

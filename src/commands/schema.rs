@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use clap::{Parser};
 use id_tree::{InsertBehavior, Node, NodeId, Tree};
 
 #[cfg(feature = "use_mysql")]
@@ -7,7 +8,8 @@ use mysql;
 use regex::RegexBuilder;
 
 use crate::commands::{ApplicationArguments};
-use crate::commands::common::{SourceConfigCommandWrapper, SourceConfigCommand};
+use crate::commands::common::{SourceConfigCommand};
+use crate::commands::data_source::DataSourceCommand;
 use crate::utils::report_query_error;
 
 #[cfg(feature = "use_mysql")]
@@ -20,14 +22,12 @@ use crate::sources::postgres::establish_postgres_connection;
 use crate::sources::sqlite::establish_sqlite_connection;
 
 
-#[derive(StructOpt)]
+#[derive(Debug, Parser)]
 pub struct SchemaCommand {
-    #[structopt(short = "r", long = "regex", help = "use regular expression engine")]
+    #[arg(short = 'r', long = "regex", help = "use regular expression engine")]
     pub regex: bool,
-    #[structopt(short = "q", long = "query", help = "show items matching query")]
+    #[arg(short = 'q', long = "query", help = "show items matching query")]
     pub query: Option<String>,
-    #[structopt(subcommand)]
-    pub source: SourceConfigCommandWrapper,
 }
 
 
@@ -128,11 +128,11 @@ impl DBItems {
     }
 }
 
-pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
+pub fn schema(_args: &ApplicationArguments, src: &DataSourceCommand, schema_command: &SchemaCommand) {
 
-    match &schema_command.source.0 {
+    match &src {
         #[cfg(feature = "use_mysql")]
-        SourceConfigCommand::Mysql(mysql_config_options) => {
+        DataSourceCommand::Mysql(mysql_config_options) => {
             let mut conn = establish_mysql_connection(mysql_config_options);
             let mut where_parts = vec![];
             let mut params = vec![];
@@ -257,7 +257,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
             dbitems.print();
         },
         #[cfg(feature = "use_sqlite")]
-        SourceConfigCommand::Sqlite(sqlite_config_options) => {
+        DataSourceCommand::Sqlite(sqlite_config_options) => {
             let conn = establish_sqlite_connection(sqlite_config_options);
             let mut dbitems = DBItems::new();
             let root_node = dbitems.0.insert(
@@ -341,7 +341,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
             dbitems.print();
         },
         #[cfg(feature = "use_postgres")]
-        SourceConfigCommand::Postgres(postgres_config_options) => {
+        DataSourceCommand::Postgres(postgres_config_options) => {
           let mut conn = establish_postgres_connection(postgres_config_options);
           let mut where_parts = vec!["t.table_schema='public'"];
           let mut params:Vec<&(dyn postgres::types::ToSql + Sync)> = vec![];

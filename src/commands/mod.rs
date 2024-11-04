@@ -1,31 +1,10 @@
-use structopt;
-use structopt::clap::arg_enum;
+use clap::{ArgMatches, Args, Command, FromArgMatches, Parser, Subcommand, ValueEnum};
 
-use crate::commands::common::SourceConfigCommand;
+pub use crate::commands::data_source::DataSourceCommand;
+use crate::commands::export::export;
+use crate::commands::schema::schema;
+use crate::commands::shell::shell;
 use crate::config;
-use crate::structopt::{StructOpt, StructOptInternal, clap};
-
-#[cfg(feature = "use_mysql")]
-use crate::{commands::common::MysqlConfigOptions, sources::mysql::MysqlSource};
-//#[cfg(feature = "use_spsheet")]
-//use crate::destinations::ods_xlsx::{SpreadSheetDestination, SpreadSheetFormat};
-#[cfg(feature = "use_postgres")]
-use crate::{commands::common::PostgresConfigOptions, sources::postgres::PostgresSource};
-//#[cfg(feature = "use_csv")]
-//use crate::destinations::csv::CSVDestination;
-//use crate::destinations::debug::DebugDestination;
-//#[cfg(feature = "use_html")]
-//use crate::destinations::html::HTMLDestination;
-//#[cfg(feature = "use_json")]
-//use crate::destinations::json::JSONDestination;
-#[cfg(feature = "use_sqlite")]
-use crate::{commands::common::SqliteConfigOptions, destinations::sqlite::SqliteDestination, sources::sqlite::SqliteSource};
-//#[cfg(feature = "use_text")]
-//use crate::destinations::text::TextDestination;
-//#[cfg(feature = "use_text")]
-//use crate::destinations::text_vertical::TextVerticalDestination;
-
-
 
 pub mod common;
 pub mod data_source;
@@ -35,13 +14,11 @@ pub mod shell;
 pub mod sources;
 
 
-arg_enum! {
-    #[derive(Debug, PartialEq)]
-    pub enum UseColor {
-        Yes,
-        No,
-        Auto
-    }
+#[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
+pub enum UseColor {
+    Yes,
+    No,
+    Auto
 }
 
 pub fn ah() -> String {
@@ -49,212 +26,160 @@ pub fn ah() -> String {
 }
 
 
-#[derive(StructOpt)]
-#[structopt(name = "export", about="Export data from database to sqlite/csv/text/html/json file.", after_help="Choose a command to run or to print help for, ie. :sources --help", rename_all = "verbatim")]
-#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+//#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+#[derive(Clone, Copy, Debug, Parser)]
+#[command(version, about)]
 pub struct ApplicationArguments {
-    #[structopt(short = "v", long = "verbose", help = "Be verbose")]
+    #[arg(short = 'v', long = "verbose", help = "Be verbose")]
     pub verbose: bool,
-    #[structopt(short = "c", long = "color", help = "use color", default_value="auto", possible_values = &UseColor::variants(), case_insensitive = true)]
+    #[arg(short = 'c', long = "color", help = "use color", default_value="auto", ignore_case = true)]
     pub color: UseColor,
-    #[structopt(subcommand)]
-    pub command: CommandWrapper,
 }
 
 
+#[derive(Debug, Parser)]
+pub enum SourceLevelCommand {
+	Export(export::ExportCommand),
+	Schema(schema::SchemaCommand),
+	Shell(shell::ShellCommand),
+}
+
+pub fn handle_source_level_command(app_args: &ApplicationArguments, src: &DataSourceCommand, cmd: &SourceLevelCommand) {
+	match cmd {
+		SourceLevelCommand::Export(export_cmd) => { export(app_args, src, export_cmd); },
+		SourceLevelCommand::Schema(schema_cmd) => { schema(app_args, src, schema_cmd); },
+		SourceLevelCommand::Shell(shell_cmd) => { shell(app_args, src, shell_cmd) },
+	}
+}
 
 
-
-#[derive(Debug, StructOpt)]
-pub enum Command {
-    /*#[structopt(name = ":export", about="export data", rename_all = "verbatim")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
-    Export(export::ExportCommand),
-    #[structopt(name = ":shell", about="jump to shell", rename_all = "verbatim")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
-    Shell(shell::ShellCommand),
-    #[structopt(name = ":schema", about="show source schema", rename_all = "verbatim")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
-    Schema(schema::SchemaCommand),*/
+#[derive(Debug, Parser)]
+pub enum CommandSource {
 
     #[cfg(feature = "use_mysql")]
-    #[structopt(name = "mysql", about="mysql")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "mysql", about="mysql")]
+    //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Mysql(export::MysqlSourceOptions),
     #[cfg(feature = "use_postgres")]
-    #[structopt(name = "postgres", about="postgres")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "postgres", about="postgres")]
+    //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Postgres(export::PostgresSourceOptions),
     #[cfg(feature = "use_sqlite")]
-    #[structopt(name = "sqlite", about="sqlite")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "sqlite", about="sqlite")]
+    //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sqlite(export::SqliteSourceOptions),
 
 
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
-    DataSource(data_source::DataSourceCommand),
+    //#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    //DataSource(data_source::DataSourceCommand),
 
-    #[structopt(name = ":sources", about="manage data sources", rename_all = "verbatim")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    //#[structopt(name = ":sources", about="manage data sources", rename_all = "verbatim")]
+    //#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sources(sources::SourcesCommand),
 }
 
 #[derive(Debug)]
-pub struct CommandWrapper (pub Command);
+pub struct CommandWrapper (pub CommandSource);
 
-impl StructOpt for CommandWrapper {
 
-    fn clap<'a, 'b>() -> clap::App<'a, 'b> { Command::clap() }
+impl FromArgMatches for CommandWrapper {
 
-    fn from_clap(matches: &clap::ArgMatches<'_>) -> Self { CommandWrapper(Command::from_clap(matches))}
+    fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
+		let result = CommandSource::from_arg_matches(matches).map(|r| Self(r));
+		match result {
+			Ok(_) => result,
+			Err(ref e) => {
+				if e.kind() == clap::error::ErrorKind::InvalidSubcommand {
+					println!("err again {:?}" ,e);
+				} else {
+				};
+				result
 
-    fn from_args() -> Self
-    where
-        Self: Sized,
-    { CommandWrapper(Command::from_args())  }
-
-    fn from_args_safe() -> clap::Result<Self>
-    where
-        Self: Sized,
-    { 
-        match Command::from_args_safe() {
-            Ok(v) => Ok(CommandWrapper(v)),
-            Err(e) => Err(e)
-        }
+			}
+		}
+    }
+    fn update_from_arg_matches(
+        &mut self,
+        matches: &ArgMatches,
+    ) -> Result<(), clap::Error>{
+        self.0.update_from_arg_matches(matches)
     }
 
-    fn from_iter<I>(iter: I) -> Self
-    where
-        Self: Sized,
-        I: IntoIterator,
-        I::Item: Into<std::ffi::OsString> + Clone,
-    {
-        CommandWrapper(Command::from_iter(iter))
+    // Provided methods
+    fn from_arg_matches_mut(matches: &mut ArgMatches) -> Result<Self, clap::Error> {
+        let r = CommandSource::from_arg_matches_mut(matches).map(|r| Self(r));
+		println!("here2:: {:#?}", r);
+		r
     }
-
-    fn from_iter_safe<I>(iter: I) -> clap::Result<Self>
-    where
-        Self: Sized,
-        I: IntoIterator,
-        I::Item: Into<std::ffi::OsString> + Clone,
-    { 
-
-        match Command::from_iter_safe(iter) {
-            Ok(v) => Ok(CommandWrapper(v)),
-            Err(e) => Err(e)
-        }
+    fn update_from_arg_matches_mut(
+        &mut self,
+        matches: &mut ArgMatches,
+    ) -> Result<(), clap::Error> {
+        self.0.update_from_arg_matches_mut(matches)
     }
 }
 
 
-impl StructOptInternal for CommandWrapper {
+impl Subcommand for CommandWrapper {
 
-    fn augment_clap<'a, 'b>(
-            app: ::structopt::clap::App<'a, 'b>,
-        ) -> ::structopt::clap::App<'a, 'b> {
-        
-            let mut app = Command::augment_clap(app);
+	fn augment_subcommands(cmd: Command) -> Command {
+		let mut new_cmd = CommandSource::augment_subcommands(cmd);
 
-            let sources = config::get_sources_list();
+        #[cfg(feature = "use_mysql")] {
+        	new_cmd = new_cmd.mut_subcommand("mysql", |subcmd| SourceLevelCommand::augment_subcommands(subcmd)); 
+		}
+        #[cfg(feature = "use_postgres")] {
+        	new_cmd = new_cmd.mut_subcommand("postgres", |subcmd| SourceLevelCommand::augment_subcommands(subcmd)); 
+		}
+        #[cfg(feature = "use_sqlite")] {
+        	new_cmd = new_cmd.mut_subcommand("sqlite", |subcmd| SourceLevelCommand::augment_subcommands(subcmd)); 
+		}
 
-            for (source_name, source_config_command) in sources {
+        let sources = config::get_sources_list();
 
-                match source_config_command.get_type_name().as_str() {
+        for (source_name, source_config_command) in sources {
 
-                    #[cfg(feature = "use_mysql")]
-                    "mysql" => {
-                        let subcmd = export::MysqlSourceOptions::augment_clap(
-                            structopt::clap::SubCommand::with_name(&source_name)
-                                .setting(structopt::clap::AppSettings::ColoredHelp)
-                        );
-                        app = app.subcommand(subcmd);
-                    },
-                    #[cfg(feature = "use_postgres")]
-                    "postgres" => {
-                        let subcmd = export::PostgresSourceOptions::augment_clap(
-                            structopt::clap::SubCommand::with_name(&source_name)
-                                .setting(structopt::clap::AppSettings::ColoredHelp)
-                        );
-                        app = app.subcommand(subcmd);
-                    },
-                    #[cfg(feature = "use_sqlite")]
-                    "sqlite" => {
-                        let subcmd = data_source::DataSourceCommand::augment_clap(
-                            structopt::clap::SubCommand::with_name(&source_name)
-                                .setting(structopt::clap::AppSettings::ColoredHelp)
-                        );
-                        app = app.subcommand(subcmd);
-                    },
+            match source_config_command.get_type_name().as_str() {
 
-                    unknown => { eprintln!("unknown database type: {} for source: {}", unknown, source_config_command.get_type_name());}
-                }
+                #[cfg(feature = "use_mysql")]
+                "mysql" => {
+                    let mut subcmd = export::MysqlSourceOptions::augment_args(
+                        clap::Command::new(&source_name)
+							.about(source_config_command.description())
+					);
+					subcmd = SourceLevelCommand::augment_subcommands(subcmd);
+                    new_cmd = new_cmd.subcommand(subcmd);
+                },
+                #[cfg(feature = "use_postgres")]
+                "postgres" => {
+                    let mut subcmd = export::PostgresSourceOptions::augment_args(
+                        clap::Command::new(&source_name)
+							.about(source_config_command.description())
+                    );
+					subcmd = SourceLevelCommand::augment_subcommands(subcmd);
+                    new_cmd = new_cmd.subcommand(subcmd);
+                },
+                #[cfg(feature = "use_sqlite")]
+                "sqlite" => {
+                    let mut subcmd = export::SqliteSourceOptions::augment_args(
+                        clap::Command::new(&source_name)
+                            .about(source_config_command.description())
+                    );
+					subcmd = SourceLevelCommand::augment_subcommands(subcmd);
+                    new_cmd = new_cmd.subcommand(subcmd);
+                },
+
+                unknown => { eprintln!("unknown database type: {} for source: {}", unknown, source_config_command.get_type_name());}
             }
-
-            app
-    }
-
-    fn from_subcommand<'a, 'b> (
-        sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
-    ) -> Option<Self> {
-
-        let result = Command::from_subcommand(sub);
-        if result.is_none() {
-
-            if let (source_name, Some(matches)) = sub {
-                match config::USER_DEFINED_SOURCES.get(source_name) {
-                    None => None,
-                    Some(source) => match source {
-                        #[cfg(feature = "use_mysql")]
-                        SourceConfigCommand::Mysql(mysql_config_options) => {
-
-                            let mut mysql_options = <export::MysqlSourceOptions as ::structopt::StructOpt>
-                                ::from_clap(matches);
-                            mysql_options.update_from_config_options(mysql_config_options);
-
-                            Some(
-                                CommandWrapper(
-                                    Command::Mysql(mysql_options)
-                                )
-                            )
-                        },
-                        #[cfg(feature = "use_postgres")]
-                        SourceConfigCommand::Postgres(postgres_config_options) => {
-
-                            let mut postgres_options = <export::PostgresSourceOptions as ::structopt::StructOpt>
-                                ::from_clap(matches);
-                            postgres_options.update_from_config_options(postgres_config_options);
-
-                            Some(
-                                CommandWrapper(
-                                    Command::Postgres(postgres_options)
-                                )
-                            )
-                        },
-                        #[cfg(feature = "use_sqlite")]
-                        SourceConfigCommand::Sqlite(sqlite_config_options) => {
-
-                            //let mut sqlite_options: SqliteSourceOptions = <data_source::DataSourceCommand as ::structopt::StructOpt>
-                            let mut sqlite_options: export::SqliteSourceOptions = export::SqliteSourceOptions::from_clap(matches);
-                            //sqlite_options.update_from_config_options(sqlite_config_options);
-
-                            Some(
-                                CommandWrapper(
-                                    //Command::Sqlite(sqlite_options)
-                                    Command::DataSource(
-                                        data_source::DataSourceCommand::Sqlite(sqlite_options)
-                                    )
-                                )
-                            )
-                        },
-                    }
-                }
-            } else {
-                None
-            }
-
-
-        } else {
-            result.map(CommandWrapper)
         }
-    }
+
+
+		new_cmd
+
+	}
+    fn augment_subcommands_for_update(cmd: Command) -> Command { cmd }
+    fn has_subcommand(name: &str) -> bool {
+		CommandSource::has_subcommand(name)
+	}
+
 }
