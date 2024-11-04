@@ -82,7 +82,7 @@ impl DataDestination for HTMLDestination {
                     Value::Time(time) => format!("{}", time.format("%H:%M:%S")),
                     Value::DateTime(datetime) => format!("{}", datetime.format("%Y-%m-%d %H:%M:%S")),
                    
-                    _ => panic!(format!("text: unsupported type: {:?}", col))
+                    _ => panic!("text: unsupported type: {:?}", col)
                 }, askama_escape::Html).to_string();
                 row_data.push(content);
             }

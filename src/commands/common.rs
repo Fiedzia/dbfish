@@ -1,141 +1,45 @@
+use clap; 
+use clap::{ArgMatches, FromArgMatches, Parser};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::config;
-use crate::structopt::StructOptInternal;
 
-pub struct SourceConfigCommandWrapper (pub SourceConfigCommand);
+#[derive(Clone, Debug)]
+pub struct SourceConfigCommandWrapper(pub SourceConfigCommand);
 
+impl FromArgMatches for SourceConfigCommandWrapper {
 
-impl structopt::StructOptInternal for SourceConfigCommandWrapper {
-
-    fn augment_clap<'a, 'b>(
-            app: ::structopt::clap::App<'a, 'b>,
-        ) -> ::structopt::clap::App<'a, 'b> {
-        let mut app = SourceConfigCommand::augment_clap(app);
-        let sources = config::get_sources_list();
-
-        for (source_name, source_config_command) in sources {
-
-            match source_config_command.get_type_name().as_str() {
-
-                #[cfg(feature = "use_mysql")]
-                "mysql" => {
-                    let subcmd = MysqlConfigOptions::augment_clap(
-                        structopt::clap::SubCommand::with_name(&source_name)
-                            .setting(structopt::clap::AppSettings::ColoredHelp)
-                    );
-                    app = app.subcommand(subcmd);
-                },
-                #[cfg(feature = "use_postgres")]
-                "postgres" => {
-                    let subcmd = PostgresConfigOptions::augment_clap(
-                        structopt::clap::SubCommand::with_name(&source_name)
-                            .setting(structopt::clap::AppSettings::ColoredHelp)
-                    );
-                    app = app.subcommand(subcmd);
-                },
-                #[cfg(feature = "use_sqlite")]
-                "sqlite" => {
-                    let subcmd = SqliteConfigOptions::augment_clap(
-                        structopt::clap::SubCommand::with_name(&source_name)
-                            .setting(structopt::clap::AppSettings::ColoredHelp)
-                    );
-                    app = app.subcommand(subcmd);
-                },
-
-                unknown => { eprintln!("unknown database type: {} for source: {}", unknown, source_config_command.get_type_name());}
-            }
-        }
-        app
+    fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
+        SourceConfigCommand::from_arg_matches(matches).map(|r| Self(r))
+    }
+    fn update_from_arg_matches(
+        &mut self,
+        matches: &ArgMatches,
+    ) -> Result<(), clap::Error>{
+        self.0.update_from_arg_matches(matches)
     }
 
-    fn from_subcommand<'a, 'b> (
-        sub: (&'b str, Option<&'b ::structopt::clap::ArgMatches<'a>>),
-    ) -> Option<Self> {
-
-        let result = SourceConfigCommand::from_subcommand(sub);
-        //no default sources were matching subcommand, it might be user defined source
-        if result.is_none() {
-
-            if let (source_name, Some(matches)) = sub {
-                match config::USER_DEFINED_SOURCES.get(source_name) {
-                    None => None,
-                    Some(source) => match source {
-                        #[cfg(feature = "use_mysql")]
-                        SourceConfigCommand::Mysql(mysql_config_options) => {
-
-                            let mut mysql_options = <MysqlConfigOptions as ::structopt::StructOpt>
-                                ::from_clap(matches);
-                            mysql_options.update_from_config_options(mysql_config_options);
-
-                            Some(
-                                SourceConfigCommandWrapper(
-                                    SourceConfigCommand::Mysql(mysql_options)
-                                )
-                            )
-                        },
-                        #[cfg(feature = "use_postgres")]
-                        SourceConfigCommand::Postgres(postgres_config_options) => {
-
-                            let mut postgres_options = <PostgresConfigOptions as ::structopt::StructOpt>
-                                ::from_clap(matches);
-                            postgres_options.update_from_config_options(postgres_config_options);
-
-                            Some(
-                                SourceConfigCommandWrapper(
-                                    SourceConfigCommand::Postgres(postgres_options)
-                                )
-                            )
-                        },
-                        #[cfg(feature = "use_sqlite")]
-                        SourceConfigCommand::Sqlite(sqlite_config_options) => {
-
-                            let mut sqlite_options = <SqliteConfigOptions as ::structopt::StructOpt>
-                                ::from_clap(matches);
-                            sqlite_options.update_from_config_options(sqlite_config_options);
-
-                            Some(
-                                SourceConfigCommandWrapper(
-                                    SourceConfigCommand::Sqlite(sqlite_options)
-                                )
-                            )
-                        },
-                    }
-                }
-            } else {
-                None
-            }
-        } else {
-            result.map(SourceConfigCommandWrapper)
-        }
+    // Provided methods
+    fn from_arg_matches_mut(matches: &mut ArgMatches) -> Result<Self, clap::Error> {
+        SourceConfigCommand::from_arg_matches_mut(matches).map(|r| Self(r))
     }
-
-}
-
-impl structopt::StructOpt for SourceConfigCommandWrapper {
-    fn clap<'a, 'b>() -> structopt::clap::App<'a, 'b> {
-        <Self as ::structopt::StructOptInternal>::augment_clap(SourceConfigCommand::clap())
-    }
-
-    fn from_clap(arg_matches: &structopt::clap::ArgMatches<'_>) -> Self {
-        SourceConfigCommandWrapper(SourceConfigCommand::from_clap(arg_matches))
+    fn update_from_arg_matches_mut(
+        &mut self,
+        matches: &mut ArgMatches,
+    ) -> Result<(), clap::Error> {
+        self.0.update_from_arg_matches_mut(matches)
     }
 }
 
-
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub enum SourceConfigCommand {
     #[cfg(feature = "use_mysql")]
-    #[structopt(name = "mysql", about="mysql")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "mysql", about="mysql")]
     Mysql(MysqlConfigOptions),
     #[cfg(feature = "use_postgres")]
-    #[structopt(name = "postgres", about="postgres")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "postgres", about="postgres")]
     Postgres(PostgresConfigOptions),
     #[cfg(feature = "use_sqlite")]
-    #[structopt(name = "sqlite", about="sqlite")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "sqlite", about="sqlite")]
     Sqlite(SqliteConfigOptions),
 }
 
@@ -167,6 +71,36 @@ impl SourceConfigCommand {
         }
     }
 
+    pub fn description(&self) -> String {
+
+        match self {
+            #[cfg(feature = "use_mysql")]
+            SourceConfigCommand::Mysql(options) => {
+                match (&options.host, &options.database) {
+                    (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
+                    (Some(host), None) => format!("mysql {}", host),
+                    (None,       Some(db)) => format!("mysql /{}", db),
+                    (None,       None) => format!("mysql"),
+                }
+            },
+            #[cfg(feature = "use_postgres")]
+            SourceConfigCommand::Postgres(options) => {
+                match (&options.host, &options.database) {
+                    (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
+                    (Some(host), None) => format!("mysql {}", host),
+                    (None,       Some(db)) => format!("mysql /{}", db),
+                    (None,       None) => format!("mysql"),
+                }
+
+            }
+
+            #[cfg(feature = "use_sqlite")]
+            SourceConfigCommand::Sqlite(options) => {
+                if let Some(filename) = &options.filename { format!("sqlite: {}", filename) }
+                else  { "sqlite".to_string() }
+            }
+        }
+    }
 
     pub fn to_full_toml(&self) -> toml::Value {
         let type_name = self.get_type_name();
@@ -225,24 +159,24 @@ impl SourceConfigCommand {
 fn empty_vec() -> Vec<String> {vec![]}
 
 #[cfg(feature = "use_mysql")]
-#[derive(Clone, Debug, Deserialize, Serialize, StructOpt)]
+#[derive(Clone, Debug, Deserialize, Serialize, Parser)]
 pub struct MysqlConfigOptions {
-    #[structopt(short = "h", long = "host", help = "hostname")]
+    #[arg(short = 'h', long = "host", help = "hostname")]
     pub host: Option<String>,
-    #[structopt(short = "u", long = "user", help = "username")]
+    #[arg(short = 'u', long = "user", help = "username")]
     pub user: Option<String>,
-    #[structopt(short = "p", long = "password", help = "password")]
+    #[arg(short = 'p', long = "password", help = "password")]
     pub password: Option<String>,
-    #[structopt(short = "P", long = "port", help = "port")]
+    #[arg(short = 'P', long = "port", help = "port")]
     pub port: Option<u16>,
-    #[structopt(short = "S", long = "socket", help = "socket")]
+    #[arg(short = 'S', long = "socket", help = "socket")]
     pub socket: Option<String>,
-    #[structopt(short = "D", long = "database", help = "database name")]
+    #[arg(short = 'D', long = "database", help = "database name")]
     pub database: Option<String>,
-    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    #[arg(short = 'i', long = "init", help = "initial sql commands")]
     #[serde(default="empty_vec")]
     pub init: Vec<String>,
-    #[structopt(long = "timeout", help = "connect/read/write timeout in seconds")]
+    #[arg(long = "timeout", help = "connect/read/write timeout in seconds")]
     pub timeout: Option<u64>,
 }
 
@@ -281,21 +215,21 @@ impl MysqlConfigOptions {
 
 
 #[cfg(feature = "use_postgres")]
-#[derive(Clone, Debug, Deserialize, Serialize, StructOpt)]
+#[derive(Clone, Debug, Deserialize, Serialize, Parser)]
 pub struct PostgresConfigOptions {
-    #[structopt(short = "h", long = "host", help = "hostname")]
+    //#[structopt(short = "h", long = "host", help = "hostname")]
     pub host: Option<String>,
-    #[structopt(short = "u", long = "user", help = "username")]
+    // #[structopt(short = "u", long = "user", help = "username")]
     pub user: Option<String>,
-    #[structopt(short = "p", long = "password", help = "password")]
+    //#[structopt(short = "p", long = "password", help = "password")]
     pub password: Option<String>,
-    #[structopt(short = "P", long = "port", help = "port")]
+    //#[structopt(short = "P", long = "port", help = "port")]
     pub port: Option<u16>,
-    #[structopt(short = "D", long = "database", help = "database name")]
+    //#[structopt(short = "D", long = "database", help = "database name")]
     pub database: Option<String>,
-    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    //#[structopt(short = "i", long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
-    #[structopt(long = "timeout", help = "connect timeout in seconds")]
+    //#[structopt(long = "timeout", help = "connect timeout in seconds")]
     pub timeout: Option<u64>,
 }
 
@@ -329,11 +263,11 @@ impl PostgresConfigOptions {
 
 
 #[cfg(feature = "use_sqlite")]
-#[derive(Clone, Debug, Deserialize, Serialize, StructOpt)]
+#[derive(Clone, Debug, Deserialize, Serialize, Parser)]
 pub struct SqliteConfigOptions {
-    #[structopt(help = "sqlite filename")]
+    //#[structopt(help = "sqlite filename")]
     pub filename: Option<String>,
-    #[structopt(short = "i", long = "init", help = "initial sql commands")]
+    //#[structopt(short = "i", long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
 }
 

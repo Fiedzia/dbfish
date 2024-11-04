@@ -20,22 +20,30 @@ Usage:
 
 ```bash
 
-    # define data source named "mydata" which will connect to a database you use
-    dbfish sources add mydata mysql --user joe --password secret
-    dbfish sources add mydata postgres --user joe --password secret
-    dbfish sources add mydata sqlite /tmp/somefile.sqlite3
+    # define data source named "mydata" which will connect to a database you use (pick one you like)
 
-    # dbfish export SOURCE [source options] DESTINATION [destination options]
-    dbfish export mydata -q 'select * from sometable' html /tmp/output.html
-    dbfish export mydata -q 'select * from sometable' csv /tmp/output.csv
-    dbfish export mydata -q 'select * from sometable' json /tmp/output.json
+    dbfish :sources add mydata mysql --user joe --password secret
+    dbfish :sources add mydata postgres --user joe --password secret
+    dbfish :sources add mydata sqlite /tmp/somefile.sqlite3
+
+    # export your data
+
+    dbfish mydata -q 'select * from sometable' export html /tmp/output.html
+    dbfish mydata -q 'select * from sometable' export csv /tmp/output.csv
+    dbfish mydata -q 'select * from sometable' export json /tmp/output.json
+
+    # list all available sources and commands
 
     dbfish help
 
-    dbfish shell [--client CLIENT] SOURCE # jump to shell, dbfish supports mysql, psql, python, litecli/mycli/pgcli, sqlite
-    dbfish shell mydata # use default shell
-    dbfish shell -c mycli mydata # use mycli shell
-    dbfish shell -c python mydata # use ipython as shell
+    # jump to database shell. With added benefits
+    # most notable dbfish can use pgcli tools suite
+    # and create python environment for any custom needs you may have
+    # dbfish supports mysql, psql, python, litecli/mycli/pgcli, sqlite
+
+    dbfish mydata shell # use default shell
+    dbfish mydata shell -c mycli  # use mycli shell
+    dbfish mydata shell -c python  # use ipython as shell
 
         Variables and functions:
             conn: database connection
@@ -49,11 +57,13 @@ Usage:
         
         In [1]: conn.execute('select * from sometable') 
 
-    # dbfish schema SOURCE [source options] # display database schema
-    dbfish schema -q user SOURCE [source options] # display all parts of database schema that contain phrase "user"
-    dbfish schema -r -q '201[89]' SOURCE [source options] # display all parts of database schema that contain 2018 or 2019
+    # inspect schema
 
-    dbfish sources add | edit | list | remove # manage database credential
+    dbfish mydata schema
+    dbfish mydata schema -q user   # display all parts of database schema that contain phrase "user"
+    dbfish mydata schema -r -q '201[89]' SOURCE [source options] # display all parts of database schema that match given regex
+
+    dbfish :sources add | edit | list | remove # manage database credential
 ```
 
 Sources:
@@ -77,8 +87,8 @@ Destinations:
 Examples:
 
 ```bash
-    dbfish export mysql --database users -q 'select * from users' csv somefile.csv
-    dbfish export mysql --database users --user joe --password secret -q 'select * from users' sqlite -f somefile.sqlite
+    dbfish mysql --database users -q 'select * from users' export csv somefile.csv
+    dbfish mysql --database users --user joe --password secret -q 'select * from users' export sqlite -f somefile.sqlite
 ```
 
 
@@ -95,15 +105,16 @@ Fancy features:
 TODO: (must-have before calling it usable)
 
  * helpful error messages
- * kill most of .unwrap()
+ * kill all .unwrap()
  * debug source
  * tests
+ * documentation. Maybe a video
 
 
 TODO: (nice to have)
 
- * more sources (CSV, BigQuery, maybe JSON/Solr/ES/MongoDB)
- * more destinations (HDF5)
+ * more sources (BigQuery, maybe JSON/Solr/ES/MongoDB)
+ * more destinations (HDF5, Parquet)
  * support a bit more MySQL and PostgreSQL features (few types were ommited)
  * kill all .unwrap()
  * compress to zip/tgz (useful for csv/text/html)
@@ -112,6 +123,7 @@ TODO: (nice to have)
  * add command for user management
  * add command to display database/table sizes
  * add command to show currently running queries
+ * add watch command to show periodically query result
 
 Design principles:
 

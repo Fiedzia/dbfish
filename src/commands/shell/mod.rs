@@ -1,27 +1,37 @@
 use std::io::Write;
-use std::process::Command;
+use std::process::Command as OsCommand;
+
+use clap::{Parser, ValueEnum};
 
 use crate::config;
-use crate::commands;
 use crate::commands::{ApplicationArguments};
-use crate::commands::common::{SourceConfigCommandWrapper, SourceConfigCommand};
+use crate::commands::data_source::DataSourceCommand;
+use crate::commands::export;
 
-static KNOWN_SHELLS:[&str; 8] = ["default", "python", "litecli", "sqlite", "mycli", "mysql", "pgcli", "psql"];
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum KnownShells {
+    Default,
+    Python,
+    Litecli,
+    Sqlite,
+    Mycli,
+    Mysql,
+    Pgcli,
+    Psql
+}
 
-#[derive(StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ShellCommand {
-    #[structopt(short = "c", long = "client", help = "select shell (client)", default_value="default",  possible_values = &KNOWN_SHELLS)]
-    pub client: String,
-    #[structopt(subcommand)]
-    pub source: SourceConfigCommandWrapper,
+    #[arg(short = 'c', long = "client", help = "select shell (client)", default_value="default")]
+    pub client: KnownShells,
 }
 
 
 pub fn create_python_virtualenv(path: &std::path::PathBuf) {
 
     if !path.exists() {
-        Command::new("python3")
+        OsCommand::new("python3")
             .arg("-m")
             .arg("virtualenv")
             .arg("-p")
@@ -33,8 +43,8 @@ pub fn create_python_virtualenv(path: &std::path::PathBuf) {
 }
 
 #[cfg(feature = "use_mysql")]
-pub fn mysql_client(mysql_config_options: &commands::common::MysqlConfigOptions) {
-    let mut cmd = Command::new("mysql");
+pub fn mysql_client(mysql_config_options: &export::MysqlSourceOptions) {
+    let mut cmd = OsCommand::new("mysql");
     if let Some(hostname) =  &mysql_config_options.host {
         cmd.arg("-h").arg(hostname);
     }
@@ -59,8 +69,8 @@ pub fn mysql_client(mysql_config_options: &commands::common::MysqlConfigOptions)
 }
 
 #[cfg(feature = "use_mysql")]
-pub fn mycli_client(mysql_config_options: &commands::common::MysqlConfigOptions) {
-    let mut cmd = Command::new("mycli");
+pub fn mycli_client(mysql_config_options: &export::MysqlSourceOptions) {
+    let mut cmd = OsCommand::new("mycli");
     if let Some(hostname) =  &mysql_config_options.host {
         cmd.arg("-h").arg(hostname);
     }
@@ -86,7 +96,7 @@ pub fn mycli_client(mysql_config_options: &commands::common::MysqlConfigOptions)
 
 
 #[cfg(feature = "use_mysql")]
-pub fn mysql_python_client(mysql_config_options: &commands::common::MysqlConfigOptions) {
+pub fn mysql_python_client(mysql_config_options: &export::MysqlSourceOptions) {
     config::ensure_config_directory_exists();
     let python_venv_dir = config::get_config_directory().join("python_venv");
     if !python_venv_dir.exists() {
@@ -96,7 +106,7 @@ pub fn mysql_python_client(mysql_config_options: &commands::common::MysqlConfigO
     let python_mysql_venv = python_venv_dir.join("mysql");
     if !python_mysql_venv.exists() {
         create_python_virtualenv(&python_mysql_venv);
-        Command::new(python_mysql_venv.join("bin").join("pip"))
+        OsCommand::new(python_mysql_venv.join("bin").join("pip"))
             .arg("install")
             .arg("ipython")
             .arg("pymysql")
@@ -125,7 +135,7 @@ pub fn mysql_python_client(mysql_config_options: &commands::common::MysqlConfigO
         std::env::set_var("MYSQL_DATABASE", database);
     }
 
-    Command::new(python_mysql_venv.join("bin").join("python"))
+    OsCommand::new(python_mysql_venv.join("bin").join("python"))
         .arg(python_file.clone())
         .status()
         .expect(&format!("could not run python script: {}", python_file.to_str().unwrap()));
@@ -133,8 +143,8 @@ pub fn mysql_python_client(mysql_config_options: &commands::common::MysqlConfigO
 
 
 #[cfg(feature = "use_sqlite")]
-pub fn litecli_client(sqlite_config_options: &commands::common::SqliteConfigOptions) {
-    let mut cmd = Command::new("litecli");
+pub fn litecli_client(sqlite_config_options: &export::SqliteSourceOptions) {
+    let mut cmd = OsCommand::new("litecli");
     if let Some(filename) =  &sqlite_config_options.filename {
         cmd.arg(filename);
     }
@@ -145,8 +155,8 @@ pub fn litecli_client(sqlite_config_options: &commands::common::SqliteConfigOpti
 }
 
 #[cfg(feature = "use_postgres")]
-pub fn pgcli_client(postgres_config_options: &commands::common::PostgresConfigOptions) {
-    let mut cmd = Command::new("pgcli");
+pub fn pgcli_client(postgres_config_options: &export::PostgresSourceOptions) {
+    let mut cmd = OsCommand::new("pgcli");
     if let Some(hostname) =  &postgres_config_options.host {
         cmd.arg("-h").arg(hostname);
     }
@@ -165,8 +175,8 @@ pub fn pgcli_client(postgres_config_options: &commands::common::PostgresConfigOp
         .expect(&format!("failed to execute pgcli ({:?})", cmd));
 }
 
-#[cfg(feature = "use_mysql")]
-pub fn postgres_python_client(postgres_config_options: &commands::common::PostgresConfigOptions) {
+#[cfg(feature = "use_postgres")]
+pub fn postgres_python_client(postgres_config_options: &export::PostgresSourceOptions) {
     config::ensure_config_directory_exists();
     let python_venv_dir = config::get_config_directory().join("python_venv");
     if !python_venv_dir.exists() {
@@ -176,7 +186,7 @@ pub fn postgres_python_client(postgres_config_options: &commands::common::Postgr
     let python_postgres_venv = python_venv_dir.join("postgres");
     if !python_postgres_venv.exists() {
         create_python_virtualenv(&python_postgres_venv);
-        Command::new(python_postgres_venv.join("bin").join("pip"))
+        OsCommand::new(python_postgres_venv.join("bin").join("pip"))
             .arg("install")
             .arg("ipython")
             .arg("py-postgresql")
@@ -205,7 +215,7 @@ pub fn postgres_python_client(postgres_config_options: &commands::common::Postgr
         std::env::set_var("POSTGRES_DATABASE", database);
     }
 
-    Command::new(python_postgres_venv.join("bin").join("python"))
+    OsCommand::new(python_postgres_venv.join("bin").join("python"))
         .arg(python_file.clone())
         .status()
         .expect(&format!("could not run python script: {}", python_file.to_str().unwrap()));
@@ -213,8 +223,8 @@ pub fn postgres_python_client(postgres_config_options: &commands::common::Postgr
 
 
 #[cfg(feature = "use_postgres")]
-pub fn psql_client(postgres_config_options: &commands::common::PostgresConfigOptions) {
-    let mut cmd = Command::new("psql");
+pub fn psql_client(postgres_config_options: &export::PostgresSourceOptions) {
+    let mut cmd = OsCommand::new("psql");
     if let Some(hostname) =  &postgres_config_options.host {
         cmd.arg("-h").arg(hostname);
     }
@@ -234,8 +244,8 @@ pub fn psql_client(postgres_config_options: &commands::common::PostgresConfigOpt
 }
 
 #[cfg(feature = "use_sqlite")]
-pub fn sqlite_client(sqlite_config_options: &commands::common::SqliteConfigOptions) {
-    let mut cmd = Command::new("sqlite3");
+pub fn sqlite_client(sqlite_config_options: &export::SqliteSourceOptions) {
+    let mut cmd = OsCommand::new("sqlite3");
     if let Some(filename) =  &sqlite_config_options.filename {
         cmd.arg(filename);
     }
@@ -247,7 +257,7 @@ pub fn sqlite_client(sqlite_config_options: &commands::common::SqliteConfigOptio
 
 
 #[cfg(feature = "use_sqlite")]
-pub fn sqlite_python_client(sqlite_config_options: &commands::common::SqliteConfigOptions) {
+pub fn sqlite_python_client(sqlite_config_options: &export::SqliteSourceOptions) {
     config::ensure_config_directory_exists();
     let python_venv_dir = config::get_config_directory().join("python_venv");
     if !python_venv_dir.exists() {
@@ -258,7 +268,7 @@ pub fn sqlite_python_client(sqlite_config_options: &commands::common::SqliteConf
     
     if !python_sqlite_venv.exists() {
         create_python_virtualenv(&python_sqlite_venv);
-        Command::new(python_sqlite_venv.join("bin").join("pip"))
+        OsCommand::new(python_sqlite_venv.join("bin").join("pip"))
             .arg("install")
             .arg("ipython")
             .status()
@@ -274,48 +284,46 @@ pub fn sqlite_python_client(sqlite_config_options: &commands::common::SqliteConf
         std::env::set_var("SQLITE_FILE", filename);
     }
 
-    Command::new(python_sqlite_venv.join("bin").join("python"))
+    OsCommand::new(python_sqlite_venv.join("bin").join("python"))
         .arg(python_file.clone())
         .status()
         .expect(&format!("could not run python script: {}", python_file.to_str().unwrap()));
 }
 
-
-pub fn shell (_args: &ApplicationArguments, shell_command: &ShellCommand) {
-
-    match &shell_command.source.0 {
+pub fn shell (_args: &ApplicationArguments, src: &DataSourceCommand, shell_command: &ShellCommand) {
+    match &src {
         #[cfg(feature = "use_mysql")]
-        SourceConfigCommand::Mysql(mysql_config_options) => 
-            match shell_command.client.as_ref() {
-                "mycli" => mycli_client(&mysql_config_options),
-                "default" | "mysql" => mysql_client(&mysql_config_options),
-                "python" => mysql_python_client(&mysql_config_options),
+        DataSourceCommand::Mysql(mysql_config_options) => 
+            match shell_command.client {
+                KnownShells::Mycli => {mycli_client(&mysql_config_options);},
+                KnownShells::Default | KnownShells::Mysql => {mysql_client(&mysql_config_options);},
+                KnownShells::Python => {mysql_python_client(&mysql_config_options);},
                 _ =>  {
-                    eprintln!("client unknown or unsuitable for given source: {}", shell_command.client);
+                    eprintln!("client unknown or unsuitable for given source: {:?}", shell_command.client);
                     std::process::exit(1);
                 }
             }
 
         #[cfg(feature = "use_sqlite")]
-        SourceConfigCommand::Sqlite(sqlite_config_options) => {
-            match shell_command.client.as_ref() {
-                "litecli" => litecli_client(&sqlite_config_options),
-                "default" | "sqlite" => sqlite_client(&sqlite_config_options),
-                "python" => sqlite_python_client(&sqlite_config_options),
+        DataSourceCommand::Sqlite(sqlite_config_options) => {
+            match shell_command.client {
+                KnownShells::Litecli => litecli_client(&sqlite_config_options),
+                KnownShells::Default | KnownShells::Sqlite => sqlite_client(&sqlite_config_options),
+                KnownShells::Python => sqlite_python_client(&sqlite_config_options),
                 _ =>  {
-                    eprintln!("client unknown or unsuitable for given source: {}", shell_command.client);
+                    eprintln!("client unknown or unsuitable for given source: {:?}", shell_command.client);
                     std::process::exit(1);
                 }
             }
         },
         #[cfg(feature = "use_postgres")]
-        SourceConfigCommand::Postgres(postgres_config_options) => {
-            match shell_command.client.as_ref() {
-                "pgcli" => pgcli_client(&postgres_config_options),
-                "default" | "psql" => psql_client(&postgres_config_options),
-                "python" => postgres_python_client(&postgres_config_options),
+        DataSourceCommand::Postgres(postgres_config_options) => {
+            match shell_command.client {
+                KnownShells::Pgcli => pgcli_client(&postgres_config_options),
+                KnownShells::Default | KnownShells::Psql => psql_client(&postgres_config_options),
+                KnownShells::Python => postgres_python_client(&postgres_config_options),
                 _ =>  {
-                    eprintln!("client unknown or unsuitable for given source: {}", shell_command.client);
+                    eprintln!("client unknown or unsuitable for given source: {:?}", shell_command.client);
                     std::process::exit(1);
                 }
             }

@@ -81,60 +81,55 @@ pub fn sources(args: &ApplicationArguments, sources_command: &SourcesCommand) {
     };
 }
 
-#[derive(Clone, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SourcesCommand {
-    #[structopt(subcommand)]
+    #[command(subcommand)]
     pub command: SourcesSubCommand,
 }
 
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub enum SourcesSubCommand {
-    #[structopt(name = "add", about="add source")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "add", about="add source")]
     Add(SourcesAddOptions),
-    #[structopt(name = "delete", about="delete source")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "delete", about="delete source")]
     Delete(SourcesDeleteOptions),
-    #[structopt(name = "edit", about="edit source definition")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "edit", about="edit source definition")]
     Edit(SourcesEditOptions),
-    #[structopt(name = "list", about="list sources")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "list", about="list sources")]
     List(SourcesListOptions),
-    #[structopt(name = "show", about="show source details")]
-    #[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "show", about="show source details")]
     Show(SourcesShowOptions),
 }
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SourcesAddOptions {
-    #[structopt(help = "source name")]
+    #[arg(help = "source name")]
     pub name: String,
-    #[structopt(subcommand)]
+    #[command(subcommand)]
     pub source: SourceConfigCommand,
 }
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SourcesDeleteOptions {
-    #[structopt(help = "source name")]
+    #[arg(help = "source name")]
     pub name: String,
 }
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SourcesEditOptions {
-    #[structopt(help = "source name")]
+    #[arg(help = "source name")]
     pub name: String,
 }
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SourcesListOptions {
-    #[structopt(help = "pattern to search for (using regular expression)")]
+    #[arg(help = "pattern to search for (using regular expression)")]
     pub pattern: Option<String>,
 }
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
 pub struct SourcesShowOptions {
-    #[structopt(help = "pattern to search for (using regular expression)")]
+    #[arg(help = "pattern to search for (using regular expression)")]
     pub pattern: Option<String>,
 }

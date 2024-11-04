@@ -52,7 +52,7 @@ impl DataDestination for SqliteDestination
                 ColumnType::Date => "date".to_string(),
                 ColumnType::Time => "time".to_string(),
                 ColumnType::Decimal => "numeric".to_string(),
-                _ => panic!(format!("sqlite: unsupported column type: {:?}", col.data_type))
+                _ => panic!("sqlite: unsupported column type: {:?}", col.data_type)
             })})
             .collect::<Vec<String>>()
             .join(", ");
@@ -77,8 +77,8 @@ impl DataDestination for SqliteDestination
         for _v in 1..rows.len() {
             sql.push_str(&format!(",({})", values_part));
         }
-        let statement = self.connection.prepare(sql).unwrap();
-        let mut cursor = statement.cursor();
+        let mut statement = self.connection.prepare(sql).unwrap();
+        //let mut cursor = statement.iter();
         let mut data: Vec<sqlite::Value> = Vec::with_capacity(self.column_names.len());
         for row in rows {
             for col in row.iter() {
@@ -96,16 +96,17 @@ impl DataDestination for SqliteDestination
                     Value::F64(value) => data.push(sqlite::Value::Float(*value)),
                     Value::F32(value) => data.push(sqlite::Value::Float(f64::from(*value))),
                     Value::Bytes(value) => data.push(sqlite::Value::Binary(value.clone())),
-                    _ => panic!(format!("sqlite: unsupported type: {:?}", col))
+                    _ => panic!("sqlite: unsupported type: {:?}", col)
                 }
             }
         }
-        cursor.bind(&data).unwrap();
-        cursor.next().unwrap();
+        //cursor.bind(&*data).unwrap();
+        statement.bind(&*data).unwrap();
+        //cursor.next().unwrap();
+        statement.next().unwrap();
        
     }
 
     fn close(&mut self) { }
 
 }
-

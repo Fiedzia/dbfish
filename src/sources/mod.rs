@@ -6,7 +6,7 @@ pub mod postgres;
 pub mod sqlite;
 
 
-use crate::definitions::{DataSource, DataSourceConnection, DataSourceBatchIterator, ColumnInfo, Row};
+use crate::definitions::{DataSource, DataSourceConnection, DataSourceBatchIterator};
 
 
 pub enum Source {
@@ -19,29 +19,19 @@ pub enum Source {
 }
 
 
-pub enum SourceConnection<'c> {
+pub enum SourceConnection<'source> {
     #[cfg(feature = "use_sqlite")]
-    SqliteConnection(sqlite::SqliteSourceConnection<'c>),
+    SqliteConnection(sqlite::SqliteSourceConnection<'source>),
     #[cfg(feature = "use_mysql")]
-    MysqlConnection(mysql::MysqlSourceConnection<'c>),
+    MysqlConnection(mysql::MysqlSourceConnection<'source>),
     #[cfg(feature = "use_postgres")]
-    PostgresConnection(postgres::PostgresSourceConnection<'c>),
+    PostgresConnection(postgres::PostgresSourceConnection<'source>),
 }
 
 
-pub enum SourceBatchIterator<'i> {
-    #[cfg(feature = "use_sqlite")]
-    SqliteBatchIterator(sqlite::SqliteSourceBatchIterator<'i>),
-    #[cfg(feature = "use_mysql")]
-    MysqlBatchIterator(mysql::MysqlSourceBatchIterator<'i>),
-    #[cfg(feature = "use_postgres")]
-    PostgresBatchIterator(postgres::PostgresSourceBatchIterator<'i>),
-}
-
-
-impl <'c, 'i>DataSource<'c, 'i, SourceConnection<'c>, SourceBatchIterator<'i>> for Source
-where 'c: 'i {
-    fn connect(&'c self) -> SourceConnection {
+impl <'source: 'conn, 'conn>DataSource<'source, 'conn, SourceConnection<'source>> for Source
+{
+fn connect(&'source self) -> SourceConnection<'source> {
         match self {
             #[cfg(feature = "use_sqlite")]
             Source::Sqlite(sqlite_source) => SourceConnection::SqliteConnection(sqlite_source.connect()), 
@@ -76,56 +66,16 @@ where 'c: 'i {
 }
 
 
-
-impl <'c, 'i>DataSourceConnection<'i, SourceBatchIterator<'i>> for SourceConnection<'c> {
-
-    fn batch_iterator(&'i mut self, batch_size: u64) -> SourceBatchIterator<'i> {
+impl <'source, 'conn>DataSourceConnection<'conn> for SourceConnection<'source> {
+    fn batch_iterator(&'conn mut self, batch_size: u64) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)> {
         match self {
             #[cfg(feature = "use_sqlite")]
-            SourceConnection::SqliteConnection(sqlite_connection) => SourceBatchIterator::SqliteBatchIterator((*sqlite_connection).batch_iterator(batch_size)), 
+            SourceConnection::SqliteConnection(sqlite_connection) => (*sqlite_connection).batch_iterator(batch_size),
             #[cfg(feature = "use_mysql")]
-            SourceConnection::MysqlConnection(mysql_connection) => SourceBatchIterator::MysqlBatchIterator(mysql_connection.batch_iterator(batch_size)), 
+            SourceConnection::MysqlConnection(mysql_connection) => mysql_connection.batch_iterator(batch_size), 
             #[cfg(feature = "use_postgres")]
-            SourceConnection::PostgresConnection(postgres_connection) => SourceBatchIterator::PostgresBatchIterator(postgres_connection.batch_iterator(batch_size)), 
+            SourceConnection::PostgresConnection(postgres_connection) => postgres_connection.batch_iterator(batch_size),
         }
    
-    }
-}
-
-
-impl <'c, 'i>DataSourceBatchIterator for SourceBatchIterator<'i> {
-
-    fn get_column_info(&self) -> Vec<ColumnInfo> {
-        match self {
-            #[cfg(feature = "use_sqlite")]
-            SourceBatchIterator::SqliteBatchIterator(sqlite_source) => sqlite_source.get_column_info(), 
-            #[cfg(feature = "use_mysql")]
-            SourceBatchIterator::MysqlBatchIterator(mysql_source) => mysql_source.get_column_info(), 
-            #[cfg(feature = "use_postgres")]
-            SourceBatchIterator::PostgresBatchIterator(postgres_source) => postgres_source.get_column_info(), 
-        }
-    }
-    
-    fn get_count(&self) -> Option<u64> {
-        match self {
-            #[cfg(feature = "use_sqlite")]
-            SourceBatchIterator::SqliteBatchIterator(sqlite_source) => sqlite_source.get_count(), 
-            #[cfg(feature = "use_mysql")]
-            SourceBatchIterator::MysqlBatchIterator(mysql_source) => mysql_source.get_count(), 
-            #[cfg(feature = "use_postgres")]
-            SourceBatchIterator::PostgresBatchIterator(postgres_source) => postgres_source.get_count(), 
-        }
-   
-    }
-
-    fn next(&mut self) -> Option<Vec<Row>> {
-        match self {
-            #[cfg(feature = "use_sqlite")]
-            SourceBatchIterator::SqliteBatchIterator(sqlite_source) => sqlite_source.next(), 
-            #[cfg(feature = "use_mysql")]
-            SourceBatchIterator::MysqlBatchIterator(mysql_source) => mysql_source.next(), 
-            #[cfg(feature = "use_postgres")]
-            SourceBatchIterator::PostgresBatchIterator(postgres_source) => postgres_source.next(), 
-        }
     }
 }

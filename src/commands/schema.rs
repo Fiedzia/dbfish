@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use clap::{Parser};
 use id_tree::{InsertBehavior, Node, NodeId, Tree};
 
 #[cfg(feature = "use_mysql")]
@@ -8,9 +9,12 @@ use mysql::prelude::Queryable;
 use regex::RegexBuilder;
 
 use crate::commands::{ApplicationArguments};
-use crate::commands::common::{SourceConfigCommandWrapper, SourceConfigCommand};
+use crate::commands::common::{SourceConfigCommand};
+use crate::commands::data_source::DataSourceCommand;
 use crate::utils::report_query_error;
 
+#[cfg(feature = "use_mysql")]
+use mysql::prelude::Queryable;
 #[cfg(feature = "use_mysql")]
 use crate::sources::mysql::{establish_mysql_connection};
 #[cfg(feature = "use_postgres")]
@@ -19,14 +23,12 @@ use crate::sources::postgres::establish_postgres_connection;
 use crate::sources::sqlite::establish_sqlite_connection;
 
 
-#[derive(StructOpt)]
+#[derive(Debug, Parser)]
 pub struct SchemaCommand {
-    #[structopt(short = "r", long = "regex", help = "use regular expression engine")]
+    #[arg(short = 'r', long = "regex", help = "use regular expression engine")]
     pub regex: bool,
-    #[structopt(short = "q", long = "query", help = "show items matching query")]
+    #[arg(short = 'q', long = "query", help = "show items matching query")]
     pub query: Option<String>,
-    #[structopt(subcommand)]
-    pub source: SourceConfigCommandWrapper,
 }
 
 
@@ -127,11 +129,11 @@ impl DBItems {
     }
 }
 
-pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
+pub fn schema(_args: &ApplicationArguments, src: &DataSourceCommand, schema_command: &SchemaCommand) {
 
-    match &schema_command.source.0 {
+    match &src {
         #[cfg(feature = "use_mysql")]
-        SourceConfigCommand::Mysql(mysql_config_options) => {
+        DataSourceCommand::Mysql(mysql_config_options) => {
             let mut conn = establish_mysql_connection(mysql_config_options);
             let mut where_parts = vec![];
             let mut params = vec![];
@@ -162,9 +164,8 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
                 order by t.table_schema, t.table_name, c.column_name
                 ", where_clause);
 
-            let stmt = conn.prep(query.as_str()).unwrap();
-            let result = conn.exec_iter(stmt, params);
-            let results = match result {
+            let result = conn.exec(&query, params);
+            let results: Vec<mysql::Row> = match result {
                 Ok(v) => v,
                 Err(e) => {
                     report_query_error(&query, &format!("{:?}", e));
@@ -182,7 +183,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
             let mut current_table = None;
 
             for row in results {
-                let (schema_name, table_name, column_name, column_type, is_nullable):(String, String, String, String, String) = mysql::from_row(row.unwrap());
+                let (schema_name, table_name, column_name, column_type, is_nullable):(String, String, String, String, String) = mysql::from_row(row);
                 let field_description = format!(
                     "({}{})",
                     column_type,
@@ -257,7 +258,7 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
             dbitems.print();
         },
         #[cfg(feature = "use_sqlite")]
-        SourceConfigCommand::Sqlite(sqlite_config_options) => {
+        DataSourceCommand::Sqlite(sqlite_config_options) => {
             let conn = establish_sqlite_connection(sqlite_config_options);
             let mut dbitems = DBItems::new();
             let root_node = dbitems.0.insert(
@@ -341,13 +342,14 @@ pub fn schema (_args: &ApplicationArguments, schema_command: &SchemaCommand) {
             dbitems.print();
         },
         #[cfg(feature = "use_postgres")]
-        SourceConfigCommand::Postgres(postgres_config_options) => {
+        DataSourceCommand::Postgres(postgres_config_options) => {
           let mut conn = establish_postgres_connection(postgres_config_options);
           let mut where_parts = vec!["t.table_schema='public'"];
-          let mut params:Vec<&(dyn postgres::types::ToSql + std::marker::Sync)> = vec![];
+          let mut params:Vec<&(dyn postgres::types::ToSql + Sync)> = vec![];
           if let Some(dbname) = &postgres_config_options.database {
               where_parts.push("t.table_catalog=$1");
-              params.push(dbname as &(dyn postgres::types::ToSql + std::marker::Sync));
+              //params.push(&dbname.as_str() as &dyn postgres::types::ToSql);
+              params.push(dbname as &(dyn postgres::types::ToSql + Sync));
           }
           let where_clause = match where_parts.is_empty() {
               true => "".to_string(),
