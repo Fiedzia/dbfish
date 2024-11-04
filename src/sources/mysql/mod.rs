@@ -7,7 +7,6 @@ use mysql;
 use mysql::prelude::Queryable;
 use mysql::consts::ColumnType as MyColumnType;
 use mysql::consts::ColumnFlags as MyColumnFlags;
-use mysql::prelude::Queryable;
 
 use crate::commands::common::MysqlConfigOptions;
 use crate::commands::export::MysqlSourceOptions;
@@ -67,7 +66,7 @@ pub fn establish_mysql_connection(mysql_options: &dyn GetMysqlConnectionParams )
     option_builder = if let Some(ref socket) = mysql_options.get_socket() {
         option_builder.socket(Some(socket.to_owned()))
     } else {
-        option_builder = option_builder
+        option_builder
             .ip_or_hostname(mysql_options.get_hostname().to_owned().or_else(||Some("localhost".to_string())))
             .tcp_port(mysql_options.get_port().to_owned().unwrap_or(3306))
     };
@@ -176,9 +175,7 @@ impl <'source: 'conn, 'conn> DataSource<'source, 'conn, MysqlSourceConnection<'s
 }
 
 impl <'source: 'conn, 'conn>DataSourceConnection<'conn> for MysqlSourceConnection<'source>
-//impl <'source, 'conn>DataSourceConnection<'conn, MysqlSourceBatchIterator<'source, 'conn>> for MysqlSourceConnection<'source>
 {
-    //fn batch_iterator(&'conn self, batch_size: u64) -> MysqlSourceBatchIterator<'source, 'conn>
     fn batch_iterator(&'conn mut self, batch_size: u64) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)>
     {
         let query = match &self.source.options.query {
@@ -193,7 +190,7 @@ impl <'source: 'conn, 'conn>DataSourceConnection<'conn> for MysqlSourceConnectio
             }
         };
         
-        let count: Option<u64> = {if self.source.options.count {
+        let count: Option<u64> = if self.source.options.count {
             let count_query = format!("select count(*) from ({}) q", query);
             let count_value: u64 = self.connection.exec_first::<mysql::Row, _, _>(count_query.as_str(), ()).unwrap().unwrap().get(0).unwrap();
             Some(count_value)
@@ -206,7 +203,7 @@ impl <'source: 'conn, 'conn>DataSourceConnection<'conn> for MysqlSourceConnectio
                 report_query_error(&query, &format!("{:?}", e));
                 std::process::exit(1);
             }
-        }};
+        };
 
         Box::new(MysqlSourceBatchIterator {
             batch_size,

@@ -3,16 +3,14 @@ use std::collections::HashMap;
 use clap::{Parser};
 use id_tree::{InsertBehavior, Node, NodeId, Tree};
 
-#[cfg(feature = "use_mysql")]
-use mysql;
-use mysql::prelude::Queryable;
 use regex::RegexBuilder;
 
 use crate::commands::{ApplicationArguments};
-use crate::commands::common::{SourceConfigCommand};
 use crate::commands::data_source::DataSourceCommand;
 use crate::utils::report_query_error;
 
+#[cfg(feature = "use_mysql")]
+use mysql;
 #[cfg(feature = "use_mysql")]
 use mysql::prelude::Queryable;
 #[cfg(feature = "use_mysql")]

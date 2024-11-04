@@ -5,7 +5,6 @@ use clap::{ArgMatches, Args, Command, CommandFactory, FromArgMatches, Parser, Su
 use chrono::{DateTime, Utc};
 use humantime;
 use indicatif::ProgressBar;
-use structopt;
 
 use crate::commands::ApplicationArguments;
 use crate::commands::data_source::DataSourceCommand;
@@ -238,7 +237,7 @@ pub struct CSVDestinationOptions {
     pub filename: String,
     #[arg(short = 't', long = "truncate", help = "truncate data to given amount of graphemes")]
     pub truncate: Option<u64>,
-    #[structopt(long = "no-headers", help = "skip header")]
+    #[arg(long = "no-headers", help = "skip header")]
     pub no_headers: bool,
 
 }
@@ -331,8 +330,6 @@ pub struct MysqlSourceOptions {
     pub count: bool,
     #[arg(short = 't', long = "timeout", help = "connect/read/write timeout in seconds")]
     pub timeout: Option<u64>,
-    //#[structopt(subcommand)]
-    //pub destination: DestinationCommand
 }
 
 #[cfg(feature = "use_mysql")]

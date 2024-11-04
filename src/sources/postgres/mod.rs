@@ -73,7 +73,7 @@ pub fn establish_postgres_connection(postgres_options: &dyn GetPostgresConnectio
 
     if !postgres_options.get_init().is_empty() {
         for sql in postgres_options.get_init().iter() {
-            match client.execute(sql.as_str(), &[]) {
+            match conn.execute(sql.as_str(), &[]) {
                 Ok(_) => {},
                 Err(e) => {
                     report_query_error(&sql, &format!("{:?}", e));
@@ -82,7 +82,7 @@ pub fn establish_postgres_connection(postgres_options: &dyn GetPostgresConnectio
             }
         }
     }
-    client
+    conn
 }
 
 

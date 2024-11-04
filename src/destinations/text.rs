@@ -1,7 +1,7 @@
 use std;
 use std::io::Write;
 
-use is_terminal::IsTermina;
+use is_terminal::IsTerminal;
 use prettytable::{self, Table, Cell};
 use termcolor;
 
