@@ -1,10 +1,10 @@
 ///type that can store std::fs::File or termcolor::StandardStream and implements std::io::Write
 pub enum FileOrStdout {
     File(std::fs::File),
-    ColorStdout(termcolor::StandardStream)
+    ColorStdout(termcolor::StandardStream),
 }
 
-impl std::io::Write for FileOrStdout{
+impl std::io::Write for FileOrStdout {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         match self {
             FileOrStdout::File(f) => f.write(buf),
@@ -26,13 +26,16 @@ impl std::io::Write for FileOrStdout{
         }
     }
     fn write_fmt(&mut self, fmt: std::fmt::Arguments) -> std::io::Result<()> {
-         match self {
+        match self {
             FileOrStdout::File(f) => f.write_fmt(fmt),
             FileOrStdout::ColorStdout(s) => s.write_fmt(fmt),
         }
     }
 
-    fn by_ref(&mut self) -> &mut Self where Self: Sized {
+    fn by_ref(&mut self) -> &mut Self
+    where
+        Self: Sized,
+    {
         self
     }
 }

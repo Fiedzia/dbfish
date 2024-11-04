@@ -41,14 +41,14 @@ pub enum Value {
     Bytes(Vec<u8>),
     Bool(bool),
     JSON(String),
-    None, //null
-    Timestamp(u64), //seconds from unix epoch
-    Date(chrono::NaiveDate),//year month day
-    Time(chrono::NaiveTime),//hours, minutes, seconds
-    DateTime(chrono::NaiveDateTime),//year month day, hours, minutes, seconds
+    None,                            //null
+    Timestamp(u64),                  //seconds from unix epoch
+    Date(chrono::NaiveDate),         //year month day
+    Time(chrono::NaiveTime),         //hours, minutes, seconds
+    DateTime(chrono::NaiveDateTime), //year month day, hours, minutes, seconds
     //Decimal(bigdecimal? decimal? string? what about precision?)
     //datetime with timezone
-    Custom(String) //for all other existing types
+    Custom(String), //for all other existing types
 }
 
 pub type Row = Vec<Value>;
@@ -59,15 +59,12 @@ pub struct ColumnInfo {
     pub data_type: ColumnType,
 }
 
-
-pub trait DataDestination
-{
+pub trait DataDestination {
     fn prepare(&mut self);
     fn prepare_for_results(&mut self, result_iterator: &dyn DataSourceBatchIterator);
     fn add_rows(&mut self, rows: &[Row]);
     fn close(&mut self);
 }
-
 
 pub trait DataSourceBatchIterator<'conn> {
     fn get_column_info(&self) -> Vec<ColumnInfo>;
@@ -75,17 +72,17 @@ pub trait DataSourceBatchIterator<'conn> {
     fn next(&mut self) -> Option<Vec<Row>>;
 }
 
-
-pub trait DataSourceConnection<'conn>
-{
-    fn batch_iterator(&'conn mut self, batch_size: u64) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)>;
+pub trait DataSourceConnection<'conn> {
+    fn batch_iterator(
+        &'conn mut self,
+        batch_size: u64,
+    ) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)>;
 }
 
-
 pub trait DataSource<'source, 'conn, C>
-where 
+where
     C: DataSourceConnection<'conn> + 'source + 'conn,
-    'source: 'conn
+    'source: 'conn,
 {
     fn connect(&'source self) -> C;
     fn get_type_name(&self) -> String;

@@ -2,7 +2,7 @@ use csv;
 use termcolor;
 
 use crate::commands::export::CSVDestinationOptions;
-use crate::definitions::{Value, Row, DataSourceBatchIterator, DataDestination};
+use crate::definitions::{DataDestination, DataSourceBatchIterator, Row, Value};
 use crate::utils::fileorstdout::FileOrStdout;
 use crate::utils::{escape_binary_data, truncate_text_with_note};
 
@@ -12,19 +12,26 @@ pub struct CSVDestination {
     no_headers: bool,
 }
 
-impl CSVDestination 
-{
+impl CSVDestination {
     pub fn init(csv_options: &CSVDestinationOptions) -> CSVDestination {
         let csv_writer = csv::Writer::from_writer(match csv_options.filename.as_str() {
-            "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(termcolor::ColorChoice::Never)),
-            _ => FileOrStdout::File(std::fs::File::create(csv_options.filename.to_string()).unwrap())
+            "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(
+                termcolor::ColorChoice::Never,
+            )),
+            _ => {
+                FileOrStdout::File(std::fs::File::create(csv_options.filename.to_string()).unwrap())
+            }
         });
-        CSVDestination { csv_writer, truncate: csv_options.truncate, no_headers: csv_options.no_headers }
+        CSVDestination {
+            csv_writer,
+            truncate: csv_options.truncate,
+            no_headers: csv_options.no_headers,
+        }
     }
 
     pub fn row_to_csv_row(row: &Row, truncate: Option<u64>) -> Vec<String> {
-        row.iter().map(|v| {
-            match v {
+        row.iter()
+            .map(|v| match v {
                 Value::U64(value) => value.to_string(),
                 Value::I64(value) => value.to_string(),
                 Value::U32(value) => value.to_string(),
@@ -43,14 +50,13 @@ impl CSVDestination
                 Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),
                 Value::Time(time) => format!("{}", time.format("%H:%M:%S")),
                 Value::DateTime(datetime) => format!("{}", datetime.format("%Y-%m-%d %H:%M:%S")),
-                _ => panic!("csv: unsupported type: {:?}", v)
-            }
-        }).collect()
+                _ => panic!("csv: unsupported type: {:?}", v),
+            })
+            .collect()
     }
 }
 
-impl DataDestination for CSVDestination
-{
+impl DataDestination for CSVDestination {
     fn prepare(&mut self) {}
 
     fn prepare_for_results(&mut self, result_iterator: &dyn DataSourceBatchIterator) {

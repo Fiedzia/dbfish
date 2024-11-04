@@ -13,18 +13,16 @@ pub mod schema;
 pub mod shell;
 pub mod sources;
 
-
 #[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum UseColor {
     Yes,
     No,
-    Auto
+    Auto,
 }
 
 pub fn ah() -> String {
     "abc".to_string()
 }
-
 
 //#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
 #[derive(Clone, Copy, Debug, Parser)]
@@ -32,43 +30,53 @@ pub fn ah() -> String {
 pub struct ApplicationArguments {
     #[arg(short = 'v', long = "verbose", help = "Be verbose")]
     pub verbose: bool,
-    #[arg(short = 'c', long = "color", help = "use color", default_value="auto", ignore_case = true)]
+    #[arg(
+        short = 'c',
+        long = "color",
+        help = "use color",
+        default_value = "auto",
+        ignore_case = true
+    )]
     pub color: UseColor,
 }
 
-
 #[derive(Debug, Parser)]
 pub enum SourceLevelCommand {
-	Export(export::ExportCommand),
-	Schema(schema::SchemaCommand),
-	Shell(shell::ShellCommand),
+    Export(export::ExportCommand),
+    Schema(schema::SchemaCommand),
+    Shell(shell::ShellCommand),
 }
 
-pub fn handle_source_level_command(app_args: &ApplicationArguments, src: &DataSourceCommand, cmd: &SourceLevelCommand) {
-	match cmd {
-		SourceLevelCommand::Export(export_cmd) => { export(app_args, src, export_cmd); },
-		SourceLevelCommand::Schema(schema_cmd) => { schema(app_args, src, schema_cmd); },
-		SourceLevelCommand::Shell(shell_cmd) => { shell(app_args, src, shell_cmd) },
-	}
+pub fn handle_source_level_command(
+    app_args: &ApplicationArguments,
+    src: &DataSourceCommand,
+    cmd: &SourceLevelCommand,
+) {
+    match cmd {
+        SourceLevelCommand::Export(export_cmd) => {
+            export(app_args, src, export_cmd);
+        }
+        SourceLevelCommand::Schema(schema_cmd) => {
+            schema(app_args, src, schema_cmd);
+        }
+        SourceLevelCommand::Shell(shell_cmd) => shell(app_args, src, shell_cmd),
+    }
 }
-
 
 #[derive(Debug, Parser)]
 pub enum CommandSource {
-
     #[cfg(feature = "use_mysql")]
-    #[command(name = "mysql", about="mysql")]
+    #[command(name = "mysql", about = "mysql")]
     //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Mysql(export::MysqlSourceOptions),
     #[cfg(feature = "use_postgres")]
-    #[command(name = "postgres", about="postgres")]
+    #[command(name = "postgres", about = "postgres")]
     //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Postgres(export::PostgresSourceOptions),
     #[cfg(feature = "use_sqlite")]
-    #[command(name = "sqlite", about="sqlite")]
+    #[command(name = "sqlite", about = "sqlite")]
     //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sqlite(export::SqliteSourceOptions),
-
 
     //#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
     //DataSource(data_source::DataSourceCommand),
@@ -79,107 +87,105 @@ pub enum CommandSource {
 }
 
 #[derive(Debug)]
-pub struct CommandWrapper (pub CommandSource);
-
+pub struct CommandWrapper(pub CommandSource);
 
 impl FromArgMatches for CommandWrapper {
-
     fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
-		let result = CommandSource::from_arg_matches(matches).map(|r| Self(r));
-		match result {
-			Ok(_) => result,
-			Err(ref e) => {
-				if e.kind() == clap::error::ErrorKind::InvalidSubcommand {
-					println!("err again {:?}" ,e);
-				} else {
-				};
-				result
-
-			}
-		}
+        let result = CommandSource::from_arg_matches(matches).map(|r| Self(r));
+        match result {
+            Ok(_) => result,
+            Err(ref e) => {
+                if e.kind() == clap::error::ErrorKind::InvalidSubcommand {
+                    println!("err again {:?}", e);
+                } else {
+                };
+                result
+            }
+        }
     }
-    fn update_from_arg_matches(
-        &mut self,
-        matches: &ArgMatches,
-    ) -> Result<(), clap::Error>{
+    fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> Result<(), clap::Error> {
         self.0.update_from_arg_matches(matches)
     }
 
     // Provided methods
     fn from_arg_matches_mut(matches: &mut ArgMatches) -> Result<Self, clap::Error> {
         let r = CommandSource::from_arg_matches_mut(matches).map(|r| Self(r));
-		println!("here2:: {:#?}", r);
-		r
+        println!("here2:: {:#?}", r);
+        r
     }
-    fn update_from_arg_matches_mut(
-        &mut self,
-        matches: &mut ArgMatches,
-    ) -> Result<(), clap::Error> {
+    fn update_from_arg_matches_mut(&mut self, matches: &mut ArgMatches) -> Result<(), clap::Error> {
         self.0.update_from_arg_matches_mut(matches)
     }
 }
 
-
 impl Subcommand for CommandWrapper {
+    fn augment_subcommands(cmd: Command) -> Command {
+        let mut new_cmd = CommandSource::augment_subcommands(cmd);
 
-	fn augment_subcommands(cmd: Command) -> Command {
-		let mut new_cmd = CommandSource::augment_subcommands(cmd);
-
-        #[cfg(feature = "use_mysql")] {
-        	new_cmd = new_cmd.mut_subcommand("mysql", |subcmd| SourceLevelCommand::augment_subcommands(subcmd)); 
-		}
-        #[cfg(feature = "use_postgres")] {
-        	new_cmd = new_cmd.mut_subcommand("postgres", |subcmd| SourceLevelCommand::augment_subcommands(subcmd)); 
-		}
-        #[cfg(feature = "use_sqlite")] {
-        	new_cmd = new_cmd.mut_subcommand("sqlite", |subcmd| SourceLevelCommand::augment_subcommands(subcmd)); 
-		}
+        #[cfg(feature = "use_mysql")]
+        {
+            new_cmd = new_cmd.mut_subcommand("mysql", |subcmd| {
+                SourceLevelCommand::augment_subcommands(subcmd)
+            });
+        }
+        #[cfg(feature = "use_postgres")]
+        {
+            new_cmd = new_cmd.mut_subcommand("postgres", |subcmd| {
+                SourceLevelCommand::augment_subcommands(subcmd)
+            });
+        }
+        #[cfg(feature = "use_sqlite")]
+        {
+            new_cmd = new_cmd.mut_subcommand("sqlite", |subcmd| {
+                SourceLevelCommand::augment_subcommands(subcmd)
+            });
+        }
 
         let sources = config::get_sources_list();
 
         for (source_name, source_config_command) in sources {
-
             match source_config_command.get_type_name().as_str() {
-
                 #[cfg(feature = "use_mysql")]
                 "mysql" => {
                     let mut subcmd = export::MysqlSourceOptions::augment_args(
-                        clap::Command::new(&source_name)
-							.about(source_config_command.description())
-					);
-					subcmd = SourceLevelCommand::augment_subcommands(subcmd);
+                        clap::Command::new(&source_name).about(source_config_command.description()),
+                    );
+                    subcmd = SourceLevelCommand::augment_subcommands(subcmd);
                     new_cmd = new_cmd.subcommand(subcmd);
-                },
+                }
                 #[cfg(feature = "use_postgres")]
                 "postgres" => {
                     let mut subcmd = export::PostgresSourceOptions::augment_args(
-                        clap::Command::new(&source_name)
-							.about(source_config_command.description())
+                        clap::Command::new(&source_name).about(source_config_command.description()),
                     );
-					subcmd = SourceLevelCommand::augment_subcommands(subcmd);
+                    subcmd = SourceLevelCommand::augment_subcommands(subcmd);
                     new_cmd = new_cmd.subcommand(subcmd);
-                },
+                }
                 #[cfg(feature = "use_sqlite")]
                 "sqlite" => {
                     let mut subcmd = export::SqliteSourceOptions::augment_args(
-                        clap::Command::new(&source_name)
-                            .about(source_config_command.description())
+                        clap::Command::new(&source_name).about(source_config_command.description()),
                     );
-					subcmd = SourceLevelCommand::augment_subcommands(subcmd);
+                    subcmd = SourceLevelCommand::augment_subcommands(subcmd);
                     new_cmd = new_cmd.subcommand(subcmd);
-                },
+                }
 
-                unknown => { eprintln!("unknown database type: {} for source: {}", unknown, source_config_command.get_type_name());}
+                unknown => {
+                    eprintln!(
+                        "unknown database type: {} for source: {}",
+                        unknown,
+                        source_config_command.get_type_name()
+                    );
+                }
             }
         }
 
-
-		new_cmd
-
-	}
-    fn augment_subcommands_for_update(cmd: Command) -> Command { cmd }
+        new_cmd
+    }
+    fn augment_subcommands_for_update(cmd: Command) -> Command {
+        cmd
+    }
     fn has_subcommand(name: &str) -> bool {
-		CommandSource::has_subcommand(name)
-	}
-
+        CommandSource::has_subcommand(name)
+    }
 }

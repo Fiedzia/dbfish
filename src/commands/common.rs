@@ -1,20 +1,15 @@
-use clap; 
+use clap;
 use clap::{ArgMatches, FromArgMatches, Parser};
 use serde_derive::{Deserialize, Serialize};
-
 
 #[derive(Clone, Debug)]
 pub struct SourceConfigCommandWrapper(pub SourceConfigCommand);
 
 impl FromArgMatches for SourceConfigCommandWrapper {
-
     fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
         SourceConfigCommand::from_arg_matches(matches).map(|r| Self(r))
     }
-    fn update_from_arg_matches(
-        &mut self,
-        matches: &ArgMatches,
-    ) -> Result<(), clap::Error>{
+    fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> Result<(), clap::Error> {
         self.0.update_from_arg_matches(matches)
     }
 
@@ -22,10 +17,7 @@ impl FromArgMatches for SourceConfigCommandWrapper {
     fn from_arg_matches_mut(matches: &mut ArgMatches) -> Result<Self, clap::Error> {
         SourceConfigCommand::from_arg_matches_mut(matches).map(|r| Self(r))
     }
-    fn update_from_arg_matches_mut(
-        &mut self,
-        matches: &mut ArgMatches,
-    ) -> Result<(), clap::Error> {
+    fn update_from_arg_matches_mut(&mut self, matches: &mut ArgMatches) -> Result<(), clap::Error> {
         self.0.update_from_arg_matches_mut(matches)
     }
 }
@@ -33,18 +25,17 @@ impl FromArgMatches for SourceConfigCommandWrapper {
 #[derive(Clone, Debug, Parser)]
 pub enum SourceConfigCommand {
     #[cfg(feature = "use_mysql")]
-    #[command(name = "mysql", about="mysql")]
+    #[command(name = "mysql", about = "mysql")]
     Mysql(MysqlConfigOptions),
     #[cfg(feature = "use_postgres")]
-    #[command(name = "postgres", about="postgres")]
+    #[command(name = "postgres", about = "postgres")]
     Postgres(PostgresConfigOptions),
     #[cfg(feature = "use_sqlite")]
-    #[command(name = "sqlite", about="sqlite")]
+    #[command(name = "sqlite", about = "sqlite")]
     Sqlite(SqliteConfigOptions),
 }
 
 impl SourceConfigCommand {
-
     pub fn get_type_name(&self) -> String {
         match self {
             #[cfg(feature = "use_mysql")]
@@ -57,47 +48,49 @@ impl SourceConfigCommand {
     }
 
     pub fn to_toml(&self) -> toml::Value {
-
         match self {
             #[cfg(feature = "use_mysql")]
-            SourceConfigCommand::Mysql(options) =>
-                toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
+            SourceConfigCommand::Mysql(options) => toml::to_string(options)
+                .unwrap()
+                .parse::<toml::Value>()
+                .unwrap(),
             #[cfg(feature = "use_postgres")]
-            SourceConfigCommand::Postgres(options)
-                => toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
+            SourceConfigCommand::Postgres(options) => toml::to_string(options)
+                .unwrap()
+                .parse::<toml::Value>()
+                .unwrap(),
             #[cfg(feature = "use_sqlite")]
-            SourceConfigCommand::Sqlite(options)
-                => toml::to_string(options).unwrap().parse::<toml::Value>().unwrap(),
+            SourceConfigCommand::Sqlite(options) => toml::to_string(options)
+                .unwrap()
+                .parse::<toml::Value>()
+                .unwrap(),
         }
     }
 
     pub fn description(&self) -> String {
-
         match self {
             #[cfg(feature = "use_mysql")]
-            SourceConfigCommand::Mysql(options) => {
-                match (&options.host, &options.database) {
-                    (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
-                    (Some(host), None) => format!("mysql {}", host),
-                    (None,       Some(db)) => format!("mysql /{}", db),
-                    (None,       None) => format!("mysql"),
-                }
+            SourceConfigCommand::Mysql(options) => match (&options.host, &options.database) {
+                (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
+                (Some(host), None) => format!("mysql {}", host),
+                (None, Some(db)) => format!("mysql /{}", db),
+                (None, None) => format!("mysql"),
             },
             #[cfg(feature = "use_postgres")]
-            SourceConfigCommand::Postgres(options) => {
-                match (&options.host, &options.database) {
-                    (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
-                    (Some(host), None) => format!("mysql {}", host),
-                    (None,       Some(db)) => format!("mysql /{}", db),
-                    (None,       None) => format!("mysql"),
-                }
-
-            }
+            SourceConfigCommand::Postgres(options) => match (&options.host, &options.database) {
+                (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
+                (Some(host), None) => format!("mysql {}", host),
+                (None, Some(db)) => format!("mysql /{}", db),
+                (None, None) => format!("mysql"),
+            },
 
             #[cfg(feature = "use_sqlite")]
             SourceConfigCommand::Sqlite(options) => {
-                if let Some(filename) = &options.filename { format!("sqlite: {}", filename) }
-                else  { "sqlite".to_string() }
+                if let Some(filename) = &options.filename {
+                    format!("sqlite: {}", filename)
+                } else {
+                    "sqlite".to_string()
+                }
             }
         }
     }
@@ -108,7 +101,7 @@ impl SourceConfigCommand {
         toml_table.insert("type".to_string(), toml::Value::String(type_name.clone()));
         toml_table.insert(type_name, self.to_toml());
 
-       toml::Value::Table(toml_table)
+        toml::Value::Table(toml_table)
     }
 
     pub fn from_toml(toml_value: &toml::Value) -> Self {
@@ -118,45 +111,38 @@ impl SourceConfigCommand {
             #[cfg(feature = "use_mysql")]
             "mysql" => SourceConfigCommand::Mysql(
                 toml::from_str(
-                    toml::to_string(
-                        toml_table
-                            .get("mysql")
-                            .unwrap()
-                        )
-                    .unwrap()
-                    .as_str())
-                .unwrap()
+                    toml::to_string(toml_table.get("mysql").unwrap())
+                        .unwrap()
+                        .as_str(),
+                )
+                .unwrap(),
             ),
             #[cfg(feature = "use_postgres")]
             "postgres" => SourceConfigCommand::Postgres(
                 toml::from_str(
-                    toml::to_string(
-                        toml_table
-                            .get("postgres")
-                            .unwrap()
-                        )
-                    .unwrap()
-                    .as_str())
-                .unwrap()
+                    toml::to_string(toml_table.get("postgres").unwrap())
+                        .unwrap()
+                        .as_str(),
+                )
+                .unwrap(),
             ),
             #[cfg(feature = "use_sqlite")]
             "sqlite" => SourceConfigCommand::Sqlite(
                 toml::from_str(
-                    toml::to_string(
-                        toml_table
-                            .get("sqlite")
-                            .unwrap()
-                        )
-                    .unwrap()
-                    .as_str())
-                .unwrap()
+                    toml::to_string(toml_table.get("sqlite").unwrap())
+                        .unwrap()
+                        .as_str(),
+                )
+                .unwrap(),
             ),
             _ => panic!("source from toml: unknown source type: {}", data_type),
         }
     }
 }
 
-fn empty_vec() -> Vec<String> {vec![]}
+fn empty_vec() -> Vec<String> {
+    vec![]
+}
 
 #[cfg(feature = "use_mysql")]
 #[derive(Clone, Debug, Deserialize, Serialize, Parser)]
@@ -174,7 +160,7 @@ pub struct MysqlConfigOptions {
     #[arg(short = 'D', long = "database", help = "database name")]
     pub database: Option<String>,
     #[arg(short = 'i', long = "init", help = "initial sql commands")]
-    #[serde(default="empty_vec")]
+    #[serde(default = "empty_vec")]
     pub init: Vec<String>,
     #[arg(long = "timeout", help = "connect/read/write timeout in seconds")]
     pub timeout: Option<u64>,
@@ -182,7 +168,6 @@ pub struct MysqlConfigOptions {
 
 #[cfg(feature = "use_mysql")]
 impl MysqlConfigOptions {
-
     //fill any values that are set in config options and not overriden
     pub fn update_from_config_options(&mut self, config_options: &MysqlConfigOptions) {
         if self.host.is_none() && config_options.host.is_some() {
@@ -211,8 +196,6 @@ impl MysqlConfigOptions {
         }
     }
 }
-
-
 
 #[cfg(feature = "use_postgres")]
 #[derive(Clone, Debug, Deserialize, Serialize, Parser)]
@@ -261,7 +244,6 @@ impl PostgresConfigOptions {
     }
 }
 
-
 #[cfg(feature = "use_sqlite")]
 #[derive(Clone, Debug, Deserialize, Serialize, Parser)]
 pub struct SqliteConfigOptions {
@@ -273,7 +255,6 @@ pub struct SqliteConfigOptions {
 
 #[cfg(feature = "use_sqlite")]
 impl SqliteConfigOptions {
-
     //fill any values that are set in config options and not overriden
     pub fn update_from_config_options(&mut self, config_options: &SqliteConfigOptions) {
         if self.filename.is_none() && config_options.filename.is_some() {
