@@ -24,7 +24,6 @@ pub fn ah() -> String {
     "abc".to_string()
 }
 
-//#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
 #[derive(Clone, Copy, Debug, Parser)]
 #[command(version, about)]
 pub struct ApplicationArguments {
@@ -67,22 +66,16 @@ pub fn handle_source_level_command(
 pub enum CommandSource {
     #[cfg(feature = "use_mysql")]
     #[command(name = "mysql", about = "mysql")]
-    //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Mysql(export::MysqlSourceOptions),
     #[cfg(feature = "use_postgres")]
     #[command(name = "postgres", about = "postgres")]
-    //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Postgres(export::PostgresSourceOptions),
     #[cfg(feature = "use_sqlite")]
     #[command(name = "sqlite", about = "sqlite")]
-    //#[arg(setting = structopt::clap::AppSettings::ColoredHelp)]
     Sqlite(export::SqliteSourceOptions),
 
-    //#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
-    //DataSource(data_source::DataSourceCommand),
 
-    //#[structopt(name = ":sources", about="manage data sources", rename_all = "verbatim")]
-    //#[structopt(setting = structopt::clap::AppSettings::ColoredHelp)]
+    #[command(name = "sources", about="manage data sources", rename_all = "verbatim")]
     Sources(sources::SourcesCommand),
 }
 
