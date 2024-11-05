@@ -27,7 +27,9 @@ impl TextDestination {
         };
 
         let mut table = Table::new();
-        table.set_format(*prettytable::format::consts::FORMAT_BOX_CHARS);
+        let mut format = *prettytable::format::consts::FORMAT_BOX_CHARS;
+        format.padding(0, 0);
+        table.set_format(format);
 
         TextDestination {
             truncate: options.truncate,
