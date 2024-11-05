@@ -78,7 +78,7 @@ where
                 match connection.execute(sql) {
                     Ok(_) => {}
                     Err(e) => {
-                        report_query_error(&sql, &format!("{:?}", e));
+                        report_query_error(sql, &format!("{:?}", e));
                         std::process::exit(1);
                     }
                 }
@@ -87,7 +87,7 @@ where
 
         SqliteSourceConnection {
             connection,
-            source: &self,
+            source: self,
         }
     }
 

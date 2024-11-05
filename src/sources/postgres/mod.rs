@@ -105,7 +105,7 @@ pub fn establish_postgres_connection(postgres_options: &dyn GetPostgresConnectio
             match conn.execute(sql.as_str(), &[]) {
                 Ok(_) => {}
                 Err(e) => {
-                    report_query_error(&sql, &format!("{:?}", e));
+                    report_query_error(sql, &format!("{:?}", e));
                     std::process::exit(1);
                 }
             }
@@ -161,12 +161,7 @@ impl<'source: 'conn, 'conn> PostgresSourceConnection<'source> {
         let mut batch_iterator = connection
             .query_raw::<str, Vec<String>, _>(&query, vec![])
             .unwrap();
-        let first_row = batch_iterator
-            .by_ref()
-            .peekable()
-            .peek()
-            .unwrap()
-            .map(|r| r.clone());
+        let first_row = batch_iterator.by_ref().peekable().peek().unwrap().cloned();
         /*let batch_iterator =
                 row_iterator = match conn.query_raw::<str,Vec<String>  ,_ >(&query, vec![]) {
                     Ok(r) => Some(r.peekable()),
@@ -196,7 +191,7 @@ impl<'source: 'conn, 'conn> DataSource<'source, 'conn, PostgresSourceConnection<
                 match connection.execute(sql, &[]) {
                     Ok(_) => {}
                     Err(e) => {
-                        report_query_error(&sql, &format!("{:?}", e));
+                        report_query_error(sql, &format!("{:?}", e));
                         std::process::exit(1);
                     }
                 }
@@ -205,7 +200,7 @@ impl<'source: 'conn, 'conn> DataSource<'source, 'conn, PostgresSourceConnection<
 
         PostgresSourceConnection {
             connection,
-            source: &self,
+            source: self,
         }
     }
 
@@ -248,36 +243,33 @@ pub fn postgres_to_row(
 impl<'conn> DataSourceBatchIterator<'conn> for PostgresSourceBatchIterator<'conn> {
     fn get_column_info(&self) -> Vec<ColumnInfo> {
         let mut result = vec![];
-        match &self.first_row {
-            Some(row) => {
-                for column in row.columns().iter() {
-                    //println!("name={}; type_name={}; kind={:?};", column.name(), column.type_().name(), column.type_().kind() );
-                    match (column.type_().kind(), column.type_().name()) {
-                        (Kind::Simple, "int4") => result.push(ColumnInfo {
-                            name: column.name().to_string(),
-                            data_type: ColumnType::I32,
-                        }),
-                        (Kind::Simple, "int8") => result.push(ColumnInfo {
-                            name: column.name().to_string(),
-                            data_type: ColumnType::I64,
-                        }),
-                        (Kind::Simple, "float4") => result.push(ColumnInfo {
-                            name: column.name().to_string(),
-                            data_type: ColumnType::F32,
-                        }),
-                        (Kind::Simple, "float8") => result.push(ColumnInfo {
-                            name: column.name().to_string(),
-                            data_type: ColumnType::F64,
-                        }),
-                        (Kind::Simple, "text") => result.push(ColumnInfo {
-                            name: column.name().to_string(),
-                            data_type: ColumnType::String,
-                        }),
-                        _ => panic!("postgres: unsupported type: {:?}", column.type_()),
-                    };
-                }
+        if let Some(row) = &self.first_row {
+            for column in row.columns().iter() {
+                //println!("name={}; type_name={}; kind={:?};", column.name(), column.type_().name(), column.type_().kind() );
+                match (column.type_().kind(), column.type_().name()) {
+                    (Kind::Simple, "int4") => result.push(ColumnInfo {
+                        name: column.name().to_string(),
+                        data_type: ColumnType::I32,
+                    }),
+                    (Kind::Simple, "int8") => result.push(ColumnInfo {
+                        name: column.name().to_string(),
+                        data_type: ColumnType::I64,
+                    }),
+                    (Kind::Simple, "float4") => result.push(ColumnInfo {
+                        name: column.name().to_string(),
+                        data_type: ColumnType::F32,
+                    }),
+                    (Kind::Simple, "float8") => result.push(ColumnInfo {
+                        name: column.name().to_string(),
+                        data_type: ColumnType::F64,
+                    }),
+                    (Kind::Simple, "text") => result.push(ColumnInfo {
+                        name: column.name().to_string(),
+                        data_type: ColumnType::String,
+                    }),
+                    _ => panic!("postgres: unsupported type: {:?}", column.type_()),
+                };
             }
-            _ => {}
         }
         result
     }

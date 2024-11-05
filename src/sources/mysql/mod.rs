@@ -159,7 +159,7 @@ where
                 mysql::Value::UInt(v) => result.push(Value::U64(*v)),
                 mysql::Value::Float(v) => result.push(Value::F64(*v as f64)),
                 mysql::Value::Double(v) => result.push(Value::F64(*v)),
-                mysql::Value::Bytes(v) => match std::str::from_utf8(&v) {
+                mysql::Value::Bytes(v) => match std::str::from_utf8(v) {
                     Ok(s) => result.push(Value::String(s.to_string())),
                     Err(e) => panic!(
                         "mysq: invalid utf8 in '{:?}' for row: {:?} ({})",
@@ -242,7 +242,7 @@ impl<'source: 'conn, 'conn> DataSource<'source, 'conn, MysqlSourceConnection<'so
 
         MysqlSourceConnection {
             connection,
-            source: &self,
+            source: self,
         }
     }
 

@@ -83,7 +83,7 @@ impl DataDestination for TextDestination {
                         truncate_text_with_note(value.to_string(), self.truncate)
                     }
                     Value::Bool(value) => value.to_string(),
-                    Value::Bytes(value) => escape_binary_data(&value),
+                    Value::Bytes(value) => escape_binary_data(value),
                     Value::None => "".to_string(),
                     Value::Timestamp(value) => value.to_string(),
                     Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),
@@ -98,7 +98,7 @@ impl DataDestination for TextDestination {
             }
 
             self.table.add_row(prettytable::Row::new(
-                row_data.iter().map(|content| Cell::new(&content)).collect(),
+                row_data.iter().map(|content| Cell::new(content)).collect(),
             ));
         }
     }

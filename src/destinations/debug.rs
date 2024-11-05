@@ -58,7 +58,7 @@ impl DataDestination for DebugDestination {
                 .write_all(format!("{:?}", column).as_bytes())
                 .unwrap()
         });
-        self.writer.write(&['\n' as u8]).unwrap();
+        self.writer.write_all(b"\n").unwrap();
     }
 
     fn add_rows(&mut self, rows: &[Row]) {
@@ -68,7 +68,7 @@ impl DataDestination for DebugDestination {
                     .write_all(format!("{:?}", col).as_bytes())
                     .unwrap();
             }
-            self.writer.write(&['\n' as u8]).unwrap();
+            self.writer.write_all(b"\n").unwrap();
         }
     }
 

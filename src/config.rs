@@ -51,16 +51,16 @@ pub fn get_sources_list() -> Vec<(String, SourceConfigCommand)> {
     let dirname = get_sources_config_directory();
     let mut entries = if std::path::Path::new(&dirname).exists() {
         std::fs::read_dir(&dirname)
-            .expect(&format!("could not read directory: {:?}", &dirname))
-            .map(|entry| entry.expect(&format!("could not process path: {:?}", &dirname)))
+            .unwrap_or_else(|_| panic!("could not read directory: {:?}", &dirname))
+            .map(|entry| entry.unwrap_or_else(|_| panic!("could not process path: {:?}", &dirname)))
             .filter(|entry| !entry.file_type().unwrap().is_dir())
             .map(|entry| {
                 let name = entry
                     .file_name()
                     .into_string()
-                    .expect(&format!("could not process file: {:?}", entry.file_name()));
+                    .unwrap_or_else(|_| panic!("could not process file: {:?}", entry.file_name()));
                 let toml_value = toml_from_file(&entry.path())
-                    .expect(&format!("could not parse toml file: {:?}", name));
+                    .unwrap_or_else(|_| panic!("could not parse toml file: {:?}", name));
                 let source_config_command = SourceConfigCommand::from_toml(&toml_value);
                 (name, source_config_command)
             })
@@ -74,10 +74,10 @@ pub fn get_sources_list() -> Vec<(String, SourceConfigCommand)> {
 
 pub fn ensure_config_directory_exists() {
     if !get_config_directory().exists() {
-        std::fs::create_dir(&get_config_directory()).unwrap();
+        std::fs::create_dir(get_config_directory()).unwrap();
     };
     if !get_sources_config_directory().exists() {
-        std::fs::create_dir(&get_sources_config_directory()).unwrap();
+        std::fs::create_dir(get_sources_config_directory()).unwrap();
     }
 }
 

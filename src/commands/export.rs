@@ -45,44 +45,44 @@ pub fn export(
     let (source, mut destination) = match src {
         #[cfg(feature = "use_mysql")]
         DataSourceCommand::Mysql(ref mysql_options) => {
-            let source: Source = Source::Mysql(MysqlSource::init(&mysql_options));
+            let source: Source = Source::Mysql(MysqlSource::init(mysql_options));
             let destination: Destination = match &export_command.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => {
-                    Destination::CSV(CSVDestination::init(&csv_options))
+                    Destination::CSV(Box::new(CSVDestination::init(csv_options)))
                 }
                 DestinationCommand::Debug(debug_options) => {
-                    Destination::Debug(DebugDestination::init(&args, &debug_options))
+                    Destination::Debug(DebugDestination::init(args, debug_options))
                 }
                 #[cfg(feature = "use_html")]
                 DestinationCommand::HTML(html_options) => {
-                    Destination::HTML(HTMLDestination::init(&html_options))
+                    Destination::HTML(HTMLDestination::init(html_options))
                 }
                 #[cfg(feature = "use_json")]
                 DestinationCommand::JSON(json_options) => {
-                    Destination::JSON(JSONDestination::init(&args, &json_options))
+                    Destination::JSON(JSONDestination::init(args, json_options))
                 }
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => {
-                    Destination::Sqlite(SqliteDestination::init(&sqlite_options))
+                    Destination::Sqlite(SqliteDestination::init(sqlite_options))
                 }
                 #[cfg(feature = "use_ods")]
                 DestinationCommand::ODS(options) => {
-                    Destination::SpreadSheetODS(SpreadSheetODSDestination::init(options))
+                    Destination::SpreadSheetODS(Box::new(SpreadSheetODSDestination::init(options)))
                 }
                 #[cfg(feature = "use_xlsx")]
-                DestinationCommand::XLSX(options) => {
-                    Destination::SpreadSheetXLSX(SpreadSheetXLSXDestination::init(options))
-                }
+                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(Box::new(
+                    SpreadSheetXLSXDestination::init(options),
+                )),
                 #[cfg(feature = "use_text")]
                 DestinationCommand::Text(text_options) => {
-                    Destination::Text(TextDestination::init(&args, &text_options))
+                    Destination::Text(TextDestination::init(args, text_options))
                 }
                 #[cfg(feature = "use_text")]
                 DestinationCommand::TextVertical(text_vertical_options) => {
                     Destination::TextVertical(TextVerticalDestination::init(
-                        &args,
-                        &text_vertical_options,
+                        args,
+                        text_vertical_options,
                     ))
                 }
             };
@@ -91,44 +91,44 @@ pub fn export(
 
         #[cfg(feature = "use_postgres")]
         DataSourceCommand::Postgres(ref postgres_options) => {
-            let source: Source = Source::Postgres(PostgresSource::init(&postgres_options));
+            let source: Source = Source::Postgres(PostgresSource::init(postgres_options));
             let destination: Destination = match &export_command.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => {
-                    Destination::CSV(CSVDestination::init(&csv_options))
+                    Destination::CSV(Box::new(CSVDestination::init(csv_options)))
                 }
                 DestinationCommand::Debug(debug_options) => {
-                    Destination::Debug(DebugDestination::init(&args, &debug_options))
+                    Destination::Debug(DebugDestination::init(args, debug_options))
                 }
                 #[cfg(feature = "use_html")]
                 DestinationCommand::HTML(html_options) => {
-                    Destination::HTML(HTMLDestination::init(&html_options))
+                    Destination::HTML(HTMLDestination::init(html_options))
                 }
                 #[cfg(feature = "use_json")]
                 DestinationCommand::JSON(json_options) => {
-                    Destination::JSON(JSONDestination::init(&args, &json_options))
+                    Destination::JSON(JSONDestination::init(args, json_options))
                 }
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => {
-                    Destination::Sqlite(SqliteDestination::init(&sqlite_options))
+                    Destination::Sqlite(SqliteDestination::init(sqlite_options))
                 }
                 #[cfg(feature = "use_ods")]
                 DestinationCommand::ODS(options) => {
-                    Destination::SpreadSheetODS(SpreadSheetODSDestination::init(options))
+                    Destination::SpreadSheetODS(Box::new(SpreadSheetODSDestination::init(options)))
                 }
                 #[cfg(feature = "use_xlsx")]
-                DestinationCommand::XLSX(options) => {
-                    Destination::SpreadSheetXLSX(SpreadSheetXLSXDestination::init(options))
-                }
+                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(Box::new(
+                    SpreadSheetXLSXDestination::init(options),
+                )),
                 #[cfg(feature = "use_text")]
                 DestinationCommand::Text(text_options) => {
-                    Destination::Text(TextDestination::init(&args, &text_options))
+                    Destination::Text(TextDestination::init(args, text_options))
                 }
                 #[cfg(feature = "use_text")]
                 DestinationCommand::TextVertical(text_vertical_options) => {
                     Destination::TextVertical(TextVerticalDestination::init(
-                        &args,
-                        &text_vertical_options,
+                        args,
+                        text_vertical_options,
                     ))
                 }
             };
@@ -136,44 +136,44 @@ pub fn export(
         }
         #[cfg(feature = "use_sqlite")]
         DataSourceCommand::Sqlite(ref sqlite_options) => {
-            let source: Source = Source::Sqlite(SqliteSource::init(&sqlite_options));
+            let source: Source = Source::Sqlite(SqliteSource::init(sqlite_options));
             let destination: Destination = match &export_command.destination {
                 #[cfg(feature = "use_csv")]
                 DestinationCommand::CSV(csv_options) => {
-                    Destination::CSV(CSVDestination::init(&csv_options))
+                    Destination::CSV(Box::new(CSVDestination::init(csv_options)))
                 }
                 DestinationCommand::Debug(debug_options) => {
-                    Destination::Debug(DebugDestination::init(&args, &debug_options))
+                    Destination::Debug(DebugDestination::init(args, debug_options))
                 }
                 #[cfg(feature = "use_html")]
                 DestinationCommand::HTML(html_options) => {
-                    Destination::HTML(HTMLDestination::init(&html_options))
+                    Destination::HTML(HTMLDestination::init(html_options))
                 }
                 #[cfg(feature = "use_json")]
                 DestinationCommand::JSON(json_options) => {
-                    Destination::JSON(JSONDestination::init(&args, &json_options))
+                    Destination::JSON(JSONDestination::init(args, json_options))
                 }
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => {
-                    Destination::Sqlite(SqliteDestination::init(&sqlite_options))
+                    Destination::Sqlite(SqliteDestination::init(sqlite_options))
                 }
                 #[cfg(feature = "use_ods")]
                 DestinationCommand::ODS(options) => {
-                    Destination::SpreadSheetODS(SpreadSheetODSDestination::init(options))
+                    Destination::SpreadSheetODS(Box::new(SpreadSheetODSDestination::init(options)))
                 }
                 #[cfg(feature = "use_xlsx")]
-                DestinationCommand::XLSX(options) => {
-                    Destination::SpreadSheetXLSX(SpreadSheetXLSXDestination::init(options))
-                }
+                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(Box::new(
+                    SpreadSheetXLSXDestination::init(options),
+                )),
                 #[cfg(feature = "use_text")]
                 DestinationCommand::Text(text_options) => {
-                    Destination::Text(TextDestination::init(&args, &text_options))
+                    Destination::Text(TextDestination::init(args, text_options))
                 }
                 #[cfg(feature = "use_text")]
                 DestinationCommand::TextVertical(text_vertical_options) => {
                     Destination::TextVertical(TextVerticalDestination::init(
-                        &args,
-                        &text_vertical_options,
+                        args,
+                        text_vertical_options,
                     ))
                 }
             };
@@ -186,10 +186,7 @@ pub fn export(
     destination.prepare_for_results(&*it);
     let mut processed = 0;
     let progress_bar = if args.verbose {
-        let pb = ProgressBar::new(match it.get_count() {
-            Some(c) => c,
-            None => 0,
-        });
+        let pb = ProgressBar::new(it.get_count().unwrap_or_default());
         pb.set_style(
             indicatif::ProgressStyle::default_bar()
                 .template("Processed {pos:>7}/{len:7} rows in {elapsed_precise}")
@@ -228,7 +225,7 @@ pub fn export(
         println!(
             "Done. Exported {} rows in {}",
             processed,
-            humantime::format_duration(duration).to_string()
+            humantime::format_duration(duration)
         );
     }
 }

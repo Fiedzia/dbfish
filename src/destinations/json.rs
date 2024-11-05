@@ -36,9 +36,7 @@ impl JSONDestination {
             } else {
                 termcolor::ColorChoice::Never
             })),
-            _ => FileOrStdout::File(
-                std::fs::File::create(json_options.filename.to_string()).unwrap(),
-            ),
+            _ => FileOrStdout::File(std::fs::File::create(&json_options.filename).unwrap()),
         };
         JSONDestination {
             use_color,

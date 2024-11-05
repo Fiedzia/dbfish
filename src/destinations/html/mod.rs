@@ -26,7 +26,7 @@ impl HTMLDestination {
                 )),
                 _ => FileOrStdout::File(std::fs::File::create(options.filename.clone()).unwrap()),
             },
-            title: options.title.clone().unwrap_or_else(|| "".to_string()),
+            title: options.title.clone().unwrap_or_default(),
         }
     }
 }
@@ -55,7 +55,7 @@ impl DataDestination for HTMLDestination {
             self.writer
                 .write_all(
                     ("    <th>".to_string()
-                        + escape(&name, askama_escape::Html).to_string().as_ref()
+                        + escape(name, askama_escape::Html).to_string().as_ref()
                         + "</th>\n")
                         .as_bytes(),
                 )
@@ -84,7 +84,7 @@ impl DataDestination for HTMLDestination {
                             truncate_text_with_note(value.to_string(), self.truncate)
                         }
                         Value::Bool(value) => value.to_string(),
-                        Value::Bytes(value) => escape_binary_data(&value),
+                        Value::Bytes(value) => escape_binary_data(value),
                         Value::None => "".to_string(),
                         Value::Timestamp(value) => value.to_string(),
                         Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),

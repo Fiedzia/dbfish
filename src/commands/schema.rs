@@ -78,7 +78,7 @@ impl DBItems {
         match self.0.root_node_id() {
             None => {}
             Some(root_node_id) => {
-                for node_id in self.0.traverse_pre_order_ids(&root_node_id).unwrap() {
+                for node_id in self.0.traverse_pre_order_ids(root_node_id).unwrap() {
                     let node = self.0.get(&node_id).unwrap();
                     if node.parent().is_some() {
                         let indentation_level = self.0.ancestors(&node_id).unwrap().count() - 1;
@@ -95,7 +95,7 @@ impl DBItems {
             Some(root_node_id) => {
                 let mut new_dbitems = DBItems::new();
                 let mut node_map = HashMap::new();
-                for node_id in self.0.traverse_post_order_ids(&root_node_id).unwrap() {
+                for node_id in self.0.traverse_post_order_ids(root_node_id).unwrap() {
                     if self
                         .0
                         .get(&node_id)

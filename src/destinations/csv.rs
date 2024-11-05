@@ -18,9 +18,7 @@ impl CSVDestination {
             "-" => FileOrStdout::ColorStdout(termcolor::StandardStream::stdout(
                 termcolor::ColorChoice::Never,
             )),
-            _ => {
-                FileOrStdout::File(std::fs::File::create(csv_options.filename.to_string()).unwrap())
-            }
+            _ => FileOrStdout::File(std::fs::File::create(&csv_options.filename).unwrap()),
         });
         CSVDestination {
             csv_writer,
@@ -44,7 +42,7 @@ impl CSVDestination {
                 Value::F32(value) => value.to_string(),
                 Value::String(value) => truncate_text_with_note(value.to_string(), truncate),
                 Value::Bool(value) => value.to_string(),
-                Value::Bytes(value) => escape_binary_data(&value),
+                Value::Bytes(value) => escape_binary_data(value),
                 Value::None => "".to_string(),
                 Value::Timestamp(value) => value.to_string(),
                 Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),
@@ -73,7 +71,7 @@ impl DataDestination for CSVDestination {
     fn add_rows(&mut self, rows: &[Row]) {
         for row in rows {
             self.csv_writer
-                .write_record(CSVDestination::row_to_csv_row(&row, self.truncate))
+                .write_record(CSVDestination::row_to_csv_row(row, self.truncate))
                 .unwrap();
         }
     }

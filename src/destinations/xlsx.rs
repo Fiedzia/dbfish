@@ -110,7 +110,7 @@ impl DataDestination for SpreadSheetXLSXDestination {
                     Value::Bytes(value) => worksheet.write_string(
                         self.sheet_row_count as u32,
                         idx as u16,
-                        truncate_text_with_note(escape_binary_data(&value), self.truncate),
+                        truncate_text_with_note(escape_binary_data(value), self.truncate),
                     ),
                     Value::None => {
                         worksheet.write_string(self.sheet_row_count as u32, idx as u16, "")

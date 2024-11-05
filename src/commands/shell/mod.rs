@@ -31,14 +31,14 @@ pub struct ShellCommand {
     pub client: KnownShells,
 }
 
-pub fn create_python_virtualenv(path: &std::path::PathBuf) {
+pub fn create_python_virtualenv(path: &std::path::Path) {
     if !path.exists() {
         OsCommand::new("python3")
             .arg("-m")
             .arg("virtualenv")
             .arg("-p")
             .arg("python3")
-            .arg(path.clone())
+            .arg(path)
             .status()
             .expect("creation of virtualenv failed");
     }
@@ -66,7 +66,7 @@ pub fn mysql_client(mysql_config_options: &export::MysqlSourceOptions) {
     }
 
     cmd.status()
-        .expect(&format!("failed to execute mysql ({:?})", cmd));
+        .unwrap_or_else(|_| panic!("failed to execute mysql ({:?})", cmd));
 }
 
 #[cfg(feature = "use_mysql")]
@@ -91,7 +91,7 @@ pub fn mycli_client(mysql_config_options: &export::MysqlSourceOptions) {
     }
 
     cmd.status()
-        .expect(&format!("failed to execute mysql ({:?})", cmd));
+        .unwrap_or_else(|_| panic!("failed to execute mysql ({:?})", cmd));
 }
 
 #[cfg(feature = "use_mysql")]
@@ -140,10 +140,12 @@ pub fn mysql_python_client(mysql_config_options: &export::MysqlSourceOptions) {
     OsCommand::new(python_mysql_venv.join("bin").join("python"))
         .arg(python_file.clone())
         .status()
-        .expect(&format!(
-            "could not run python script: {}",
-            python_file.to_str().unwrap()
-        ));
+        .unwrap_or_else(|_| {
+            panic!(
+                "could not run python script: {}",
+                python_file.to_str().unwrap()
+            )
+        });
 }
 
 #[cfg(feature = "use_sqlite")]
@@ -154,7 +156,7 @@ pub fn litecli_client(sqlite_config_options: &export::SqliteSourceOptions) {
     }
 
     cmd.status()
-        .expect(&format!("failed to execute litecli ({:?})", cmd));
+        .unwrap_or_else(|_| panic!("failed to execute litecli ({:?})", cmd));
 }
 
 #[cfg(feature = "use_postgres")]
@@ -174,7 +176,7 @@ pub fn pgcli_client(postgres_config_options: &export::PostgresSourceOptions) {
     }
 
     cmd.status()
-        .expect(&format!("failed to execute pgcli ({:?})", cmd));
+        .unwrap_or_else(|_| panic!("failed to execute pgcli ({:?})", cmd));
 }
 
 #[cfg(feature = "use_postgres")]
@@ -223,10 +225,12 @@ pub fn postgres_python_client(postgres_config_options: &export::PostgresSourceOp
     OsCommand::new(python_postgres_venv.join("bin").join("python"))
         .arg(python_file.clone())
         .status()
-        .expect(&format!(
-            "could not run python script: {}",
-            python_file.to_str().unwrap()
-        ));
+        .unwrap_or_else(|_| {
+            panic!(
+                "could not run python script: {}",
+                python_file.to_str().unwrap()
+            )
+        });
 }
 
 #[cfg(feature = "use_postgres")]
@@ -246,7 +250,7 @@ pub fn psql_client(postgres_config_options: &export::PostgresSourceOptions) {
     }
 
     cmd.status()
-        .expect(&format!("failed to execute psql ({:?})", cmd));
+        .unwrap_or_else(|_| panic!("failed to execute psql ({:?})", cmd));
 }
 
 #[cfg(feature = "use_sqlite")]
@@ -257,7 +261,7 @@ pub fn sqlite_client(sqlite_config_options: &export::SqliteSourceOptions) {
     }
 
     cmd.status()
-        .expect(&format!("failed to execute sqlite3 ({:?})", cmd));
+        .unwrap_or_else(|_| panic!("failed to execute sqlite3 ({:?})", cmd));
 }
 
 #[cfg(feature = "use_sqlite")]
@@ -294,10 +298,12 @@ pub fn sqlite_python_client(sqlite_config_options: &export::SqliteSourceOptions)
     OsCommand::new(python_sqlite_venv.join("bin").join("python"))
         .arg(python_file.clone())
         .status()
-        .expect(&format!(
-            "could not run python script: {}",
-            python_file.to_str().unwrap()
-        ));
+        .unwrap_or_else(|_| {
+            panic!(
+                "could not run python script: {}",
+                python_file.to_str().unwrap()
+            )
+        });
 }
 
 pub fn shell(_args: &ApplicationArguments, src: &DataSourceCommand, shell_command: &ShellCommand) {
@@ -305,13 +311,13 @@ pub fn shell(_args: &ApplicationArguments, src: &DataSourceCommand, shell_comman
         #[cfg(feature = "use_mysql")]
         DataSourceCommand::Mysql(mysql_config_options) => match shell_command.client {
             KnownShells::Mycli => {
-                mycli_client(&mysql_config_options);
+                mycli_client(mysql_config_options);
             }
             KnownShells::Default | KnownShells::Mysql => {
-                mysql_client(&mysql_config_options);
+                mysql_client(mysql_config_options);
             }
             KnownShells::Python => {
-                mysql_python_client(&mysql_config_options);
+                mysql_python_client(mysql_config_options);
             }
             _ => {
                 eprintln!(
@@ -324,9 +330,9 @@ pub fn shell(_args: &ApplicationArguments, src: &DataSourceCommand, shell_comman
 
         #[cfg(feature = "use_sqlite")]
         DataSourceCommand::Sqlite(sqlite_config_options) => match shell_command.client {
-            KnownShells::Litecli => litecli_client(&sqlite_config_options),
-            KnownShells::Default | KnownShells::Sqlite => sqlite_client(&sqlite_config_options),
-            KnownShells::Python => sqlite_python_client(&sqlite_config_options),
+            KnownShells::Litecli => litecli_client(sqlite_config_options),
+            KnownShells::Default | KnownShells::Sqlite => sqlite_client(sqlite_config_options),
+            KnownShells::Python => sqlite_python_client(sqlite_config_options),
             _ => {
                 eprintln!(
                     "client unknown or unsuitable for given source: {:?}",
@@ -337,9 +343,9 @@ pub fn shell(_args: &ApplicationArguments, src: &DataSourceCommand, shell_comman
         },
         #[cfg(feature = "use_postgres")]
         DataSourceCommand::Postgres(postgres_config_options) => match shell_command.client {
-            KnownShells::Pgcli => pgcli_client(&postgres_config_options),
-            KnownShells::Default | KnownShells::Psql => psql_client(&postgres_config_options),
-            KnownShells::Python => postgres_python_client(&postgres_config_options),
+            KnownShells::Pgcli => pgcli_client(postgres_config_options),
+            KnownShells::Default | KnownShells::Psql => psql_client(postgres_config_options),
+            KnownShells::Python => postgres_python_client(postgres_config_options),
             _ => {
                 eprintln!(
                     "client unknown or unsuitable for given source: {:?}",

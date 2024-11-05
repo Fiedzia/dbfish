@@ -7,7 +7,7 @@ pub struct SourceConfigCommandWrapper(pub SourceConfigCommand);
 
 impl FromArgMatches for SourceConfigCommandWrapper {
     fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
-        SourceConfigCommand::from_arg_matches(matches).map(|r| Self(r))
+        SourceConfigCommand::from_arg_matches(matches).map(Self)
     }
     fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> Result<(), clap::Error> {
         self.0.update_from_arg_matches(matches)
@@ -15,7 +15,7 @@ impl FromArgMatches for SourceConfigCommandWrapper {
 
     // Provided methods
     fn from_arg_matches_mut(matches: &mut ArgMatches) -> Result<Self, clap::Error> {
-        SourceConfigCommand::from_arg_matches_mut(matches).map(|r| Self(r))
+        SourceConfigCommand::from_arg_matches_mut(matches).map(Self)
     }
     fn update_from_arg_matches_mut(&mut self, matches: &mut ArgMatches) -> Result<(), clap::Error> {
         self.0.update_from_arg_matches_mut(matches)
@@ -74,14 +74,14 @@ impl SourceConfigCommand {
                 (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
                 (Some(host), None) => format!("mysql {}", host),
                 (None, Some(db)) => format!("mysql /{}", db),
-                (None, None) => format!("mysql"),
+                (None, None) => "mysql".to_string(),
             },
             #[cfg(feature = "use_postgres")]
             SourceConfigCommand::Postgres(options) => match (&options.host, &options.database) {
                 (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
                 (Some(host), None) => format!("mysql {}", host),
                 (None, Some(db)) => format!("mysql /{}", db),
-                (None, None) => format!("mysql"),
+                (None, None) => "mysql".to_string(),
             },
 
             #[cfg(feature = "use_sqlite")]

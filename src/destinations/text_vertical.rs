@@ -34,7 +34,7 @@ impl TextVerticalDestination {
             } else {
                 termcolor::ColorChoice::Never
             })),
-            _ => FileOrStdout::File(std::fs::File::create(options.filename.to_string()).unwrap()),
+            _ => FileOrStdout::File(std::fs::File::create(&options.filename).unwrap()),
         };
 
         TextVerticalDestination {
@@ -80,7 +80,7 @@ impl DataDestination for TextVerticalDestination {
                         truncate_text_with_note(value.to_string(), self.truncate)
                     }
                     Value::Bool(value) => value.to_string(),
-                    Value::Bytes(value) => escape_binary_data(&value),
+                    Value::Bytes(value) => escape_binary_data(value),
                     Value::None => "".to_string(),
                     Value::Timestamp(value) => value.to_string(),
                     Value::Date(date) => format!("{}", date.format("%Y-%m-%d")),

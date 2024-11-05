@@ -30,7 +30,7 @@ pub fn value_to_ods_value(value: &Value, truncate: Option<u64>) -> spreadsheet_o
             spreadsheet_ods::Value::Text(truncate_text_with_note(value.to_string(), truncate))
         }
         Value::Bool(value) => spreadsheet_ods::Value::Boolean(*value),
-        Value::Bytes(value) => spreadsheet_ods::Value::Text(escape_binary_data(&value)),
+        Value::Bytes(value) => spreadsheet_ods::Value::Text(escape_binary_data(value)),
         Value::None => spreadsheet_ods::Value::Text("".to_string()),
         Value::Timestamp(value) => spreadsheet_ods::Value::DateTime(
             chrono::NaiveDateTime::from_timestamp(*value as i64, 0),
@@ -88,6 +88,6 @@ impl DataDestination for SpreadSheetODSDestination {
 
     fn close(&mut self) {
         spreadsheet_ods::write_ods(&mut self.workbook, self.filename.clone())
-            .expect(&format!("write_ods: {}", self.filename))
+            .unwrap_or_else(|_| panic!("write_ods: {}", self.filename))
     }
 }

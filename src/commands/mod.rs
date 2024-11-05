@@ -91,13 +91,12 @@ pub struct CommandWrapper(pub CommandSource);
 
 impl FromArgMatches for CommandWrapper {
     fn from_arg_matches(matches: &ArgMatches) -> Result<Self, clap::Error> {
-        let result = CommandSource::from_arg_matches(matches).map(|r| Self(r));
+        let result = CommandSource::from_arg_matches(matches).map(Self);
         match result {
             Ok(_) => result,
             Err(ref e) => {
                 if e.kind() == clap::error::ErrorKind::InvalidSubcommand {
                     println!("err again {:?}", e);
-                } else {
                 };
                 result
             }
@@ -109,7 +108,7 @@ impl FromArgMatches for CommandWrapper {
 
     // Provided methods
     fn from_arg_matches_mut(matches: &mut ArgMatches) -> Result<Self, clap::Error> {
-        let r = CommandSource::from_arg_matches_mut(matches).map(|r| Self(r));
+        let r = CommandSource::from_arg_matches_mut(matches).map(Self);
         println!("here2:: {:#?}", r);
         r
     }

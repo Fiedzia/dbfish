@@ -53,9 +53,6 @@ mod tests {
 
     #[test]
     fn test_escape_binary_data() {
-        assert_eq!(
-            escape_binary_data(&vec!['a' as u8, 0x0, 'b' as u8, 0x9]),
-            "a\\x00b\\t"
-        );
+        assert_eq!(escape_binary_data(&[b'a', 0x0, b'b', 0x9]), "a\\x00b\\t");
     }
 }

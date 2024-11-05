@@ -21,61 +21,52 @@ fn main() {
 
     let args = &app.get_matches();
 
-    let app_args = ApplicationArguments::from_arg_matches(&args).unwrap();
+    let app_args = ApplicationArguments::from_arg_matches(args).unwrap();
     /*match app_args.color {
         UseColor::No => { app = app.disable_colored_help(true);},
         _ => {}
     }*/
-    let subcmd = CommandWrapper::from_arg_matches(&args);
+    let subcmd = CommandWrapper::from_arg_matches(args);
     match &subcmd {
         Ok(cmd) => {
             match cmd {
                 CommandWrapper(CommandSource::Sources(sources_cmd)) => {
-                    commands::sources::sources(&app_args, &sources_cmd);
+                    commands::sources::sources(&app_args, sources_cmd);
                 }
                 #[cfg(feature = "use_mysql")]
                 CommandWrapper(CommandSource::Mysql(mysql_options)) => {
                     let src_subcmd =
-                        SourceLevelCommand::from_arg_matches(&args.subcommand().unwrap().1);
-                    match src_subcmd {
-                        Ok(cmd) => {
-                            handle_source_level_command(
-                                &app_args,
-                                &DataSourceCommand::Mysql(mysql_options.clone()),
-                                &cmd,
-                            );
-                        }
-                        Err(_) => {}
+                        SourceLevelCommand::from_arg_matches(args.subcommand().unwrap().1);
+                    if let Ok(cmd) = src_subcmd {
+                        handle_source_level_command(
+                            &app_args,
+                            &DataSourceCommand::Mysql(mysql_options.clone()),
+                            &cmd,
+                        );
                     }
                 }
                 #[cfg(feature = "use_postgres")]
                 CommandWrapper(CommandSource::Postgres(postgres_options)) => {
                     let src_subcmd =
-                        SourceLevelCommand::from_arg_matches(&args.subcommand().unwrap().1);
-                    match src_subcmd {
-                        Ok(cmd) => {
-                            handle_source_level_command(
-                                &app_args,
-                                &DataSourceCommand::Postgres(postgres_options.clone()),
-                                &cmd,
-                            );
-                        }
-                        Err(_) => {}
+                        SourceLevelCommand::from_arg_matches(args.subcommand().unwrap().1);
+                    if let Ok(cmd) = src_subcmd {
+                        handle_source_level_command(
+                            &app_args,
+                            &DataSourceCommand::Postgres(postgres_options.clone()),
+                            &cmd,
+                        );
                     }
                 }
                 #[cfg(feature = "use_sqlite")]
                 CommandWrapper(CommandSource::Sqlite(sqlite_options)) => {
                     let src_subcmd =
-                        SourceLevelCommand::from_arg_matches(&args.subcommand().unwrap().1);
-                    match src_subcmd {
-                        Ok(cmd) => {
-                            handle_source_level_command(
-                                &app_args,
-                                &DataSourceCommand::Sqlite(sqlite_options.clone()),
-                                &cmd,
-                            );
-                        }
-                        Err(_) => {}
+                        SourceLevelCommand::from_arg_matches(args.subcommand().unwrap().1);
+                    if let Ok(cmd) = src_subcmd {
+                        handle_source_level_command(
+                            &app_args,
+                            &DataSourceCommand::Sqlite(sqlite_options.clone()),
+                            &cmd,
+                        );
                     }
                 }
             };

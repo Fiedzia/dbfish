@@ -20,7 +20,7 @@ pub mod xlsx;
 
 pub enum Destination {
     #[cfg(feature = "use_csv")]
-    CSV(csv::CSVDestination),
+    CSV(Box<csv::CSVDestination>),
     Debug(debug::DebugDestination),
     #[cfg(feature = "use_html")]
     HTML(html::HTMLDestination),
@@ -29,9 +29,9 @@ pub enum Destination {
     #[cfg(feature = "use_sqlite")]
     Sqlite(sqlite::SqliteDestination),
     #[cfg(feature = "use_ods")]
-    SpreadSheetODS(ods::SpreadSheetODSDestination),
+    SpreadSheetODS(Box<ods::SpreadSheetODSDestination>),
     #[cfg(feature = "use_xlsx")]
-    SpreadSheetXLSX(xlsx::SpreadSheetXLSXDestination),
+    SpreadSheetXLSX(Box<xlsx::SpreadSheetXLSXDestination>),
     #[cfg(feature = "use_text")]
     Text(text::TextDestination),
     #[cfg(feature = "use_text")]

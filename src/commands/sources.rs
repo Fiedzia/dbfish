@@ -60,10 +60,7 @@ pub fn sources_list(
             .case_insensitive(true)
             .build()
             .unwrap();
-        sources = sources
-            .into_iter()
-            .filter(|(name, _src)| re.is_match(name))
-            .collect();
+        sources.retain(|(name, _src)| re.is_match(name));
     }
     let mut max_source_length = 0;
     sources
@@ -90,10 +87,7 @@ pub fn sources_show(
             .case_insensitive(true)
             .build()
             .unwrap();
-        sources = sources
-            .into_iter()
-            .filter(|(name, _src)| re.is_match(name))
-            .collect();
+        sources.retain(|(name, _src)| re.is_match(name));
     }
     let mut max_source_length = 0;
     sources
@@ -106,19 +100,13 @@ pub fn sources_show(
 
 pub fn sources(args: &ApplicationArguments, sources_command: &SourcesCommand) {
     match &sources_command.command {
-        SourcesSubCommand::Add(add_options) => sources_add(&args, &sources_command, &add_options),
+        SourcesSubCommand::Add(add_options) => sources_add(args, sources_command, add_options),
         SourcesSubCommand::Delete(delete_options) => {
-            sources_delete(&args, &sources_command, &delete_options)
+            sources_delete(args, sources_command, delete_options)
         }
-        SourcesSubCommand::Edit(edit_options) => {
-            sources_edit(&args, &sources_command, &edit_options)
-        }
-        SourcesSubCommand::List(list_options) => {
-            sources_list(&args, &sources_command, &list_options)
-        }
-        SourcesSubCommand::Show(show_options) => {
-            sources_show(&args, &sources_command, &show_options)
-        }
+        SourcesSubCommand::Edit(edit_options) => sources_edit(args, sources_command, edit_options),
+        SourcesSubCommand::List(list_options) => sources_list(args, sources_command, list_options),
+        SourcesSubCommand::Show(show_options) => sources_show(args, sources_command, show_options),
     };
 }
 
