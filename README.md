@@ -22,9 +22,9 @@ Usage:
 
     # define data source named "mydata" which will connect to a database you use (pick one you like)
 
-    dbfish :sources add mydata mysql --user joe --password secret
-    dbfish :sources add mydata postgres --user joe --password secret
-    dbfish :sources add mydata sqlite /tmp/somefile.sqlite3
+    dbfish sources add mydata mysql --user joe --password secret
+    dbfish sources add mydata postgres --user joe --password secret
+    dbfish sources add mydata sqlite /tmp/somefile.sqlite3
 
     # export your data
 
@@ -63,7 +63,7 @@ Usage:
     dbfish mydata schema -q user   # display all parts of database schema that contain phrase "user"
     dbfish mydata schema -r -q '201[89]' SOURCE [source options] # display all parts of database schema that match given regex
 
-    dbfish :sources add | edit | list | remove # manage database credential
+    dbfish sources add | edit | list | remove # manage database credential
 ```
 
 Sources:
