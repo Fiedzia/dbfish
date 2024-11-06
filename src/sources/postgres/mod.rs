@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::Read;
 
 use postgres::fallible_iterator::FallibleIterator;
+use postgres::fallible_iterator::IntoFallibleIterator;
 use postgres::{self, types::Kind, Client, NoTls};
 use urlencoding;
 
@@ -279,10 +280,12 @@ impl<'conn> DataSourceBatchIterator<'conn> for PostgresSourceBatchIterator<'conn
     }
 
     fn next(&mut self) -> Option<Vec<Row>> {
-        let rows: Vec<Row> = self
+        let mut rows: Vec<Row> = vec![];
+        match self
             .result_iterator
             .by_ref()
             .take(self.batch_size as usize)
+            .into_fallible_iter()
             .map(|postgres_row| {
                 let mut result = Row::with_capacity(postgres_row.len());
                 for (idx, column) in postgres_row.columns().iter().enumerate() {
@@ -297,8 +300,18 @@ impl<'conn> DataSourceBatchIterator<'conn> for PostgresSourceBatchIterator<'conn
                 }
                 Ok(result)
             })
-            .collect()
-            .unwrap();
+            .for_each(|row| {
+                rows.push(row);
+                Ok(())
+            }) {
+            Ok(()) => {}
+            Err(e) => {
+                if e.is_closed() {
+                } else {
+                    panic!("Postgresql connection error: {:?}", e);
+                }
+            }
+        };
 
         if !rows.is_empty() {
             Some(rows)

@@ -1,5 +1,6 @@
 use clap::{ArgMatches, Args, Command, FromArgMatches, Parser, Subcommand, ValueEnum};
 
+use crate::commands::common::SourceConfigCommand;
 pub use crate::commands::data_source::DataSourceCommand;
 use crate::commands::export::export;
 use crate::commands::schema::schema;
@@ -73,8 +74,6 @@ pub enum CommandSource {
     #[cfg(feature = "use_sqlite")]
     #[command(name = "sqlite", about = "sqlite")]
     Sqlite(export::SqliteSourceOptions),
-
-
     #[command(name = "sources", about="manage data sources", rename_all = "verbatim")]
     Sources(sources::SourcesCommand),
 }
@@ -89,7 +88,106 @@ impl FromArgMatches for CommandWrapper {
             Ok(_) => result,
             Err(ref e) => {
                 if e.kind() == clap::error::ErrorKind::InvalidSubcommand {
-                    println!("err again {:?}", e);
+                    //we are handling InvalidSubcommand, so there is one for sure
+                    match config::USER_DEFINED_SOURCES.get(matches.subcommand().unwrap().0) {
+                        None => {}
+                        Some(source) => match source {
+                            #[cfg(feature = "use_mysql")]
+                            SourceConfigCommand::Mysql(mysql_config_options) => {
+                                match export::MysqlSourceOptions::from_arg_matches(
+                                    matches.subcommand().unwrap().1,
+                                ) {
+                                    Ok(mut mysql_options) => {
+                                        mysql_options
+                                            .update_from_config_options(mysql_config_options);
+                                        return Ok(CommandWrapper(CommandSource::Mysql(
+                                            mysql_options,
+                                        )));
+                                    }
+                                    Err(e) => return Err(e),
+                                }
+                            }
+                            #[cfg(feature = "use_mysql")]
+                            SourceConfigCommand::Postgres(postgres_config_options) => {
+                                match export::PostgresSourceOptions::from_arg_matches(
+                                    matches.subcommand().unwrap().1,
+                                ) {
+                                    Ok(mut postgres_options) => {
+                                        postgres_options
+                                            .update_from_config_options(postgres_config_options);
+                                        return Ok(CommandWrapper(CommandSource::Postgres(
+                                            postgres_options,
+                                        )));
+                                    }
+                                    Err(e) => return Err(e),
+                                }
+                            }
+                            #[cfg(feature = "use_sqlite")]
+                            SourceConfigCommand::Sqlite(sqlite_config_options) => {
+                                match export::SqliteSourceOptions::from_arg_matches(
+                                    matches.subcommand().unwrap().1,
+                                ) {
+                                    Ok(mut sqlite_options) => {
+                                        sqlite_options
+                                            .update_from_config_options(sqlite_config_options);
+                                        return Ok(CommandWrapper(CommandSource::Sqlite(
+                                            sqlite_options,
+                                        )));
+                                    }
+                                    Err(e) => return Err(e),
+                                }
+                            }
+                        },
+                    }
+
+                    let sources = config::get_sources_list();
+                    for (source_name, source_config_command) in sources {
+                        if source_name == matches.subcommand().unwrap().0 {
+                            //we are handling InvalidSubcommand, so there is one for sure
+                            match source_config_command.get_type_name().as_str() {
+                                #[cfg(feature = "use_mysql")]
+                                "mysql" => {
+                                    match export::MysqlSourceOptions::from_arg_matches(
+                                        matches.subcommand().unwrap().1,
+                                    ) {
+                                        Ok(mysql_options) => {
+                                            return Ok(CommandWrapper(CommandSource::Mysql(
+                                                mysql_options,
+                                            )))
+                                        }
+                                        Err(e) => return Err(e),
+                                    }
+                                }
+                                #[cfg(feature = "use_postgres")]
+                                "postgres" => {
+                                    match export::PostgresSourceOptions::from_arg_matches(
+                                        matches.subcommand().unwrap().1,
+                                    ) {
+                                        Ok(postgres_options) => {
+                                            return Ok(CommandWrapper(CommandSource::Postgres(
+                                                postgres_options,
+                                            )))
+                                        }
+                                        Err(e) => return Err(e),
+                                    }
+                                }
+                                #[cfg(feature = "use_sqlite")]
+                                "sqlite" => {
+                                    match export::SqliteSourceOptions::from_arg_matches(
+                                        matches.subcommand().unwrap().1,
+                                    ) {
+                                        Ok(sqlite_options) => {
+                                            return Ok(CommandWrapper(CommandSource::Sqlite(
+                                                sqlite_options,
+                                            )))
+                                        }
+                                        Err(e) => return Err(e),
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
                 };
                 result
             }

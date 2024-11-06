@@ -20,6 +20,8 @@ use crate::destinations::html::HTMLDestination;
 use crate::destinations::json::JSONDestination;
 #[cfg(feature = "use_ods")]
 use crate::destinations::ods::SpreadSheetODSDestination;
+#[cfg(feature = "use_parquet")]
+use crate::destinations::parquet::ParquetDestination;
 #[cfg(feature = "use_text")]
 use crate::destinations::text::TextDestination;
 #[cfg(feature = "use_text")]
@@ -61,6 +63,10 @@ pub fn export(
                 #[cfg(feature = "use_json")]
                 DestinationCommand::JSON(json_options) => {
                     Destination::JSON(JSONDestination::init(args, json_options))
+                }
+                #[cfg(feature = "use_parquet")]
+                DestinationCommand::Parquet(parquet_options) => {
+                    Destination::Parquet(ParquetDestination::init(parquet_options))
                 }
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => {
@@ -108,6 +114,10 @@ pub fn export(
                 DestinationCommand::JSON(json_options) => {
                     Destination::JSON(JSONDestination::init(args, json_options))
                 }
+                #[cfg(feature = "use_parquet")]
+                DestinationCommand::Parquet(parquet_options) => {
+                    Destination::Parquet(ParquetDestination::init(parquet_options))
+                }
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => {
                     Destination::Sqlite(SqliteDestination::init(sqlite_options))
@@ -152,6 +162,10 @@ pub fn export(
                 #[cfg(feature = "use_json")]
                 DestinationCommand::JSON(json_options) => {
                     Destination::JSON(JSONDestination::init(args, json_options))
+                }
+                #[cfg(feature = "use_parquet")]
+                DestinationCommand::Parquet(parquet_options) => {
+                    Destination::Parquet(ParquetDestination::init(parquet_options))
                 }
                 #[cfg(feature = "use_sqlite")]
                 DestinationCommand::Sqlite(sqlite_options) => {
@@ -270,6 +284,9 @@ pub enum DestinationCommand {
     #[cfg(feature = "use_xlsx")]
     #[command(name = "xlsx", about = "XLSX spreadsheet")]
     XLSX(SpreadSheetDestinationOptions),
+    #[cfg(feature = "use_parquet")]
+    #[command(name = "parquet", about = "parquet file")]
+    Parquet(ParquetDestinationOptions),
     #[cfg(feature = "use_sqlite")]
     #[command(name = "sqlite", about = "Sqlite file")]
     Sqlite(SqliteDestinationOptions),
@@ -287,6 +304,19 @@ pub enum DestinationCommand {
     JSON(JSONDestinationOptions),
     #[command(name = "debug", about = "Debug output")]
     Debug(DebugDestinationOptions),
+}
+
+#[cfg(feature = "use_parquet")]
+#[derive(Clone, Debug, Parser)]
+pub struct ParquetDestinationOptions {
+    #[arg(help = "parquet filename")]
+    pub filename: String,
+    #[arg(
+        short = 't',
+        long = "truncate",
+        help = "truncate data to given amount of graphemes"
+    )]
+    pub truncate: Option<u64>,
 }
 
 #[cfg(feature = "use_sqlite")]

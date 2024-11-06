@@ -202,7 +202,7 @@ impl MysqlConfigOptions {
 pub struct PostgresConfigOptions {
     #[arg(short = 'h', long = "host", help = "hostname")]
     pub host: Option<String>,
-     #[arg(short = 'u', long = "user", help = "username")]
+    #[arg(short = 'u', long = "user", help = "username")]
     pub user: Option<String>,
     #[arg(short = 'p', long = "password", help = "password")]
     pub password: Option<String>,

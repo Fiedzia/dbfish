@@ -27,6 +27,7 @@ fn main() {
         _ => {}
     }*/
     let subcmd = CommandWrapper::from_arg_matches(args);
+
     match &subcmd {
         Ok(cmd) => {
             match cmd {

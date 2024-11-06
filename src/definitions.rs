@@ -16,7 +16,7 @@ pub enum ColumnType {
     Bytes,
     None, //mysql indicates that the column only stores null values. Not sure about sqlite.
     Date,
-    DateTime,
+    DateTime, //TODO: datetime with timezone
     Time,
     Timestamp,
     Bool,
