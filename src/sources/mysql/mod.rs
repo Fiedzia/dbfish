@@ -235,7 +235,6 @@ where
 
 impl<'source: 'conn, 'conn> DataSource<'source, 'conn, MysqlSourceConnection<'source>>
     for MysqlSource
-//impl <'source, 'conn> DataSource<'source, 'conn, MysqlSourceConnection<'source>, MysqlSourceBatchIterator<'source, 'conn>> for MysqlSource
 {
     fn connect(&'source self) -> MysqlSourceConnection {
         let connection = establish_mysql_connection(&self.options);

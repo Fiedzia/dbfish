@@ -113,8 +113,8 @@ TODO: (must-have before calling it usable)
 
 TODO: (nice to have)
 
- * more sources (BigQuery, maybe JSON/Solr/ES/MongoDB)
- * more destinations (HDF5, Parquet)
+ * more sources (BigQuery, maybe JSON/Solr/ES/MongoDB, SurealDB, DuckDB)
+ * more destinations (HDF5, Parquet, Feather)
  * support a bit more MySQL and PostgreSQL features (few types were ommited)
  * kill all .unwrap()
  * compress to zip/tgz (useful for csv/text/html)
@@ -124,6 +124,16 @@ TODO: (nice to have)
  * add command to display database/table sizes
  * add command to show currently running queries
  * add watch command to show periodically query result
+ * query benchmark with run statistics
+ * db schema diagrams
+ * in some distant future, GUI mode maybe
+
+ Known issues:
+
+ * parquet requires strict schema definition, sqlite says every column type is binary,
+   even for tables created in strict mode (```dbfish sqlite -q 'select 1' export debug - ```
+   always reports binary column definition).
+   We need to inspect first batch of results to determine type.
 
 Design principles:
 

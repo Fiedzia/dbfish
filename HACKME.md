@@ -6,7 +6,7 @@ General idea:
 
 We have a set of database sources.
 DBFish provides set of commands that operate on those.
-All commands are defined using structopt.
+All commands are defined using clap.
 Commands can be chained.
 
 Data export:

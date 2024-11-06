@@ -200,19 +200,19 @@ impl MysqlConfigOptions {
 #[cfg(feature = "use_postgres")]
 #[derive(Clone, Debug, Deserialize, Serialize, Parser)]
 pub struct PostgresConfigOptions {
-    //#[structopt(short = "h", long = "host", help = "hostname")]
+    #[arg(short = 'h', long = "host", help = "hostname")]
     pub host: Option<String>,
-    // #[structopt(short = "u", long = "user", help = "username")]
+    #[arg(short = 'u', long = "user", help = "username")]
     pub user: Option<String>,
-    //#[structopt(short = "p", long = "password", help = "password")]
+    #[arg(short = 'p', long = "password", help = "password")]
     pub password: Option<String>,
-    //#[structopt(short = "P", long = "port", help = "port")]
+    #[arg(short = 'P', long = "port", help = "port")]
     pub port: Option<u16>,
-    //#[structopt(short = "D", long = "database", help = "database name")]
+    #[arg(short = 'D', long = "database", help = "database name")]
     pub database: Option<String>,
-    //#[structopt(short = "i", long = "init", help = "initial sql commands")]
+    #[arg(short = 'i', long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
-    //#[structopt(long = "timeout", help = "connect timeout in seconds")]
+    #[arg(long = "timeout", help = "connect timeout in seconds")]
     pub timeout: Option<u64>,
 }
 
@@ -247,9 +247,9 @@ impl PostgresConfigOptions {
 #[cfg(feature = "use_sqlite")]
 #[derive(Clone, Debug, Deserialize, Serialize, Parser)]
 pub struct SqliteConfigOptions {
-    //#[structopt(help = "sqlite filename")]
+    #[arg(help = "sqlite filename")]
     pub filename: Option<String>,
-    //#[structopt(short = "i", long = "init", help = "initial sql commands")]
+    #[arg(short = 'i', long = "init", help = "initial sql commands")]
     pub init: Vec<String>,
 }
 
