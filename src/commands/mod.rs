@@ -107,7 +107,7 @@ impl FromArgMatches for CommandWrapper {
                                     Err(e) => return Err(e),
                                 }
                             }
-                            #[cfg(feature = "use_mysql")]
+                            #[cfg(feature = "use_postgres")]
                             SourceConfigCommand::Postgres(postgres_config_options) => {
                                 match export::PostgresSourceOptions::from_arg_matches(
                                     matches.subcommand().unwrap().1,

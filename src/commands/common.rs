@@ -78,8 +78,8 @@ impl SourceConfigCommand {
             },
             #[cfg(feature = "use_postgres")]
             SourceConfigCommand::Postgres(options) => match (&options.host, &options.database) {
-                (Some(host), Some(db)) => format!("mysql {}/{}", host, db),
-                (Some(host), None) => format!("mysql {}", host),
+                (Some(host), Some(db)) => format!("postgres {}/{}", host, db),
+                (Some(host), None) => format!("postgres {}", host),
                 (None, Some(db)) => format!("mysql /{}", db),
                 (None, None) => "mysql".to_string(),
             },
