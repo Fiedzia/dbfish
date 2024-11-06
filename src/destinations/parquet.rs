@@ -5,9 +5,10 @@ use std::sync::Arc;
 use arrow::array::temporal_conversions::time_to_time64ns;
 use arrow::array::types::Date32Type;
 use arrow::array::{
-    BinaryBuilder, BooleanBuilder, Date32Builder, Float32Builder, Float64Builder, Int16Builder,
-    Int32Builder, Int64Builder, Int8Builder, StringBuilder, StructArray, Time64NanosecondBuilder,
-    TimestampSecondBuilder, UInt16Builder, UInt32Builder, UInt64Builder, UInt8Builder,
+    Array, BinaryBuilder, BooleanBuilder, Date32Builder, Float32Builder, Float64Builder,
+    Int16Builder, Int32Builder, Int64Builder, Int8Builder, StringBuilder, StructArray,
+    Time64NanosecondBuilder, TimestampSecondBuilder, UInt16Builder, UInt32Builder, UInt64Builder,
+    UInt8Builder,
 };
 use arrow::datatypes::DataType;
 use arrow::datatypes::{Field, Fields, Schema, SchemaBuilder, TimeUnit};
@@ -21,12 +22,8 @@ use crate::definitions::{ColumnType, DataDestination, DataSourceBatchIterator, R
 use crate::utils::truncate_text_with_note;
 
 pub struct ParquetDestination {
-    //column_names: Vec<String>,
     truncate: Option<u64>,
     filename: String,
-    //file: File,
-    //schema_builder: SchemaBuilder,
-    //writer_properties: Option<WriterProperties>,
     writer: Option<ParquetWriter<File>>,
     schema: Option<Arc<Schema>>,
 }
@@ -39,14 +36,8 @@ impl ParquetDestination {
         }
         ParquetDestination {
             filename: parquet_options.filename.clone(),
-            //file: File::create(&parquet_options.filename).unwrap(),
-            //column_names: vec![],
             truncate: parquet_options.truncate,
-            //schema: Schema::new(vec![Field::new("id", UInt64, false)]),
-            //schema: Schema::new(Vec::<Field>::new()),
-            //schema_builder: SchemaBuilder::new(),
             schema: None,
-            //writer_properties: None,
             writer: None,
         }
     }
@@ -130,6 +121,9 @@ impl DataDestination for ParquetDestination {
     }
 
     fn add_rows(&mut self, rows: &[Row]) {
+        let mut fields = vec![];
+        let mut arrays: Vec<Arc<dyn Array>> = vec![];
+
         for (col_idx, field) in (&self.schema.as_ref().unwrap().fields)
             .into_iter()
             .enumerate()
@@ -144,18 +138,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Int64 => {
                     let mut array = Int64Builder::new();
@@ -166,18 +150,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
 
                 DataType::UInt32 => {
@@ -189,18 +163,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Int32 => {
                     let mut array = Int32Builder::new();
@@ -211,18 +175,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::UInt16 => {
                     let mut array = UInt16Builder::new();
@@ -233,18 +187,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Int16 => {
                     let mut array = Int16Builder::new();
@@ -255,18 +199,6 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
                 }
                 DataType::UInt8 => {
                     let mut array = UInt8Builder::new();
@@ -277,18 +209,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Int8 => {
                     let mut array = Int8Builder::new();
@@ -299,18 +221,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Float64 => {
                     let mut array = Float64Builder::new();
@@ -321,18 +233,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Float32 => {
                     let mut array = Float32Builder::new();
@@ -343,18 +245,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Boolean => {
                     let mut array = BooleanBuilder::new();
@@ -365,18 +257,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Utf8 => {
                     let mut array = StringBuilder::new();
@@ -387,18 +269,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
 
                 DataType::Timestamp(_unit, _optional_timezone) => {
@@ -411,18 +283,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
 
                 DataType::Date32 => {
@@ -434,18 +296,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
 
                 DataType::Time32(_unit) => {
@@ -458,18 +310,8 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
                 DataType::Binary => {
                     //FIXME: assuming unit is second for now,
@@ -481,27 +323,24 @@ impl DataDestination for ParquetDestination {
                             array.append_null();
                         }
                     });
-                    self.writer
-                        .as_mut()
-                        .unwrap()
-                        .write(
-                            &StructArray::new(
-                                Fields::from(vec![field.clone()]),
-                                vec![Arc::new(array.finish())],
-                                None,
-                            )
-                            .into(),
-                        )
-                        .unwrap();
+                    fields.push(field.clone());
+                    arrays.push(Arc::new(array.finish()));
                 }
 
                 _ => panic!("Parquet: unsupported data type{}", field.data_type()),
             }
         }
+
+        self.writer
+            .as_mut()
+            .unwrap()
+            .write(&StructArray::new(Fields::from(fields), arrays, None).into())
+            .unwrap();
     }
 
     fn close(&mut self) {
-        self.writer.as_mut().unwrap().flush().unwrap();
-        //self.writer.as_mut().unwrap().close().unwrap();
+        let mut writer = self.writer.take().unwrap();
+        writer.flush().unwrap();
+        writer.close().unwrap();
     }
 }
