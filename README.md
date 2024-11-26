@@ -82,6 +82,7 @@ Destinations:
  * text (classic table)
  * text-vertical (each column in its own line)
  * XLSX (Excel spreadsheet)
+ * Parquet
 
 
 Examples:
@@ -127,6 +128,8 @@ TODO: (nice to have)
  * query benchmark with run statistics
  * db schema diagrams
  * in some distant future, GUI mode maybe
+ * allow to use PRQL instead of SQL
+ * combine result view with file monitoring via inotify (ala watch command)
 
  Known issues:
 
