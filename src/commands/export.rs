@@ -37,6 +37,13 @@ use crate::{
     commands::common::SqliteConfigOptions, destinations::sqlite::SqliteDestination,
     sources::sqlite::SqliteSource,
 };
+#[cfg(feature = "use_duckdb")]
+use crate::{
+    commands::common::DuckDBConfigOptions, destinations::duckdb::DuckDBDestination,
+    sources::duckdb::DuckDBSource,
+};
+
+
 
 pub fn export(
     args: &ApplicationArguments,
@@ -44,156 +51,75 @@ pub fn export(
     export_command: &ExportCommand,
 ) {
     let time_start: DateTime<Utc> = Utc::now();
-    let (source, mut destination) = match src {
+
+    let source: Source = match src {
+        #[cfg(feature = "use_duckdb")]
+        DataSourceCommand::DuckDB(ref duckdb_options) => {
+            Source::DuckDB(DuckDBSource::init(duckdb_options))
+        },
         #[cfg(feature = "use_mysql")]
         DataSourceCommand::Mysql(ref mysql_options) => {
-            let source: Source = Source::Mysql(MysqlSource::init(mysql_options));
-            let destination: Destination = match &export_command.destination {
-                #[cfg(feature = "use_csv")]
-                DestinationCommand::CSV(csv_options) => {
-                    Destination::CSV(Box::new(CSVDestination::init(csv_options)))
-                }
-                DestinationCommand::Debug(debug_options) => {
-                    Destination::Debug(DebugDestination::init(args, debug_options))
-                }
-                #[cfg(feature = "use_html")]
-                DestinationCommand::HTML(html_options) => {
-                    Destination::HTML(HTMLDestination::init(html_options))
-                }
-                #[cfg(feature = "use_json")]
-                DestinationCommand::JSON(json_options) => {
-                    Destination::JSON(JSONDestination::init(args, json_options))
-                }
-                #[cfg(feature = "use_parquet")]
-                DestinationCommand::Parquet(parquet_options) => {
-                    Destination::Parquet(ParquetDestination::init(parquet_options))
-                }
-                #[cfg(feature = "use_sqlite")]
-                DestinationCommand::Sqlite(sqlite_options) => {
-                    Destination::Sqlite(SqliteDestination::init(sqlite_options))
-                }
-                #[cfg(feature = "use_ods")]
-                DestinationCommand::ODS(options) => {
-                    Destination::SpreadSheetODS(Box::new(SpreadSheetODSDestination::init(options)))
-                }
-                #[cfg(feature = "use_xlsx")]
-                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(Box::new(
-                    SpreadSheetXLSXDestination::init(options),
-                )),
-                #[cfg(feature = "use_text")]
-                DestinationCommand::Text(text_options) => {
-                    Destination::Text(TextDestination::init(args, text_options))
-                }
-                #[cfg(feature = "use_text")]
-                DestinationCommand::TextVertical(text_vertical_options) => {
-                    Destination::TextVertical(TextVerticalDestination::init(
-                        args,
-                        text_vertical_options,
-                    ))
-                }
-            };
-            (source, destination)
-        }
-
+            Source::Mysql(MysqlSource::init(mysql_options))
+        },
         #[cfg(feature = "use_postgres")]
         DataSourceCommand::Postgres(ref postgres_options) => {
-            let source: Source = Source::Postgres(PostgresSource::init(postgres_options));
-            let destination: Destination = match &export_command.destination {
-                #[cfg(feature = "use_csv")]
-                DestinationCommand::CSV(csv_options) => {
-                    Destination::CSV(Box::new(CSVDestination::init(csv_options)))
-                }
-                DestinationCommand::Debug(debug_options) => {
-                    Destination::Debug(DebugDestination::init(args, debug_options))
-                }
-                #[cfg(feature = "use_html")]
-                DestinationCommand::HTML(html_options) => {
-                    Destination::HTML(HTMLDestination::init(html_options))
-                }
-                #[cfg(feature = "use_json")]
-                DestinationCommand::JSON(json_options) => {
-                    Destination::JSON(JSONDestination::init(args, json_options))
-                }
-                #[cfg(feature = "use_parquet")]
-                DestinationCommand::Parquet(parquet_options) => {
-                    Destination::Parquet(ParquetDestination::init(parquet_options))
-                }
-                #[cfg(feature = "use_sqlite")]
-                DestinationCommand::Sqlite(sqlite_options) => {
-                    Destination::Sqlite(SqliteDestination::init(sqlite_options))
-                }
-                #[cfg(feature = "use_ods")]
-                DestinationCommand::ODS(options) => {
-                    Destination::SpreadSheetODS(Box::new(SpreadSheetODSDestination::init(options)))
-                }
-                #[cfg(feature = "use_xlsx")]
-                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(Box::new(
-                    SpreadSheetXLSXDestination::init(options),
-                )),
-                #[cfg(feature = "use_text")]
-                DestinationCommand::Text(text_options) => {
-                    Destination::Text(TextDestination::init(args, text_options))
-                }
-                #[cfg(feature = "use_text")]
-                DestinationCommand::TextVertical(text_vertical_options) => {
-                    Destination::TextVertical(TextVerticalDestination::init(
-                        args,
-                        text_vertical_options,
-                    ))
-                }
-            };
-            (source, destination)
-        }
+            Source::Postgres(PostgresSource::init(postgres_options))
+        },
         #[cfg(feature = "use_sqlite")]
         DataSourceCommand::Sqlite(ref sqlite_options) => {
-            let source: Source = Source::Sqlite(SqliteSource::init(sqlite_options));
-            let destination: Destination = match &export_command.destination {
-                #[cfg(feature = "use_csv")]
-                DestinationCommand::CSV(csv_options) => {
-                    Destination::CSV(Box::new(CSVDestination::init(csv_options)))
-                }
-                DestinationCommand::Debug(debug_options) => {
-                    Destination::Debug(DebugDestination::init(args, debug_options))
-                }
-                #[cfg(feature = "use_html")]
-                DestinationCommand::HTML(html_options) => {
-                    Destination::HTML(HTMLDestination::init(html_options))
-                }
-                #[cfg(feature = "use_json")]
-                DestinationCommand::JSON(json_options) => {
-                    Destination::JSON(JSONDestination::init(args, json_options))
-                }
-                #[cfg(feature = "use_parquet")]
-                DestinationCommand::Parquet(parquet_options) => {
-                    Destination::Parquet(ParquetDestination::init(parquet_options))
-                }
-                #[cfg(feature = "use_sqlite")]
-                DestinationCommand::Sqlite(sqlite_options) => {
-                    Destination::Sqlite(SqliteDestination::init(sqlite_options))
-                }
-                #[cfg(feature = "use_ods")]
-                DestinationCommand::ODS(options) => {
-                    Destination::SpreadSheetODS(Box::new(SpreadSheetODSDestination::init(options)))
-                }
-                #[cfg(feature = "use_xlsx")]
-                DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(Box::new(
-                    SpreadSheetXLSXDestination::init(options),
-                )),
-                #[cfg(feature = "use_text")]
-                DestinationCommand::Text(text_options) => {
-                    Destination::Text(TextDestination::init(args, text_options))
-                }
-                #[cfg(feature = "use_text")]
-                DestinationCommand::TextVertical(text_vertical_options) => {
-                    Destination::TextVertical(TextVerticalDestination::init(
-                        args,
-                        text_vertical_options,
-                    ))
-                }
-            };
-            (source, destination)
+            Source::Sqlite(SqliteSource::init(sqlite_options))
+        },
+    };
+
+    let mut destination: Destination = match &export_command.destination {
+        #[cfg(feature = "use_csv")]
+        DestinationCommand::CSV(csv_options) => {
+            Destination::CSV(Box::new(CSVDestination::init(csv_options)))
+        }
+        DestinationCommand::Debug(debug_options) => {
+            Destination::Debug(DebugDestination::init(args, debug_options))
+        }
+        #[cfg(feature = "use_html")]
+        DestinationCommand::HTML(html_options) => {
+            Destination::HTML(HTMLDestination::init(html_options))
+        }
+        #[cfg(feature = "use_json")]
+        DestinationCommand::JSON(json_options) => {
+            Destination::JSON(JSONDestination::init(args, json_options))
+        }
+        #[cfg(feature = "use_parquet")]
+        DestinationCommand::Parquet(parquet_options) => {
+            Destination::Parquet(ParquetDestination::init(parquet_options))
+        }
+        #[cfg(feature = "use_duckdb")]
+        DestinationCommand::DuckDB(duckdb_options) => {
+            Destination::DuckDB(DuckDBDestination::init(duckdb_options))
+        }
+        #[cfg(feature = "use_sqlite")]
+        DestinationCommand::Sqlite(sqlite_options) => {
+            Destination::Sqlite(SqliteDestination::init(sqlite_options))
+        }
+        #[cfg(feature = "use_ods")]
+        DestinationCommand::ODS(options) => {
+            Destination::SpreadSheetODS(Box::new(SpreadSheetODSDestination::init(options)))
+        }
+        #[cfg(feature = "use_xlsx")]
+        DestinationCommand::XLSX(options) => Destination::SpreadSheetXLSX(Box::new(
+            SpreadSheetXLSXDestination::init(options),
+        )),
+        #[cfg(feature = "use_text")]
+        DestinationCommand::Text(text_options) => {
+            Destination::Text(TextDestination::init(args, text_options))
+        }
+        #[cfg(feature = "use_text")]
+        DestinationCommand::TextVertical(text_vertical_options) => {
+            Destination::TextVertical(TextVerticalDestination::init(
+                args,
+                text_vertical_options,
+            ))
         }
     };
+
     destination.prepare();
     let mut source_connection = source.connect();
     let mut it = source_connection.batch_iterator(export_command.batch_size);
@@ -259,6 +185,9 @@ pub struct ExportCommand {
 
 #[derive(Clone, Debug, Parser)]
 pub enum SourceCommand {
+    #[cfg(feature = "use_duckdb")]
+    #[command(name = "duckdb", about = "duckdb")]
+    DuckDB(DuckDBSourceOptions),
     #[cfg(feature = "use_mysql")]
     #[command(name = "mysql", about = "mysql")]
     Mysql(MysqlSourceOptions),
@@ -287,6 +216,9 @@ pub enum DestinationCommand {
     #[cfg(feature = "use_parquet")]
     #[command(name = "parquet", about = "parquet file")]
     Parquet(ParquetDestinationOptions),
+    #[cfg(feature = "use_duckdb")]
+    #[command(name = "duckdb", about = "DuckDB file")]
+    DuckDB(DuckDBDestinationOptions),
     #[cfg(feature = "use_sqlite")]
     #[command(name = "sqlite", about = "Sqlite file")]
     Sqlite(SqliteDestinationOptions),
@@ -311,6 +243,21 @@ pub enum DestinationCommand {
 pub struct ParquetDestinationOptions {
     #[arg(help = "parquet filename")]
     pub filename: String,
+    #[arg(
+        short = 't',
+        long = "truncate",
+        help = "truncate data to given amount of graphemes"
+    )]
+    pub truncate: Option<u64>,
+}
+
+#[cfg(feature = "use_duckdb")]
+#[derive(Clone, Debug, Parser)]
+pub struct DuckDBDestinationOptions {
+    #[arg(help = "duckdb filename")]
+    pub filename: String,
+    #[arg(help = "duckdb table name", default_value = "data")]
+    pub table: String,
     #[arg(
         short = 't',
         long = "truncate",
@@ -562,6 +509,38 @@ impl PostgresSourceOptions {
     }
 }
 
+#[cfg(feature = "use_duckdb")]
+#[derive(Clone, Debug, Parser)]
+pub struct DuckDBSourceOptions {
+    #[arg(help = "duckdb filename")]
+    pub filename: Option<String>,
+    #[arg(short = 'i', long = "init", help = "initial sql commands")]
+    pub init: Vec<String>,
+    #[arg(short = 'q', long = "query", help = "sql query")]
+    pub query: Option<String>,
+    #[arg(short = 'f', long = "query-file", help = "read sql query from file")]
+    pub query_file: Option<PathBuf>,
+    #[arg(
+        short = 'c',
+        long = "count",
+        help = "run another query to get row count first"
+    )]
+    pub count: bool,
+}
+
+#[cfg(feature = "use_sqlite")]
+impl DuckDBSourceOptions {
+    //fill any values that are set in config options and not overriden
+    pub fn update_from_config_options(&mut self, config_options: &DuckDBConfigOptions) {
+        if self.filename.is_none() && config_options.filename.is_some() {
+            self.filename = config_options.filename.clone();
+        }
+        if self.init.is_empty() && !config_options.init.is_empty() {
+            self.init.extend(config_options.init.iter().cloned());
+        }
+    }
+}
+
 #[cfg(feature = "use_sqlite")]
 #[derive(Clone, Debug, Parser)]
 pub struct SqliteSourceOptions {
@@ -593,3 +572,5 @@ impl SqliteSourceOptions {
         }
     }
 }
+
+

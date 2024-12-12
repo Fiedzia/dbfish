@@ -18,6 +18,7 @@ pub enum KnownShells {
     Mysql,
     Pgcli,
     Psql,
+    Duckdb,
 }
 
 #[derive(Debug, Parser)]
@@ -306,8 +307,75 @@ pub fn sqlite_python_client(sqlite_config_options: &export::SqliteSourceOptions)
         });
 }
 
+#[cfg(feature = "use_duckdb")]
+pub fn duckdb_client(duckdb_config_options: &export::DuckDBSourceOptions) {
+    let mut cmd = OsCommand::new("duckdb");
+    if let Some(filename) = &duckdb_config_options.filename {
+        cmd.arg(filename);
+    }
+
+    cmd.status()
+        .unwrap_or_else(|_| panic!("failed to execute duckdb ({:?})", cmd));
+}
+
+#[cfg(feature = "use_duckdb")]
+pub fn duckdb_python_client(duckdb_config_options: &export::DuckDBSourceOptions) {
+    config::ensure_config_directory_exists();
+    let python_venv_dir = config::get_config_directory().join("python_venv");
+    if !python_venv_dir.exists() {
+        std::fs::create_dir(&python_venv_dir).unwrap();
+    }
+
+    let python_duckdb_venv = python_venv_dir.join("duckdb");
+
+    if !python_duckdb_venv.exists() {
+        create_python_virtualenv(&python_duckdb_venv);
+        OsCommand::new(python_duckdb_venv.join("bin").join("pip"))
+            .arg("install")
+            .arg("ipython")
+            .arg("duckdb")
+            .status()
+            .expect("could not install dependencies via pip");
+    }
+    let python_file = python_duckdb_venv.join("run.py");
+    if !python_file.exists() {
+        let content = include_str!("duckdb.py");
+        std::fs::File::create(&python_file)
+            .unwrap()
+            .write_all(content.as_ref())
+            .unwrap();
+    }
+
+    if let Some(filename) = &duckdb_config_options.filename {
+        std::env::set_var("DUCKDB_FILE", filename);
+    }
+
+    OsCommand::new(python_duckdb_venv.join("bin").join("python"))
+        .arg(python_file.clone())
+        .status()
+        .unwrap_or_else(|_| {
+            panic!(
+                "could not run python script: {}",
+                python_file.to_str().unwrap()
+            )
+        });
+}
+
 pub fn shell(_args: &ApplicationArguments, src: &DataSourceCommand, shell_command: &ShellCommand) {
     match &src {
+        #[cfg(feature = "use_duckdb")]
+        DataSourceCommand::DuckDB(duckdb_config_options) => match shell_command.client {
+            KnownShells::Default | KnownShells::Duckdb => duckdb_client(duckdb_config_options),
+            KnownShells::Python => duckdb_python_client(duckdb_config_options),
+            _ => {
+                eprintln!(
+                    "client unknown or unsuitable for given source: {:?}",
+                    shell_command.client
+                );
+                std::process::exit(1);
+            }
+        },
+
         #[cfg(feature = "use_mysql")]
         DataSourceCommand::Mysql(mysql_config_options) => match shell_command.client {
             KnownShells::Mycli => {

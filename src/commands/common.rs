@@ -24,6 +24,9 @@ impl FromArgMatches for SourceConfigCommandWrapper {
 
 #[derive(Clone, Debug, Parser)]
 pub enum SourceConfigCommand {
+    #[cfg(feature = "use_duckdb")]
+    #[command(name = "duckdb", about = "duckdb")]
+    DuckDB(DuckDBConfigOptions),
     #[cfg(feature = "use_mysql")]
     #[command(name = "mysql", about = "mysql")]
     Mysql(MysqlConfigOptions),
@@ -38,6 +41,8 @@ pub enum SourceConfigCommand {
 impl SourceConfigCommand {
     pub fn get_type_name(&self) -> String {
         match self {
+            #[cfg(feature = "use_duckdb")]
+            SourceConfigCommand::DuckDB(_) => "duckdb".to_string(),
             #[cfg(feature = "use_mysql")]
             SourceConfigCommand::Mysql(_) => "mysql".to_string(),
             #[cfg(feature = "use_postgres")]
@@ -61,6 +66,11 @@ impl SourceConfigCommand {
                 .unwrap(),
             #[cfg(feature = "use_sqlite")]
             SourceConfigCommand::Sqlite(options) => toml::to_string(options)
+                .unwrap()
+                .parse::<toml::Value>()
+                .unwrap(),
+            #[cfg(feature = "use_duckdb")]
+            SourceConfigCommand::DuckDB(options) => toml::to_string(options)
                 .unwrap()
                 .parse::<toml::Value>()
                 .unwrap(),
@@ -91,7 +101,17 @@ impl SourceConfigCommand {
                 } else {
                     "sqlite".to_string()
                 }
-            }
+            },
+
+            #[cfg(feature = "use_duckdb")]
+            SourceConfigCommand::DuckDB(options) => {
+                if let Some(filename) = &options.filename {
+                    format!("duckdb: {}", filename)
+                } else {
+                    "duckdb".to_string()
+                }
+            },
+
         }
     }
 
@@ -130,6 +150,15 @@ impl SourceConfigCommand {
             "sqlite" => SourceConfigCommand::Sqlite(
                 toml::from_str(
                     toml::to_string(toml_table.get("sqlite").unwrap())
+                        .unwrap()
+                        .as_str(),
+                )
+                .unwrap(),
+            ),
+            #[cfg(feature = "use_duckdb")]
+            "duckdb" => SourceConfigCommand::DuckDB(
+                toml::from_str(
+                    toml::to_string(toml_table.get("duckdb").unwrap())
                         .unwrap()
                         .as_str(),
                 )
@@ -255,6 +284,28 @@ pub struct SqliteConfigOptions {
 
 #[cfg(feature = "use_sqlite")]
 impl SqliteConfigOptions {
+    //fill any values that are set in config options and not overriden
+    pub fn update_from_config_options(&mut self, config_options: &SqliteConfigOptions) {
+        if self.filename.is_none() && config_options.filename.is_some() {
+            self.filename = config_options.filename.clone();
+        }
+        if self.init.is_empty() && !config_options.init.is_empty() {
+            self.init.extend(config_options.init.iter().cloned());
+        }
+    }
+}
+
+#[cfg(feature = "use_duckdb")]
+#[derive(Clone, Debug, Deserialize, Serialize, Parser)]
+pub struct DuckDBConfigOptions {
+    #[arg(help = "duckdb filename")]
+    pub filename: Option<String>,
+    #[arg(short = 'i', long = "init", help = "initial sql commands")]
+    pub init: Vec<String>,
+}
+
+#[cfg(feature = "use_duckdb")]
+impl DuckDBConfigOptions {
     //fill any values that are set in config options and not overriden
     pub fn update_from_config_options(&mut self, config_options: &SqliteConfigOptions) {
         if self.filename.is_none() && config_options.filename.is_some() {

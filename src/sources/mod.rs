@@ -1,3 +1,5 @@
+#[cfg(feature = "use_duckdb")]
+pub mod duckdb;
 #[cfg(feature = "use_mysql")]
 pub mod mysql;
 #[cfg(feature = "use_postgres")]
@@ -8,6 +10,8 @@ pub mod sqlite;
 use crate::definitions::{DataSource, DataSourceBatchIterator, DataSourceConnection};
 
 pub enum Source {
+    #[cfg(feature = "use_duckdb")]
+    DuckDB(duckdb::DuckDBSource),
     #[cfg(feature = "use_sqlite")]
     Sqlite(sqlite::SqliteSource),
     #[cfg(feature = "use_mysql")]
@@ -17,6 +21,8 @@ pub enum Source {
 }
 
 pub enum SourceConnection<'source> {
+    #[cfg(feature = "use_duckdb")]
+    DuckDBConnection(duckdb::DuckDBSourceConnection<'source>),
     #[cfg(feature = "use_sqlite")]
     SqliteConnection(sqlite::SqliteSourceConnection<'source>),
     #[cfg(feature = "use_mysql")]
@@ -28,6 +34,10 @@ pub enum SourceConnection<'source> {
 impl<'source: 'conn, 'conn> DataSource<'source, 'conn, SourceConnection<'source>> for Source {
     fn connect(&'source self) -> SourceConnection<'source> {
         match self {
+            #[cfg(feature = "use_duckdb")]
+            Source::DuckDB(duckdb_source) => {
+                SourceConnection::DuckDBConnection(duckdb_source.connect())
+            }
             #[cfg(feature = "use_sqlite")]
             Source::Sqlite(sqlite_source) => {
                 SourceConnection::SqliteConnection(sqlite_source.connect())
@@ -45,6 +55,8 @@ impl<'source: 'conn, 'conn> DataSource<'source, 'conn, SourceConnection<'source>
 
     fn get_type_name(&self) -> String {
         match self {
+            #[cfg(feature = "use_duckdb")]
+            Source::DuckDB(duckdb_source) => duckdb_source.get_type_name(),
             #[cfg(feature = "use_sqlite")]
             Source::Sqlite(sqlite_source) => sqlite_source.get_type_name(),
             #[cfg(feature = "use_mysql")]
@@ -56,6 +68,8 @@ impl<'source: 'conn, 'conn> DataSource<'source, 'conn, SourceConnection<'source>
 
     fn get_name(&self) -> String {
         match self {
+            #[cfg(feature = "use_duckdb")]
+            Source::DuckDB(duckdb_source) => duckdb_source.get_name(),
             #[cfg(feature = "use_sqlite")]
             Source::Sqlite(sqlite_source) => sqlite_source.get_name(),
             #[cfg(feature = "use_mysql")]
@@ -72,6 +86,10 @@ impl<'source, 'conn> DataSourceConnection<'conn> for SourceConnection<'source> {
         batch_size: u64,
     ) -> Box<(dyn DataSourceBatchIterator<'conn> + 'conn)> {
         match self {
+            #[cfg(feature = "use_duckdb")]
+            SourceConnection::DuckDBConnection(duckdb_connection) => {
+                (*duckdb_connection).batch_iterator(batch_size)
+            }
             #[cfg(feature = "use_sqlite")]
             SourceConnection::SqliteConnection(sqlite_connection) => {
                 (*sqlite_connection).batch_iterator(batch_size)

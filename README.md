@@ -114,7 +114,7 @@ TODO: (must-have before calling it usable)
 
 TODO: (nice to have)
 
- * more sources (BigQuery, maybe JSON/Solr/ES/MongoDB, SurealDB, DuckDB)
+ * more sources (BigQuery, maybe JSON/Solr/ES/MongoDB, SurealDB)
  * more destinations (HDF5, Parquet, Feather)
  * support a bit more MySQL and PostgreSQL features (few types were ommited)
  * kill all .unwrap()
@@ -130,6 +130,7 @@ TODO: (nice to have)
  * in some distant future, GUI mode maybe
  * allow to use PRQL instead of SQL
  * combine result view with file monitoring via inotify (ala watch command)
+ * allow to set up database by running docker container for quick testing (like: dbfish docker-run postgres:16)
 
  Known issues:
 

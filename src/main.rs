@@ -70,6 +70,18 @@ fn main() {
                         );
                     }
                 }
+                #[cfg(feature = "use_duckdb")]
+                CommandWrapper(CommandSource::DuckDB(duckdb_options)) => {
+                    let src_subcmd =
+                        SourceLevelCommand::from_arg_matches(args.subcommand().unwrap().1);
+                    if let Ok(cmd) = src_subcmd {
+                        handle_source_level_command(
+                            &app_args,
+                            &DataSourceCommand::DuckDB(duckdb_options.clone()),
+                            &cmd,
+                        );
+                    }
+                }
             };
         }
         Err(e) => {

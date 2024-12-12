@@ -65,6 +65,9 @@ pub fn handle_source_level_command(
 
 #[derive(Debug, Parser)]
 pub enum CommandSource {
+    #[cfg(feature = "use_duckdb")]
+    #[command(name = "duckdb", about = "duckdb")]
+    DuckDB(export::DuckDBSourceOptions),
     #[cfg(feature = "use_mysql")]
     #[command(name = "mysql", about = "mysql")]
     Mysql(export::MysqlSourceOptions),
@@ -92,6 +95,21 @@ impl FromArgMatches for CommandWrapper {
                     match config::USER_DEFINED_SOURCES.get(matches.subcommand().unwrap().0) {
                         None => {}
                         Some(source) => match source {
+                            #[cfg(feature = "use_duckdb")]
+                            SourceConfigCommand::DuckDB(duckdb_config_options) => {
+                                match export::DuckDBSourceOptions::from_arg_matches(
+                                    matches.subcommand().unwrap().1,
+                                ) {
+                                    Ok(mut duckdb_options) => {
+                                        duckdb_options
+                                            .update_from_config_options(duckdb_config_options);
+                                        return Ok(CommandWrapper(CommandSource::DuckDB(
+                                            duckdb_options,
+                                        )));
+                                    }
+                                    Err(e) => return Err(e),
+                                }
+                            }
                             #[cfg(feature = "use_mysql")]
                             SourceConfigCommand::Mysql(mysql_config_options) => {
                                 match export::MysqlSourceOptions::from_arg_matches(
@@ -145,6 +163,19 @@ impl FromArgMatches for CommandWrapper {
                         if source_name == matches.subcommand().unwrap().0 {
                             //we are handling InvalidSubcommand, so there is one for sure
                             match source_config_command.get_type_name().as_str() {
+                                #[cfg(feature = "use_duckdb")]
+                                "duckdb" => {
+                                    match export::DuckDBSourceOptions::from_arg_matches(
+                                        matches.subcommand().unwrap().1,
+                                    ) {
+                                        Ok(duckdb_options) => {
+                                            return Ok(CommandWrapper(CommandSource::DuckDB(
+                                                duckdb_options,
+                                            )))
+                                        }
+                                        Err(e) => return Err(e),
+                                    }
+                                }
                                 #[cfg(feature = "use_mysql")]
                                 "mysql" => {
                                     match export::MysqlSourceOptions::from_arg_matches(
@@ -200,7 +231,6 @@ impl FromArgMatches for CommandWrapper {
     // Provided methods
     fn from_arg_matches_mut(matches: &mut ArgMatches) -> Result<Self, clap::Error> {
         let r = CommandSource::from_arg_matches_mut(matches).map(Self);
-        println!("here2:: {:#?}", r);
         r
     }
     fn update_from_arg_matches_mut(&mut self, matches: &mut ArgMatches) -> Result<(), clap::Error> {
@@ -211,7 +241,12 @@ impl FromArgMatches for CommandWrapper {
 impl Subcommand for CommandWrapper {
     fn augment_subcommands(cmd: Command) -> Command {
         let mut new_cmd = CommandSource::augment_subcommands(cmd);
-
+        #[cfg(feature = "use_duckdb")]
+        {
+            new_cmd = new_cmd.mut_subcommand("duckdb", |subcmd| {
+                SourceLevelCommand::augment_subcommands(subcmd)
+            });
+        }
         #[cfg(feature = "use_mysql")]
         {
             new_cmd = new_cmd.mut_subcommand("mysql", |subcmd| {
@@ -235,6 +270,14 @@ impl Subcommand for CommandWrapper {
 
         for (source_name, source_config_command) in sources {
             match source_config_command.get_type_name().as_str() {
+                #[cfg(feature = "use_duckdb")]
+                "duckdb" => {
+                    let mut subcmd = export::DuckDBSourceOptions::augment_args(
+                        clap::Command::new(&source_name).about(source_config_command.description()),
+                    );
+                    subcmd = SourceLevelCommand::augment_subcommands(subcmd);
+                    new_cmd = new_cmd.subcommand(subcmd);
+                }
                 #[cfg(feature = "use_mysql")]
                 "mysql" => {
                     let mut subcmd = export::MysqlSourceOptions::augment_args(

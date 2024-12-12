@@ -11,6 +11,8 @@ pub mod json;
 pub mod ods;
 #[cfg(feature = "use_parquet")]
 pub mod parquet;
+#[cfg(feature = "use_duckdb")]
+pub mod duckdb;
 #[cfg(feature = "use_sqlite")]
 pub mod sqlite;
 #[cfg(feature = "use_text")]
@@ -30,6 +32,8 @@ pub enum Destination {
     JSON(json::JSONDestination),
     #[cfg(feature = "use_parquet")]
     Parquet(parquet::ParquetDestination),
+    #[cfg(feature = "use_duckdb")]
+    DuckDB(duckdb::DuckDBDestination),
     #[cfg(feature = "use_sqlite")]
     Sqlite(sqlite::SqliteDestination),
     #[cfg(feature = "use_ods")]
@@ -62,6 +66,8 @@ impl DataDestination for Destination {
             }
             #[cfg(feature = "use_parquet")]
             Destination::Parquet(parquet_destination) => parquet_destination.prepare(),
+            #[cfg(feature = "use_duckdb")]
+            Destination::DuckDB(duckdb_destination) => duckdb_destination.prepare(),
             #[cfg(feature = "use_sqlite")]
             Destination::Sqlite(sqlite_destination) => sqlite_destination.prepare(),
             #[cfg(feature = "use_text")]
@@ -102,6 +108,10 @@ impl DataDestination for Destination {
             Destination::Parquet(parquet_destination) => {
                 parquet_destination.prepare_for_results(result_iterator)
             }
+            #[cfg(feature = "use_duckdb")]
+            Destination::DuckDB(duckdb_destination) => {
+                duckdb_destination.prepare_for_results(result_iterator)
+            }
             #[cfg(feature = "use_sqlite")]
             Destination::Sqlite(sqlite_destination) => {
                 sqlite_destination.prepare_for_results(result_iterator)
@@ -136,6 +146,8 @@ impl DataDestination for Destination {
             }
             #[cfg(feature = "use_parquet")]
             Destination::Parquet(parquet_destination) => parquet_destination.add_rows(rows),
+            #[cfg(feature = "use_duckdb")]
+            Destination::DuckDB(duckdb_destination) => duckdb_destination.add_rows(rows),
             #[cfg(feature = "use_sqlite")]
             Destination::Sqlite(sqlite_destination) => sqlite_destination.add_rows(rows),
             #[cfg(feature = "use_text")]
@@ -164,6 +176,8 @@ impl DataDestination for Destination {
             }
             #[cfg(feature = "use_parquet")]
             Destination::Parquet(parquet_destination) => parquet_destination.close(),
+            #[cfg(feature = "use_duckdb")]
+            Destination::DuckDB(duckdb_destination) => duckdb_destination.close(),
             #[cfg(feature = "use_sqlite")]
             Destination::Sqlite(sqlite_destination) => sqlite_destination.close(),
             #[cfg(feature = "use_text")]
